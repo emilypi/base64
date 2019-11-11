@@ -1,3 +1,16 @@
+-- |
+-- Module       : Data.ByteString.Base64
+-- Copyright 	: (c) 2019 Emily Pillmore
+-- License	: BSD-style
+--
+-- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
+-- Stability	: Experimental
+-- Portability	: portable
+--
+-- This module contains the lazy combinators implementing the
+-- RFC 4648 specification for the Base64 encoding including
+-- unpadded and lenient variants
+--
 module Data.ByteString.Base64.Lazy
 ( encodeBase64
 , decodeBase64
