@@ -1,3 +1,16 @@
+-- |
+-- Module       : Data.Text.Encoding.Base64
+-- Copyright 	: (c) 2019 Emily Pillmore
+-- License	: BSD-style
+--
+-- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
+-- Stability	: Experimental
+-- Portability	: portable
+--
+-- This module contains the combinators implementing the
+-- RFC 4648 specification for the Base64 encoding including
+-- unpadded and lenient variants
+--
 module Data.Text.Encoding.Base64
 ( encodeBase64Text
 , decodeBase64Text
@@ -11,7 +24,6 @@ module Data.Text.Encoding.Base64
 import Data.ByteString.Base64
 
 import Data.Text (Text)
-import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 

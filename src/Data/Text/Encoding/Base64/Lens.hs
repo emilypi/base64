@@ -1,10 +1,17 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-module Data.Text.Encoding.Base64.Lens
-( -- * Classy Optics (re-exported)
-  HasBase64(..)
-, base64Of
-)where
-
+-- |
+-- Module       : Data.Text.Encoding.Base64.Lens
+-- Copyright 	: (c) 2019 Emily Pillmore
+-- License	: BSD-style
+--
+-- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
+-- Stability	: Experimental
+-- Portability	: portable
+--
+-- This module contains the 'HasBase64' instance for 'Text', which is
+-- defined to be the collection of 'Iso's and 'Prism's defining the
+-- RFC 4648 specification for the Base64 encoding format.
+--
+module Data.Text.Encoding.Base64.Lens where
 
 import Control.Lens
 
