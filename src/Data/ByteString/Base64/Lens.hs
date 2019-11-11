@@ -68,7 +68,6 @@ instance HasBase64 ByteString where
         Right bs -> Just bs
         _ -> Nothing
 
-
     _Base64Url = prism' B64U.encodeBase64 $ \b ->
       case B64U.decodeBase64 b of
         Right bs -> Just bs
