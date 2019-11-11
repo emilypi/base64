@@ -28,9 +28,13 @@ source-repository head
 
 flag ghc-flags
   description: Generate .ghc.flags files during compilation
-  manual:      True
-  default:     False
+  manual: True
+  default: False
 
+flag optics
+  description: Enable optics for base64-encoding text and bytestrings
+  manual: True
+  default: False
 
 library
   exposed-modules:     Data.ByteString.Base64
@@ -54,6 +58,12 @@ library
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall
+
+  if flag(optics)
+    exposed-modules:   Data.ByteString.Base64.Lens
+                     , Data.Text.Encoding.Base64.Lens
+
+    build-depends:     lens ^>= 4.18
 
   if flag(ghc-flags)
     ghc-options: -fplugin GhcFlags.Plugin
