@@ -11,6 +11,9 @@
 -- defined to be the collection of 'Iso's and 'Prism's defining the
 -- RFC 4648 specification for the Base64 encoding format.
 --
+-- In order to expose this file, you must build the package with
+-- '-foptics' enabled.
+--
 module Data.ByteString.Base64.Lens
 ( -- * Classy Base64
   HasBase64(..)
