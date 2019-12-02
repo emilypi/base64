@@ -23,11 +23,29 @@ import "memory" Data.ByteArray.Encoding as Mem
 import Data.ByteString
 import "base64-bytestring" Data.ByteString.Base64 as Bos
 import "base64" Data.ByteString.Base64 as B64
+import Data.ByteString.Random (random)
 import qualified Data.Text as T
+
+import GHC.Natural
+
 
 main :: IO ()
 main = defaultMain
-    [ env globalEnv $ \ ~e -> bgroup "main"
+    [ env (globalEnv 25) $ \ ~e -> bgroup "small"
+        (bgroup_ e)
+    , env (globalEnv 100) $ \ ~e -> bgroup "med-small"
+        (bgroup_ e)
+    , env (globalEnv 1000) $ \ ~e -> bgroup "med"
+        (bgroup_ e)
+    , env (globalEnv 10000) $ \ ~e -> bgroup "med-large"
+        (bgroup_ e)
+    , env (globalEnv 100000) $ \ ~e -> bgroup "large"
+        (bgroup_ e)
+    , env (globalEnv 1000000) $ \ ~e -> bgroup "huge"
+        (bgroup_ e)
+    ]
+  where
+    bgroup_ e =
       [ bgroup "base64 encode"
         [ encodeBench @Mem e
         , encodeBench @Bos e
@@ -36,14 +54,12 @@ main = defaultMain
       , bgroup "base64 decode"
         [ decodeBench @Mem e
         , decodeBench @Bos e
-        , decodeBench @B64 e
+        -- , decodeBench @B64 e
         ]
       ]
-    ]
 
-
-globalEnv :: IO ByteString
-globalEnv = undefined
+globalEnv :: Natural -> IO ByteString
+globalEnv = random
 
 encodeBench :: forall a. Impl a => ByteString -> Benchmark
 encodeBench = bench (label @a) . nf (encoder @a)

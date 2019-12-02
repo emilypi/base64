@@ -97,6 +97,7 @@ benchmark base64-bench
                      , deepseq
                      , criterion
                      , memory
+                     , random-bytestring
                      , text
 
   ghc-options: -Wall -threaded "-with-rtsopts=-N -s" -ddump-simpl -ddump-stg -ddump-to-file
