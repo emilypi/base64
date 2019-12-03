@@ -51,26 +51,29 @@ base64Internal alpha src dst slen padded = go 0 0
     _eq = 0x3d :: Word8
 
     go !i !j
-      | i >= slen = return ()
-      | otherwise = do
+      | i + 2 <= slen = do
         a <- peekByteOff src i
-        b <- if i + 1 >= slen then return 0 else peekByteOff src (i + 1)
-        c <- if i + 2 >= slen then return 0 else peekByteOff src (i + 2)
+        b <- peekByteOff src (i + 1)
+        c <- peekByteOff src (i + 2)
 
         let (!w, !x, !y, !z) = encodeTriplet alpha a b c
 
         pokeByteOff dst j w
         pokeByteOff dst (j + 1) x
-
-        if i + 1 < slen
-        then pokeByteOff dst (j + 2) y
-        else when padded (pokeByteOff dst (j + 2) _eq)
-
-        if i + 2 < slen
-        then pokeByteOff dst (j + 3) z
-        else when padded (pokeByteOff dst (j + 3) _eq)
+        pokeByteOff dst (j + 2) y
+        pokeByteOff dst (j + 3) z
 
         go (i + 3) (j + 4)
+
+      | otherwise = do
+        a <- peekByteOff src i
+
+        pokeByteOff dst j (shiftR @Word8 a 2)
+        pokeByteOff dst (j + 1) (shiftL @Word8 a 4 .&. 0x30)
+
+        when padded (pokeByteOff dst (j + 2) _eq)
+        when padded (pokeByteOff dst (j + 3) _eq)
+
 
 base64Internal' :: Addr# -> Ptr Word8 -> Ptr Word8 -> Int -> Bool -> IO ()
 base64Internal' alpha src dst slen padded = go 0 0
@@ -99,7 +102,6 @@ base64Internal' alpha src dst slen padded = go 0 0
         else when padded (pokeByteOff dst (j + 3) _eq)
 
         go (i + 3) (j + 4)
-
 
 
 -- | Naive implemementation. We can do better by copying directly to a 'Word32'
