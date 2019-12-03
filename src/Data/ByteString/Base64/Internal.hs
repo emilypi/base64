@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeApplications #-}
 module Data.ByteString.Base64.Internal
 ( base64
-base64'
+, base64'
 ) where
 
 
