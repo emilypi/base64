@@ -33,10 +33,7 @@ import Data.Text (Text)
 -- See: RFC-4648 section 4
 --
 encodeBase64 :: ByteString -> ByteString
-encodeBase64 = base64 alpha True
-  where
-    alpha =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
+encodeBase64 = base64' True
 
 decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 = undefined
@@ -58,10 +55,7 @@ decodeBase64Lenient = undefined
 -- See: RFC-4648 section 3.2
 --
 encodeBase64Unpadded :: ByteString -> ByteString
-encodeBase64Unpadded = base64 alpha False
-  where
-    alpha =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
+encodeBase64Unpadded = base64 undefined False
 
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded = undefined
