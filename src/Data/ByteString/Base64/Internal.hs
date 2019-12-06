@@ -4,6 +4,7 @@
 module Data.ByteString.Base64.Internal
 ( base64
 , base64'
+, base64Lazy
 ) where
 
 
@@ -11,123 +12,179 @@ import Control.Monad (when)
 
 import Data.Bits
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 import Data.ByteString.Internal
+import qualified Data.ByteString.Lazy as LBS
 
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
 
 import GHC.Exts
+import GHC.ForeignPtr
 import GHC.Storable
 import GHC.Word
 
+import System.IO.Unsafe
 
 
+base64Lazy :: Bool -> LBS.ByteString -> LBS.ByteString
+base64Lazy padding = LBS.fromChunks
+   . fmap (base64 padding)
+   . chunkN 3
+   . LBS.toChunks
 
-base64 :: Addr# -> Bool -> ByteString -> ByteString
-base64 alpha padding (PS fp _ l) =
-    unsafeCreate dlen $ \dst ->
-      withForeignPtr fp $ \src ->
-        base64Internal alpha src dst l padding
+data EncodeTable = ET (Ptr Word8) (Ptr Word16)
+
+mkEncodeTable :: Addr# -> EncodeTable
+mkEncodeTable !alphabet = ET (Ptr alphabet) (Ptr eptr)
   where
-    dlen =
-      let (q,r) = l `divMod` 3
-      in 4 * (if r == 0 then q else q+1)
+    ix (I# i) = W8# (indexWord8OffAddr# alphabet i)
+    (PS (ForeignPtr eptr _) _ _) = BS.pack
+      $ concat
+      $ [ [ix j, ix k] | j <- [0..63], k <- [0..63] ]
 
-base64' :: Addr# -> Bool -> ByteString -> ByteString
-base64' alpha padding (PS fp _ l) =
-    unsafeCreate dlen $ \dst ->
-      withForeignPtr fp $ \src ->
-        base64Internal' alpha src dst l padding
+base64 :: Bool -> ByteString -> ByteString
+base64 padded (PS sfp soff slen) =
+    unsafeCreate dlen $ \dptr ->
+    withForeignPtr sfp $ \sptr ->
+      base64Internal' aptr eptr sptr (castPtr dptr) (sptr `plusPtr` (soff + slen)) padded
   where
-    dlen =
-      let (q,r) = l `divMod` 3
-      in 4 * (if r == 0 then q else q+1)
+    !dlen = ((slen + 2) `div` 3) * 4
+    ET aptr eptr = mkEncodeTable alpha
+    !alpha =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
 
-
-base64Internal :: Addr# -> Ptr Word8 -> Ptr Word8 -> Int -> Bool -> IO ()
-base64Internal alpha src dst slen padded = go 0 0
+base64Internal'
+    :: Ptr Word8
+    -> Ptr Word16
+    -> Ptr Word8
+    -> Ptr Word16
+    -> Ptr Word8
+    -> Bool
+    -> IO ()
+base64Internal' alpha etable sptr dptr end padded = go sptr dptr
   where
+    ix :: Int -> IO Word8
+    ix n = peek (alpha `plusPtr` n)
+    {-# INLINE ix #-}
+
     _eq = 0x3d :: Word8
+    {-# INLINE _eq #-}
 
-    go !i !j
-      | i + 2 <= slen = do
-        a <- peekByteOff src i
-        b <- peekByteOff src (i + 1)
-        c <- peekByteOff src (i + 2)
+    w32 :: Word8 -> Word32
+    w32 = fromIntegral
+    {-# INLINE w32 #-}
 
-        let (!w, !x, !y, !z) = encodeTriplet alpha a b c
-
-        pokeByteOff dst j w
-        pokeByteOff dst (j + 1) x
-        pokeByteOff dst (j + 2) y
-        pokeByteOff dst (j + 3) z
-
-        go (i + 3) (j + 4)
-
+    go !src !dst
+      | src `plusPtr` 2 >= end = complete src (castPtr dst)
       | otherwise = do
-        a <- peekByteOff src i
+        !i <- w32 <$> peek src
+        !j <- w32 <$> peek (src `plusPtr` 1)
+        !k <- w32 <$> peek (src `plusPtr` 2)
 
-        pokeByteOff dst j (shiftR @Word8 a 2)
-        pokeByteOff dst (j + 1) (shiftL @Word8 a 4 .&. 0x30)
+        let !w = (i `shiftL` 16) .|. (j `shiftL` 8) .|. k
 
-        when padded (pokeByteOff dst (j + 2) _eq)
-        when padded (pokeByteOff dst (j + 3) _eq)
+        !x <- peekElemOff etable (fromIntegral (shiftR @Word32 w 12))
+        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
 
+        poke dst x
+        poke (plusPtr dst 2) y
 
-base64Internal' :: Addr# -> Ptr Word8 -> Ptr Word8 -> Int -> Bool -> IO ()
-base64Internal' alpha src dst slen padded = go 0 0
-  where
-    _eq = 0x3d :: Word8
+        go (src `plusPtr` 3) (dst `plusPtr` 4)
 
-    src32 = castPtr src
-
-    go :: Int -> Int -> IO ()
-    go i j
-      | i >= slen = return ()
+    complete :: Ptr Word8 -> Ptr Word8 -> IO ()
+    complete !src !dst
+      | src == end = return ()
       | otherwise = do
-        x <- readWord32OffPtr src32 i
+        let peekSP n f = (f . fromIntegral) `fmap` peek @Word8 (src `plusPtr` n)
+            !twoMore = src `plusPtr` 2 == end
 
-        let (!a, !b, !c, !d) = encodeTriplet' alpha x
+        !a <- peekSP 0 ((`shiftR` 2) . (.&. 0xfc))
+        !b <- peekSP 0 ((`shiftL` 4) . (.&. 0x03))
+        !b' <- if twoMore
+          then peekSP 1 ((.|. b) . (`shiftR` 4) . (.&. 0xf0))
+          else return b
 
-        pokeByteOff dst j a
-        pokeByteOff dst j b
+        poke dst =<< ix a
+        poke (plusPtr dst 1) =<< ix b'
 
-        if i + 1 < slen
-        then pokeByteOff dst (j + 2) c
-        else when padded (pokeByteOff dst (j + 2) _eq)
+        if twoMore then do
+          idx <- peekSP 1 ((`shiftL` 2) . (.&. 0x0f))
+          c <- ix idx
+          poke (dst `plusPtr` 2) c
+          when padded (poke (dst `plusPtr` 3) _eq)
+        else do
+          poke (dst `plusPtr` 2) _eq
+          when padded (poke (dst `plusPtr` 3) _eq)
+{-# INLINE base64Internal' #-}
 
-        if i + 2 < slen
-        then pokeByteOff dst (j + 3) d
-        else when padded (pokeByteOff dst (j + 3) _eq)
 
-        go (i + 3) (j + 4)
-
-
--- | Naive implemementation. We can do better by copying directly to a 'Word32'
+-- | Chunk a list of bytestrings into chunks that are sized
+-- a multiple of n.
 --
--- See: http://0x80.pl/notesen/2015-12-27-base64-encoding.html
---
-encodeTriplet :: Addr# -> Word8 -> Word8 -> Word8 -> (Word8, Word8, Word8, Word8)
-encodeTriplet alpha a b c =
-    let
-      !w = shiftR a 2
-      !x = (shiftL a 4 .&. 0x30) .|. (shiftR b 4)
-      !y = (shiftL b 2 .&. 0x3c) .|. (shiftR c 6)
-      !z = c .&. 0x3f
-    in (ix w, ix x, ix y, ix z)
+chunkN :: Int -> [ByteString] -> [ByteString]
+chunkN _ [] = []
+chunkN !n (b:bs) = case BS.length b `divMod` n of
+    (_, 0) -> b : chunkN n bs
+    (d, _) ->
+      let ~(p, s) = BS.splitAt (d * n) b
+      in p : go s bs
   where
-    ix (W8# i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
-{-# INLINE encodeTriplet #-}
+    go acc [] = [acc]
+    go acc (z:zs) =
+      let ~(p, s) = BS.splitAt (n - BS.length acc) z
+      in
+        let acc' = acc <> p
+        in if BS.length acc' == n
+        then
+          let zs' = if BS.null s then zs else s:zs
+          in acc' : chunkN n zs'
+        else go acc' zs
 
-encodeTriplet' :: Addr# -> Word32 -> (Word8, Word8, Word8, Word8)
-encodeTriplet' alpha x =
-    let
-      !a = fromIntegral (x .&. 0x3f)
-      !b = fromIntegral ((shiftR x 8) .&. 0x3f)
-      !c = fromIntegral ((shiftR x 16) .&. 0x3f)
-      !d = fromIntegral ((shiftR x 24) .&. 0x3f)
-    in (ix a, ix b, ix c, ix d)
-  where
-    ix (W8# i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
-{-# INLINE encodeTriplet' #-}
+
+-- -- | my std reference impl
+-- --
+-- base64Internal :: Addr# -> Ptr Word8 -> Ptr Word8 -> Int -> Bool -> IO ()
+-- base64Internal alpha src dst slen padded = go 0 0
+--   where
+--     _eq = 0x3d :: Word8
+
+--     go !i !j
+--       | i  >= slen = return ()
+--       | otherwise = do
+--         a <- peekByteOff src i
+--         b <- peekByteOff src (i + 1)
+--         c <- peekByteOff src (i + 2)
+
+--         let (!w, !x, !y, !z) = encodeTriplet alpha a b c
+
+--         pokeByteOff dst j w
+--         pokeByteOff dst (j + 1) x
+
+--         if i + 1 < slen
+--         then pokeByteOff dst (j + 2) y
+--         else when padded (pokeByteOff dst (j + 2) _eq)
+
+--         if i + 2 < slen
+--         then pokeByteOff dst (j + 3) z
+--         else when padded (pokeByteOff dst (j + 3) _eq)
+
+--         go (i + 3) (j + 4)
+
+
+-- -- | Naive implemementation. We can do better by copying directly to a 'Word32'
+-- --
+-- -- See: http://0x80.pl/notesen/2015-12-27-base64-encoding.html
+-- --
+-- encodeTriplet :: Addr# -> Word8 -> Word8 -> Word8 -> (Word8, Word8, Word8, Word8)
+-- encodeTriplet alpha a b c =
+--     let
+--       !w = shiftR a 2
+--       !x = (shiftL a 4 .&. 0x30) .|. (shiftR b 4)
+--       !y = (shiftL b 2 .&. 0x3c) .|. (shiftR c 6)
+--       !z = c .&. 0x3f
+--     in (ix w, ix x, ix y, ix z)
+--   where
+--     ix (W8# i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
+-- {-# INLINE encodeTriplet #-}
