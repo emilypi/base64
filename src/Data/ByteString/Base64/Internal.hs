@@ -1,10 +1,10 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MagicHash #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE UnboxedTuples #-}
 module Data.ByteString.Base64.Internal
-( base64
-, base64'
-, base64Lazy
+( base64Padded
 ) where
 
 
@@ -17,6 +17,7 @@ import Data.ByteString.Internal
 import qualified Data.ByteString.Lazy as LBS
 
 import Foreign.ForeignPtr
+import Foreign.ForeignPtr.Unsafe
 import Foreign.Ptr
 import Foreign.Storable
 
@@ -28,52 +29,45 @@ import GHC.Word
 import System.IO.Unsafe
 
 
-base64Lazy :: Bool -> LBS.ByteString -> LBS.ByteString
-base64Lazy padding = LBS.fromChunks
-   . fmap (base64 padding)
-   . chunkN 3
-   . LBS.toChunks
+base64Padded :: ByteString -> ByteString
+base64Padded (PS !sfp !soff !slen) =
+    unsafeCreate dlen $ \(!dptr) ->
+    withForeignPtr sfp $ \(!sptr)-> do
+      let !end = sptr `plusPtr` (soff + slen)
+      base64InternalPadded aptr eptr sptr (castPtr dptr) end
+  where
+    !dlen = ((slen + 2) `div` 3) * 4
+    Encoding aptr eptr = {-# SCC mkEncodeTable #-} mkEncodeTable alphabet
+    !alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
 
-data EncodeTable = ET (Ptr Word8) (Ptr Word16)
+data Encoding = Encoding (Ptr Word8) (Ptr Word16)
 
-mkEncodeTable :: Addr# -> EncodeTable
-mkEncodeTable !alphabet = ET (Ptr alphabet) (Ptr eptr)
+mkEncodeTable :: Addr# -> Encoding
+mkEncodeTable !alphabet = Encoding (Ptr alphabet) (Ptr eptr)
   where
     ix (I# i) = W8# (indexWord8OffAddr# alphabet i)
     (PS (ForeignPtr eptr _) _ _) = BS.pack
       $ concat
       $ [ [ix j, ix k] | j <- [0..63], k <- [0..63] ]
 
-base64 :: Bool -> ByteString -> ByteString
-base64 padded (PS sfp soff slen) =
-    unsafeCreate dlen $ \dptr ->
-    withForeignPtr sfp $ \sptr ->
-      base64Internal' aptr eptr sptr (castPtr dptr) (sptr `plusPtr` (soff + slen)) padded
-  where
-    !dlen = ((slen + 2) `div` 3) * 4
-    ET aptr eptr = mkEncodeTable alpha
-    !alpha =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
-
-base64Internal'
+base64InternalUnpadded
     :: Ptr Word8
     -> Ptr Word16
     -> Ptr Word8
     -> Ptr Word16
     -> Ptr Word8
-    -> Bool
     -> IO ()
-base64Internal' alpha etable sptr dptr end padded = go sptr dptr
+base64InternalUnpadded alpha etable sptr dptr end = go sptr dptr
   where
     ix :: Int -> IO Word8
-    ix n = peek (alpha `plusPtr` n)
+    ix !n = peek (alpha `plusPtr` n)
     {-# INLINE ix #-}
 
-    _eq = 0x3d :: Word8
+    !_eq = 0x3d :: Word8
     {-# INLINE _eq #-}
 
     w32 :: Word8 -> Word32
-    w32 = fromIntegral
+    w32 !i = fromIntegral i
     {-# INLINE w32 #-}
 
     go !src !dst
@@ -109,15 +103,73 @@ base64Internal' alpha etable sptr dptr end padded = go sptr dptr
         poke dst =<< ix a
         poke (plusPtr dst 1) =<< ix b'
 
-        if twoMore then do
-          idx <- peekSP 1 ((`shiftL` 2) . (.&. 0x0f))
-          c <- ix idx
-          poke (dst `plusPtr` 2) c
-          when padded (poke (dst `plusPtr` 3) _eq)
-        else do
-          poke (dst `plusPtr` 2) _eq
-          when padded (poke (dst `plusPtr` 3) _eq)
-{-# INLINE base64Internal' #-}
+        !c <- ix =<< peekSP 1 ((`shiftL` 2) . (.&. 0x0f))
+        poke (dst `plusPtr` 2) c
+{-# INLINE base64InternalUnpadded #-}
+
+base64InternalPadded
+    :: Ptr Word8
+    -> Ptr Word16
+    -> Ptr Word8
+    -> Ptr Word16
+    -> Ptr Word8
+    -> IO ()
+base64InternalPadded alpha etable sptr dptr end =
+  {-# SCC "encodeBase64/go" #-}
+  go sptr dptr
+  where
+    ix :: Int -> IO Word8
+    ix !n = peek (alpha `plusPtr` n)
+    {-# INLINE ix #-}
+
+    !_eq = 0x3d :: Word8
+    {-# NOINLINE _eq #-}
+
+    w32 :: Word8 -> Word32
+    w32 !i = fromIntegral i
+    {-# INLINE w32 #-}
+
+    go !src !dst
+      | src `plusPtr` 2 >= end = {-# SCC "encodeBase64/complete" #-}
+        complete src (castPtr dst)
+      | otherwise = do
+        !i <- w32 <$> peek src
+        !j <- w32 <$> peek (src `plusPtr` 1)
+        !k <- w32 <$> peek (src `plusPtr` 2)
+
+        let !w = (i `shiftL` 16) .|. (j `shiftL` 8) .|. k
+
+        !x <- peekElemOff etable (fromIntegral (shiftR @Word32 w 12))
+        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
+
+        poke dst x
+        poke (plusPtr dst 2) y
+
+        go (src `plusPtr` 3) (dst `plusPtr` 4)
+
+    complete :: Ptr Word8 -> Ptr Word8 -> IO ()
+    complete !src !dst
+      | src == end = return ()
+      | otherwise = do
+        let peekSP n f = (f . fromIntegral) `fmap` peek @Word8 (src `plusPtr` n)
+            !twoMore = src `plusPtr` 2 == end
+
+        !a <- peekSP 0 ((`shiftR` 2) . (.&. 0xfc))
+        !b <- peekSP 0 ((`shiftL` 4) . (.&. 0x03))
+        !b' <- if twoMore
+          then peekSP 1 ((.|. b) . (`shiftR` 4) . (.&. 0xf0))
+          else return b
+
+        poke dst =<< ix a
+        poke (plusPtr dst 1) =<< ix b'
+
+        !c <- if twoMore
+          then ix =<< peekSP 1 ((`shiftL` 2) . (.&. 0x0f))
+          else return _eq
+
+        poke (dst `plusPtr` 2) c
+        poke (dst `plusPtr` 3) _eq
+{-# INLINE base64InternalPadded #-}
 
 
 -- | Chunk a list of bytestrings into chunks that are sized

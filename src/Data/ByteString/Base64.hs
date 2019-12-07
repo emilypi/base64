@@ -33,7 +33,7 @@ import Data.Text (Text)
 -- See: RFC-4648 section 4
 --
 encodeBase64 :: ByteString -> ByteString
-encodeBase64 = base64' True
+encodeBase64 = base64Padded
 
 decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 = undefined
@@ -55,7 +55,7 @@ decodeBase64Lenient = undefined
 -- See: RFC-4648 section 3.2
 --
 encodeBase64Unpadded :: ByteString -> ByteString
-encodeBase64Unpadded = base64 undefined False
+encodeBase64Unpadded = undefined
 
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded = undefined

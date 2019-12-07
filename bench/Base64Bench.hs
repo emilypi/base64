@@ -47,15 +47,15 @@ main = defaultMain
   where
     bgroup_ e =
       [ bgroup "base64 encode"
-        [ encodeBench @Mem e
-        , encodeBench @Bos e
-        , encodeBench @B64 e
+        [ -- encodeBench @Mem e
+        -- , encodeBench @Bos e
+         encodeBench @B64 e
         ]
-      , bgroup "base64 decode"
-        [ decodeBench @Mem e
-        , decodeBench @Bos e
+      -- , bgroup "base64 decode"
+      --  [ -- decodeBench @Mem e
+        -- , decodeBench @Bos e
         -- , decodeBench @B64 e
-        ]
+      --  ]
       ]
 
 globalEnv :: Natural -> IO ByteString
