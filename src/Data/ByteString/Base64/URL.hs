@@ -23,6 +23,7 @@ module Data.ByteString.Base64.URL
 ) where
 
 import Data.ByteString (ByteString)
+import Data.ByteString.Base64.Internal
 import Data.Text (Text)
 
 
@@ -31,7 +32,7 @@ import Data.Text (Text)
 -- See: RFC-4648 section 5
 --
 encodeBase64 :: ByteString -> ByteString
-encodeBase64 = undefined
+encodeBase64 = base64Padded base64UrlETable
 
 decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 = undefined
@@ -53,7 +54,7 @@ decodeBase64Lenient = undefined
 -- See: RFC-4648 section 3.2
 --
 encodeBase64Unpadded :: ByteString -> ByteString
-encodeBase64Unpadded = undefined
+encodeBase64Unpadded = base64Unpadded base64UrlETable
 
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded = undefined
