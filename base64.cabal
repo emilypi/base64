@@ -79,9 +79,11 @@ test-suite base64-tests
   main-is:             Base64Tests.hs
   build-depends:       base >=4.9 && <5
                      , base64
-                     , QuickCheck
+                     , base64-bytestring
+                     , random-bytestring
                      , tasty
                      , tasty-hunit
+                     , text
 
   ghc-options: -Wall -threaded -with-rtsopts=-N
 
