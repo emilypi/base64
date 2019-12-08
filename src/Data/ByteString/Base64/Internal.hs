@@ -8,13 +8,10 @@ module Data.ByteString.Base64.Internal
 , base64Unpadded
   -- * Encoding Tables
   -- ** Standard
-, base64ETable
+, base64Table
 
   -- ** Base64-URL
-, base64UrlETable
-
-  -- ** Base64-BSD
-, base64BsdETable
+, base64UrlTable
 ) where
 
 
@@ -52,26 +49,21 @@ base64Unpadded (T2 !aptr !efp) (PS sfp !soff !slen) =
     dlen :: Int
     !dlen = ((slen + 2) `div` 3) * 4
 
-
 -- | Only the lookup table need be a foreignptr,
 -- and then, only so that we can automate some touches to keep it alive
 --
 data T2 = T2 !(Ptr Word8) !(ForeignPtr Word16)
 
-base64ETable :: T2
-base64ETable = mkETable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
-{-# NOINLINE base64ETable #-}
+base64Table :: T2
+base64Table = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
+{-# NOINLINE base64Table #-}
 
-base64UrlETable :: T2
-base64UrlETable = mkETable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"#
-{-# NOINLINE base64UrlETable #-}
+base64UrlTable :: T2
+base64UrlTable = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"#
+{-# NOINLINE base64UrlTable #-}
 
-base64BsdETable :: T2
-base64BsdETable = mkETable "./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"#
-{-# NOINLINE base64BsdETable #-}
-
-mkETable :: Addr# -> T2
-mkETable alphabet = T2 (Ptr alphabet) (castForeignPtr efp)
+packTable :: Addr# -> T2
+packTable alphabet = T2 (Ptr alphabet) (castForeignPtr efp)
   where
     (PS efp _ _) = BS.pack $! concat $!
       [ [ ix i, ix j ]
@@ -79,7 +71,7 @@ mkETable alphabet = T2 (Ptr alphabet) (castForeignPtr efp)
         , !j <- [0..63]
       ]
     ix (I# !n) = W8# (indexWord8OffAddr# alphabet n)
-{-# INLINE mkETable #-}
+{-# INLINE packTable #-}
 
 -- | Unpadded Base64
 base64InternalUnpadded
