@@ -100,4 +100,4 @@ benchmark base64-bench
                      , random-bytestring
                      , text
 
-  ghc-options: -Wall -threaded -eventlog -fprof-auto -rtsopts "-with-rtsopts=-N -s" -ddump-simpl -ddump-stg -ddump-to-file
+  ghc-options: -Wall -threaded -rtsopts "-with-rtsopts=-N -s" -ddump-simpl -ddump-stg -ddump-to-file
