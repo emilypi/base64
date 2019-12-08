@@ -23,7 +23,6 @@ module Data.ByteString.Base64.URL
 ) where
 
 import Data.ByteString (ByteString)
-import Data.ByteString.Base64.Internal
 import Data.Text (Text)
 
 

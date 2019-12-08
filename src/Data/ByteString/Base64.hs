@@ -55,7 +55,7 @@ decodeBase64Lenient = undefined
 -- See: RFC-4648 section 3.2
 --
 encodeBase64Unpadded :: ByteString -> ByteString
-encodeBase64Unpadded = undefined
+encodeBase64Unpadded = base64Unpadded
 
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded = undefined
