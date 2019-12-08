@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.Lens
 -- Copyright 	: (c) 2019 Emily Pillmore
