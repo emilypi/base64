@@ -6,6 +6,15 @@
 module Data.ByteString.Base64.Internal
 ( base64Padded
 , base64Unpadded
+  -- * Encoding Tables
+  -- ** Standard
+, base64ETable
+
+  -- ** Base64-URL
+, base64UrlETable
+
+  -- ** Base64-BSD
+, base64BsdETable
 ) where
 
 
@@ -14,68 +23,65 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.ByteString.Internal
 
+import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
 
 import GHC.Exts
-import GHC.ForeignPtr
 import GHC.Word
 
 
 
--- bytestrings malloc plain frgn ptr bytes and so do not need
--- finalizers. The same ethos extends to alphabet addr's
---
-base64Padded :: ByteString -> ByteString
-base64Padded (PS (ForeignPtr !sptr _) !soff !slen) =
+base64Padded :: T2 -> ByteString -> ByteString
+base64Padded (T2 !aptr !efp) (PS sfp !soff !slen) =
     unsafeCreate dlen $ \dptr ->
-      base64InternalPadded aptr eptr src (castPtr dptr) (src `plusPtr` (soff + slen))
+    withForeignPtr sfp $ \sptr ->
+    withForeignPtr efp $ \eptr ->
+      base64InternalPadded aptr eptr sptr (castPtr dptr) (sptr `plusPtr` (soff + slen))
   where
-    src :: Ptr Word8
-    !src = Ptr sptr
-
     dlen :: Int
     !dlen = ((slen + 2) `div` 3) * 4
 
-    T2 !aptr !eptr = base64ETable
-
-base64Unpadded :: ByteString -> ByteString
-base64Unpadded (PS (ForeignPtr !sptr _) !soff !slen) =
+base64Unpadded :: T2 -> ByteString -> ByteString
+base64Unpadded (T2 !aptr !efp) (PS sfp !soff !slen) =
     unsafeCreate dlen $ \dptr ->
-      base64InternalUnpadded aptr eptr src (castPtr dptr) (src `plusPtr` (soff + slen))
+    withForeignPtr sfp $ \sptr ->
+    withForeignPtr efp $ \eptr ->
+      base64InternalUnpadded aptr eptr sptr (castPtr dptr) (sptr `plusPtr` (soff + slen))
   where
-    src :: Ptr Word8
-    !src = Ptr sptr
-
     dlen :: Int
     !dlen = ((slen + 2) `div` 3) * 4
 
-    T2 !aptr !eptr = base64ETable
 
-data T2 = T2 !(Ptr Word8) !(Ptr Word16)
-
--- | We want this inlined so that new ptr's are packed per request.
+-- | Only the lookup table need be a foreignptr,
+-- and then, only so that we can automate some touches to keep it alive
 --
+data T2 = T2 !(Ptr Word8) !(ForeignPtr Word16)
+
 base64ETable :: T2
-base64ETable = T2 (Ptr alphabet) (Ptr eaddr)
-  where
-    !(PS (ForeignPtr eaddr _) _ _) = BS.pack $! base64Alphabet
-    !alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
-{-# INLINE base64ETable #-}
+base64ETable = mkETable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
+{-# NOINLINE base64ETable #-}
 
--- | Don't inline this expensive boi
---
-base64Alphabet :: [Word8]
-base64Alphabet = concat $!
-    [ [ ix i, ix j ]
-      | !i <- [0..64]
-      , !j <- [0..63]
-    ]
+base64UrlETable :: T2
+base64UrlETable = mkETable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"#
+{-# NOINLINE base64UrlETable #-}
+
+base64BsdETable :: T2
+base64BsdETable = mkETable "./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"#
+{-# NOINLINE base64BsdETable #-}
+
+mkETable :: Addr# -> T2
+mkETable alphabet = T2 (Ptr alphabet) (castForeignPtr efp)
   where
+    (PS efp _ _) = BS.pack $! concat $!
+      [ [ ix i, ix j ]
+        | !i <- [0..64]
+        , !j <- [0..63]
+      ]
     ix (I# !n) = W8# (indexWord8OffAddr# alphabet n)
-    !alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
-{-# NOINLINE base64Alphabet #-}
+{-# INLINE mkETable #-}
 
+-- | Unpadded Base64
 base64InternalUnpadded
     :: Ptr Word8
     -> Ptr Word16
@@ -96,12 +102,21 @@ base64InternalUnpadded alpha etable sptr dptr end = go sptr dptr
     go !src !dst
       | src `plusPtr` 2 >= end = finalize src (castPtr dst)
       | otherwise = do
+
+        -- ideally, we want to read @uint32_t w = src[0..3]@ and simply
+        -- discard the upper bits. TODO.
+        --
         !i <- w32 <$> peek src
         !j <- w32 <$> peek (src `plusPtr` 1)
         !k <- w32 <$> peek (src `plusPtr` 2)
 
+        -- pack 3 'Word8's into a the first 24 bits of a 'Word32'
+        --
         let !w = (i `shiftL` 16) .|. (j `shiftL` 8) .|. k
 
+        -- ideally, we'd want to pack this is in a single read, then
+        -- a single write
+        --
         !x <- peekElemOff etable (fromIntegral (shiftR w 12))
         !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
 
