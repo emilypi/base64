@@ -11,43 +11,31 @@
 -- RFC 4648 specification for the Base64-URL encoding including
 -- unpadded and lenient variants
 module Data.Text.Encoding.Base64.URL
-( encodeBase64Text
-, decodeBase64Text
-, decodeBase64TextLenient
-, encodeBase64TextUnpadded
-, decodeBase64TextUnpadded
-, decodeBase64TextUnpaddedLenient
+( encodeBase64
+, decodeBase64
+, encodeBase64Unpadded
+, decodeBase64Unpadded
 ) where
 
 
-import Data.ByteString.Base64.URL
+import qualified Data.ByteString.Base64.URL as B64U
 
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 
 
-encodeBase64Text :: Text -> Text
-encodeBase64Text = T.decodeUtf8 . encodeBase64 . T.encodeUtf8
+encodeBase64 :: Text -> Text
+encodeBase64 = T.decodeUtf8 . B64U.encodeBase64 . T.encodeUtf8
 
-decodeBase64Text :: Text -> Either Text Text
-decodeBase64Text = fmap T.decodeUtf8 . decodeBase64 . T.encodeUtf8
+decodeBase64 :: Text -> Either Text Text
+decodeBase64 = fmap T.decodeUtf8 . B64U.decodeBase64 . T.encodeUtf8
 
-decodeBase64TextLenient :: Text -> Text
-decodeBase64TextLenient = T.decodeUtf8
-    . decodeBase64Lenient
+encodeBase64Unpadded :: Text -> Text
+encodeBase64Unpadded = T.decodeUtf8
+    . B64U.encodeBase64Unpadded
     . T.encodeUtf8
 
-encodeBase64TextUnpadded :: Text -> Text
-encodeBase64TextUnpadded = T.decodeUtf8
-    . encodeBase64Unpadded
-    . T.encodeUtf8
-
-decodeBase64TextUnpadded :: Text -> Either Text Text
-decodeBase64TextUnpadded = fmap T.decodeUtf8
-    . decodeBase64Unpadded
-    . T.encodeUtf8
-
-decodeBase64TextUnpaddedLenient :: Text -> Text
-decodeBase64TextUnpaddedLenient = T.decodeUtf8
-    . decodeBase64UnpaddedLenient
+decodeBase64Unpadded :: Text -> Either Text Text
+decodeBase64Unpadded = fmap T.decodeUtf8
+    . B64U.decodeBase64Unpadded
     . T.encodeUtf8

@@ -16,10 +16,8 @@
 module Data.ByteString.Base64
 ( encodeBase64
 , decodeBase64
-, decodeBase64Lenient
 , encodeBase64Unpadded
 , decodeBase64Unpadded
-, decodeBase64UnpaddedLenient
 ) where
 
 
@@ -35,11 +33,12 @@ import Data.Text (Text)
 encodeBase64 :: ByteString -> ByteString
 encodeBase64 = base64Padded base64Table
 
+-- | Decode a padded base64-encoded 'ByteString'
+--
+-- See: RFC-4648 section 4
+--
 decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 = undefined
-
-decodeBase64Lenient :: ByteString -> ByteString
-decodeBase64Lenient = undefined
 
 -- | Encode a 'ByteString' in base64 without padding.
 --
@@ -57,8 +56,9 @@ decodeBase64Lenient = undefined
 encodeBase64Unpadded :: ByteString -> ByteString
 encodeBase64Unpadded = base64Unpadded base64Table
 
+-- | Decode an unpadded base64-encoded 'ByteString'
+--
+-- See: RFC-4648 section 3.2
+--
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded = undefined
-
-decodeBase64UnpaddedLenient :: ByteString -> ByteString
-decodeBase64UnpaddedLenient = undefined
