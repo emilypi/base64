@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.Lens
 -- Copyright 	: (c) 2019 Emily Pillmore
@@ -14,48 +15,17 @@
 --
 module Data.Text.Encoding.Base64.Lens where
 
+
 import Control.Lens
 
 import Data.Text
 import Data.ByteString.Base64.Lens
-import qualified Data.Text.Encoding.Base64 as B64
-import qualified Data.Text.Encoding.Base64.URL as B64U
+import qualified Data.Text.Encoding.Base64 as B64T
+import qualified Data.Text.Encoding.Base64.URL as B64TU
 
 
-instance HasBase64 Text where
-    _Base64 = prism' B64.encodeBase64Text $ \b ->
-      case B64.decodeBase64Text b of
-        Right bs -> Just bs
-        _ -> Nothing
-
-
-    _Base64Url = prism' B64U.encodeBase64Text $ \b ->
-      case B64U.decodeBase64Text b of
-        Right bs -> Just bs
-        _ -> Nothing
-
-    _Base64Lenient = iso
-      B64.encodeBase64Text
-      B64.decodeBase64TextLenient
-
-    _Base64UrlLenient = iso
-      B64U.encodeBase64Text
-      B64U.decodeBase64TextLenient
-
-    _Base64Unpadded = prism' B64.encodeBase64Text $ \b ->
-      case B64.decodeBase64TextUnpadded b of
-        Right bs -> Just bs
-        _ -> Nothing
-
-    _Base64UrlUnpadded = prism' B64U.encodeBase64Text $ \b ->
-      case B64U.decodeBase64TextUnpadded b of
-        Right bs -> Just bs
-        _ -> Nothing
-
-    _Base64LenientUnpadded = iso
-      B64.encodeBase64Text
-      B64.decodeBase64TextLenient
-
-    _Base64UrlLenientUnpadded = iso
-      B64U.encodeBase64Text
-      B64U.decodeBase64TextLenient
+instance HasBase64 Text Text Text Text where
+    _Base64 = lens B64T.encodeBase64 (\_ b -> b)
+    _Base64Url = lens B64TU.encodeBase64 (\_ b -> b)
+    _Base64Unpadded = lens B64T.encodeBase64Unpadded (\_ b -> b)
+    _Base64UrlUnpadded = lens B64TU.encodeBase64Unpadded (\_ b -> b)
