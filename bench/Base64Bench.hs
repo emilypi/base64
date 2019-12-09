@@ -41,8 +41,8 @@ main = defaultMain
         (bgroup_ e)
     , env (globalEnv 100000) $ \ ~e -> bgroup "large"
         (bgroup_ e)
-    , env (globalEnv 1000000) $ \ ~e -> bgroup "huge"
-        (bgroup_ e)
+    -- , env (globalEnv 1000000) $ \ ~e -> bgroup "huge"
+    --     (bgroup_ e)
     ]
   where
     bgroup_ e =
