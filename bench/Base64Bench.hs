@@ -31,22 +31,22 @@ import GHC.Natural
 
 main :: IO ()
 main = defaultMain
-    [ env (globalEnv 25) $ \ ~e -> bgroup "small"
+    [ env (globalEnv 25) $ \ ~e -> bgroup "25"
         (bgroup_ e)
-    , env (globalEnv 100) $ \ ~e -> bgroup "med-small"
+    , env (globalEnv 100) $ \ ~e -> bgroup "100"
         (bgroup_ e)
-    , env (globalEnv 1000) $ \ ~e -> bgroup "med"
+    , env (globalEnv 1000) $ \ ~e -> bgroup "1,000"
         (bgroup_ e)
-    , env (globalEnv 10000) $ \ ~e -> bgroup "med-large"
+    , env (globalEnv 10000) $ \ ~e -> bgroup "10,000"
         (bgroup_ e)
-    , env (globalEnv 100000) $ \ ~e -> bgroup "large"
+    , env (globalEnv 100000) $ \ ~e -> bgroup "100,000"
         (bgroup_ e)
-    -- , env (globalEnv 1000000) $ \ ~e -> bgroup "huge"
+    -- , env (globalEnv 1000000) $ \ ~e -> bgroup "huge: 1,000,000"
     --     (bgroup_ e)
     ]
   where
     bgroup_ e =
-      [ bgroup "base64 encode"
+      [ bgroup "encode"
         [ encodeBench @Mem e
         , encodeBench @Bos e
         , encodeBench @B64 e
