@@ -67,12 +67,12 @@ base64UrlTable = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 packTable :: Addr# -> T2
 packTable alphabet = T2 (Ptr alphabet) (castForeignPtr efp)
   where
-    (PS efp _ _) = BS.pack $! concat $!
+    (PS efp _ _) = BS.pack . concat $
       [ [ ix i, ix j ]
         | !i <- [0..63]
         , !j <- [0..63]
       ]
-    ix (I# !n) = W8# (indexWord8OffAddr# alphabet n)
+    ix (I# n) = W8# (indexWord8OffAddr# alphabet n)
 {-# INLINE packTable #-}
 
 -- | Unpadded Base64
