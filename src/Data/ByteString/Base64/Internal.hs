@@ -37,7 +37,7 @@ base64Padded (T2 !aptr !efp) (PS sfp !soff !slen) =
       base64InternalPadded aptr eptr sptr (castPtr dptr) (sptr `plusPtr` (soff + slen))
   where
     dlen :: Int
-    !dlen = ((slen + 2) `div` 3) * 4
+    !dlen = 4 * ((slen + 2) `div` 3) + 1
 
 base64Unpadded :: T2 -> ByteString -> ByteString
 base64Unpadded (T2 !aptr !efp) (PS sfp !soff !slen) =
@@ -47,7 +47,7 @@ base64Unpadded (T2 !aptr !efp) (PS sfp !soff !slen) =
       base64InternalUnpadded aptr eptr sptr (castPtr dptr) (sptr `plusPtr` (soff + slen))
   where
     dlen :: Int
-    !dlen = ((slen + 2) `div` 3) * 4
+    !dlen = 4 * ((slen + 2) `div` 3)
 
 -- | Only the lookup table need be a foreignptr,
 -- and then, only so that we can automate some touches to keep it alive
@@ -76,6 +76,7 @@ packTable alphabet = T2 (Ptr alphabet) (castForeignPtr efp)
 {-# INLINE packTable #-}
 
 -- | Unpadded Base64
+--
 base64InternalUnpadded
     :: Ptr Word8
     -> Ptr Word16
@@ -86,7 +87,7 @@ base64InternalUnpadded
 base64InternalUnpadded alpha etable sptr dptr end = go sptr dptr
   where
     ix :: Int -> IO Word8
-    ix n = peek (alpha `plusPtr` n)
+    ix n = peek (plusPtr alpha n)
 
     _eq = 0x3d :: Word8
 
@@ -94,7 +95,7 @@ base64InternalUnpadded alpha etable sptr dptr end = go sptr dptr
     w32 i = fromIntegral i
 
     go !src !dst
-      | src `plusPtr` 2 >= end = finalize src (castPtr dst)
+      | src >= end = return ()
       | otherwise = do
 
         -- ideally, we want to read @uint32_t w = src[0..3]@ and simply
@@ -118,28 +119,6 @@ base64InternalUnpadded alpha etable sptr dptr end = go sptr dptr
         poke (plusPtr dst 2) y
 
         go (src `plusPtr` 3) (dst `plusPtr` 4)
-
-    finalize :: Ptr Word8 -> Ptr Word8 -> IO ()
-    finalize !src !dst
-      | src == end = return ()
-      | otherwise = do
-        let peekSP n f = (f . fromIntegral) `fmap` peek @Word8 (plusPtr src n)
-            !twoMore = plusPtr src 2 == end
-
-        !a <- peekSP 0 ((`shiftR` 2) . (.&. 0xfc))
-        !b <- peekSP 0 ((`shiftL` 4) . (.&. 0x03))
-
-        poke dst =<< ix a
-
-        if twoMore
-        then do
-          b' <- peekSP 1 ((.|. b) . (`shiftR` 4) . (.&. 0xf0))
-          poke (plusPtr dst 1) =<< ix b'
-        else do
-          poke (plusPtr dst 1) =<< ix b
-
-        !c <- ix =<< peekSP 1 ((`shiftL` 2) . (.&. 0x0f))
-        poke (plusPtr dst 2) c
 {-# INLINE base64InternalUnpadded #-}
 
 base64InternalPadded
@@ -167,14 +146,6 @@ base64InternalPadded alpha etable sptr dptr end = go sptr dptr
 
         let !w = (i `shiftL` 16) .|. (j `shiftL` 8) .|. k
 
-        -- putStrLn "------------------------------"
-        -- putStrLn $ show i
-        -- putStrLn $ show j
-        -- putStrLn $ show k
-        -- putStrLn $ show w
-        -- putStrLn $ show (shiftR w 12)
-        -- putStrLn $ show (w .&. 0xfff)
-
         !x <- peekElemOff etable (fromIntegral (shiftR @Word32 w 12))
         !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
 
@@ -188,7 +159,7 @@ base64InternalPadded alpha etable sptr dptr end = go sptr dptr
     finalize !src !dst
       | src == end = return ()
       | otherwise = do
-        let peekSP n f = (f . fromIntegral) `fmap` peek @Word8 (src `plusPtr` n)
+        let peekSP n f = f . fromIntegral <$> peek @Word8 (src `plusPtr` n)
             !twoMore = src `plusPtr` 2 == end
 
         !a <- peekSP 0 ((`shiftR` 2) . (.&. 0xfc))
