@@ -37,14 +37,14 @@ base64Padded (T2 !aptr !efp) (PS sfp !soff !slen) =
       base64InternalPadded aptr eptr sptr (castPtr dptr) (sptr `plusPtr` (soff + slen))
   where
     dlen :: Int
-    !dlen = 4 * ((slen + 2) `div` 3) + 1
+    !dlen = 4 * ((slen + 2) `div` 3)
 
 base64Unpadded :: T2 -> ByteString -> ByteString
-base64Unpadded (T2 !aptr !efp) (PS sfp !soff !slen) =
+base64Unpadded (T2 _ !efp) (PS sfp !soff !slen) =
     unsafeCreate dlen $ \dptr ->
     withForeignPtr sfp $ \sptr ->
     withForeignPtr efp $ \eptr ->
-      base64InternalUnpadded aptr eptr sptr (castPtr dptr) (sptr `plusPtr` (soff + slen))
+      base64InternalUnpadded eptr sptr (castPtr dptr) (sptr `plusPtr` (soff + slen))
   where
     dlen :: Int
     !dlen = 4 * ((slen + 2) `div` 3)
@@ -75,20 +75,17 @@ packTable alphabet = T2 (Ptr alphabet) (castForeignPtr efp)
     ix (I# n) = W8# (indexWord8OffAddr# alphabet n)
 {-# INLINE packTable #-}
 
--- | Unpadded Base64
+-- | Unpadded Base64. The implicit assumption is that the input
+-- data has a length that is a multiple of 3
 --
 base64InternalUnpadded
-    :: Ptr Word8
-    -> Ptr Word16
+    :: Ptr Word16
     -> Ptr Word8
     -> Ptr Word16
     -> Ptr Word8
     -> IO ()
-base64InternalUnpadded alpha etable sptr dptr end = go sptr dptr
+base64InternalUnpadded etable sptr dptr end = go sptr dptr
   where
-    ix :: Int -> IO Word8
-    ix n = peek (plusPtr alpha n)
-
     _eq = 0x3d :: Word8
 
     w32 :: Word8 -> Word32
