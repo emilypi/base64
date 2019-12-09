@@ -57,7 +57,7 @@ class HasBase64 s t a b | s -> a, t -> b, s b -> t, t a -> s where
     _Base64UrlUnpadded :: Lens s t a b
 
 
-type HasBase64' a b = HasBase64 a a b b
+type HasBase64' s a = HasBase64 s s a a
 
 instance HasBase64 ByteString ByteString ByteString ByteString where
     _Base64 = lens B64.encodeBase64 (\_ b -> b)
