@@ -4,17 +4,22 @@ let
 
   inherit (nixpkgs) pkgs;
 
-  f = { mkDerivation, base, bytestring, deepseq, exceptions
-      , QuickCheck, stdenv, tasty, tasty-hunit, text
+  f = { mkDerivation, base, base64-bytestring, bytestring
+      , criterion, deepseq, memory, random-bytestring, stdenv, tasty
+      , tasty-hunit, text
       }:
       mkDerivation {
         pname = "base64";
         version = "0.1.0.0";
         src = ./.;
-        libraryHaskellDepends = [
-          base bytestring deepseq exceptions text
+        libraryHaskellDepends = [ base bytestring deepseq text ];
+        testHaskellDepends = [
+          base base64-bytestring random-bytestring tasty tasty-hunit text
         ];
-        testHaskellDepends = [ base QuickCheck tasty tasty-hunit ];
+        benchmarkHaskellDepends = [
+          base base64-bytestring bytestring criterion deepseq memory
+          random-bytestring text
+        ];
         homepage = "https://github.com/emilypi/base64";
         description = "RFC 4648-compliant padded and unpadded base64 and base64url encodings";
         license = stdenv.lib.licenses.bsd3;
