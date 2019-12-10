@@ -12,4 +12,3 @@ The story so far:
 
 Performance is steadily improving as I exhaust existing algorithms for optimizations. So far, the optimal Haskell implementation seems to need to rely on a way of getting a single `Word32` copy and write as opposed to Bos' two `Word16` copy and writes. Cbits may be necessary.
 
-See [the report](bench/base64.html) for the full breakdown at `-O2`
