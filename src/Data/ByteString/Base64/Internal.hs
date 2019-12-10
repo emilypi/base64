@@ -118,6 +118,7 @@ base64InternalUnpadded etable sptr dptr end = go sptr dptr
         go (src `plusPtr` 3) (dst `plusPtr` 4)
 {-# INLINE base64InternalUnpadded #-}
 
+
 base64InternalPadded
     :: Ptr Word8
     -> Ptr Word16

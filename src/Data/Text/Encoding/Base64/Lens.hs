@@ -9,9 +9,9 @@
 -- Stability	: Experimental
 -- Portability	: portable
 --
--- This module contains the 'HasBase64' instance for 'Text', which is
--- defined to be the collection of 'Iso's and 'Prism's defining the
--- RFC 4648 specification for the Base64 encoding format.
+-- This module contains the 'HasBase64' and 'HasBase64Unpadded' instances
+-- for 'Text', which defined to be the collection of 'Prism's defining the
+-- RFC 4648 specification for the padded and unpadded Base64 encoding format.
 --
 module Data.Text.Encoding.Base64.Lens where
 
@@ -24,8 +24,20 @@ import qualified Data.Text.Encoding.Base64 as B64T
 import qualified Data.Text.Encoding.Base64.URL as B64TU
 
 
-instance HasBase64 Text Text Text Text where
-    _Base64 = lens B64T.encodeBase64 (\_ b -> b)
-    _Base64Url = lens B64TU.encodeBase64 (\_ b -> b)
-    _Base64Unpadded = lens B64T.encodeBase64Unpadded (\_ b -> b)
-    _Base64UrlUnpadded = lens B64TU.encodeBase64Unpadded (\_ b -> b)
+instance HasBase64 Text Text where
+    _Base64 = prism' B64T.encodeBase64 $ \s -> case B64T.decodeBase64 s of
+      Left _ -> Nothing
+      Right a -> Just a
+
+    _Base64Url = prism' B64TU.encodeBase64 $ \s -> case B64TU.decodeBase64 s of
+      Left _ -> Nothing
+      Right a -> Just a
+
+instance HasBase64Unpadded Text Text where
+    _Base64Unpadded = prism' B64T.encodeBase64 $ \s -> case B64T.decodeBase64 s of
+      Left _ -> Nothing
+      Right a -> Just a
+
+    _Base64UrlUnpadded = prism' B64TU.encodeBase64 $ \s -> case B64TU.decodeBase64Unpadded s of
+      Left _ -> Nothing
+      Right a -> Just a
