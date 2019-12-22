@@ -37,13 +37,8 @@ flag optics
   default: False
 
 
-common ghcflags
-  if flag(ghc-flags)
-    ghc-options: -fplugin GhcFlags.Plugin
-    build-depends: ghcflags
 
 library
-  import:              ghcflags
   exposed-modules:     Data.ByteString.Base64
                      , Data.ByteString.Base64.Lazy
                      , Data.ByteString.Base64.URL
@@ -70,11 +65,15 @@ library
   if flag(optics)
     exposed-modules:   Data.ByteString.Base64.Lens
                      , Data.Text.Encoding.Base64.Lens
-
     build-depends:     lens ^>= 4.18
 
+  if flag(ghc-flags)
+    build-tool-depends: hsinspect:hsinspect
+    ghc-options: -fplugin GhcFlags.Plugin
+    build-depends: ghcflags
 
-test-suite base64-tests
+
+test-suite tasty
   default-language:    Haskell2010
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
@@ -89,10 +88,10 @@ test-suite base64-tests
 
   ghc-options: -Wall -threaded -with-rtsopts=-N
 
-benchmark base64-bench
+benchmark bench
   default-language:    Haskell2010
   type:                exitcode-stdio-1.0
-  hs-source-dirs:      bench
+  hs-source-dirs:      benchmarks
   main-is:             Base64Bench.hs
   build-depends:       base >=4.9 && <5
                      , base64
@@ -105,6 +104,7 @@ benchmark base64-bench
                      , text
 
   ghc-options: -Wall
+               -O2
                -threaded
                -rtsopts
                -with-rtsopts=-N

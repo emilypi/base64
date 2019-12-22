@@ -41,8 +41,8 @@ main = defaultMain
         (bgroup_ e)
     , env (globalEnv 100000) $ \ ~e -> bgroup "100,000"
         (bgroup_ e)
-    -- , env (globalEnv 1000000) $ \ ~e -> bgroup "huge: 1,000,000"
-    --     (bgroup_ e)
+    , env (globalEnv 1000000) $ \ ~e -> bgroup "1,000,000"
+        (bgroup_ e)
     ]
   where
     bgroup_ e =
@@ -51,11 +51,11 @@ main = defaultMain
         , encodeBench @Bos e
         , encodeBench @B64 e
         ]
-      -- , bgroup "base64 decode"
-      --  [ -- decodeBench @Mem e
-        -- , decodeBench @Bos e
+      , bgroup "base64 decode"
+        [ decodeBench @Mem e
+        , decodeBench @Bos e
         -- , decodeBench @B64 e
-      --  ]
+        ]
       ]
 
 globalEnv :: Natural -> IO ByteString
@@ -67,12 +67,12 @@ encodeBench = bench (label @a) . nf (encoder @a)
 decodeBench :: forall a. Impl a => ByteString -> Benchmark
 decodeBench = bench (label @a) . nf (decoder @a)
 
+
 class (NFData (Base64 a)) => Impl a where
     type Base64 a
     label :: String
     encoder :: ByteString -> Base64 a
     decoder :: ByteString -> Either String (Base64 a)
-
 
 data Mem
 instance Impl Mem where
