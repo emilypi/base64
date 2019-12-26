@@ -55,6 +55,6 @@ miscBase64Tests = testGroup "Misc. Base64 Encoding Tests"
       -- if no OOM or segfault, we good
       void $ encodeBase64 <$> random 1000000
 
-    sanity n = testCase ("Testing size " <> show n <> " bytestrings") $ do
+    sanity n = testCase ("Testing size " ++ show n ++ " bytestrings") $ do
       bs <- random n
       B64.encodeBase64 bs @=? Bos.encode bs
