@@ -36,7 +36,10 @@ flag optics
   manual: True
   default: False
 
-
+flag perf-flags
+  description: Performance tuning flags and information
+  manual: True
+  default: False
 
 library
   exposed-modules:     Data.ByteString.Base64
@@ -59,8 +62,6 @@ library
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall
-                       -ddump-simpl
-                       -ddump-to-file
 
   if flag(optics)
     exposed-modules:   Data.ByteString.Base64.Lens
@@ -71,6 +72,10 @@ library
     build-tool-depends: hsinspect:hsinspect
     ghc-options: -fplugin GhcFlags.Plugin
     build-depends: ghcflags
+
+  if flag(perf-flags)
+    ghc-options: -ddump-simpl
+                 -ddump-to-file
 
 
 test-suite tasty
@@ -104,7 +109,6 @@ benchmark bench
                      , text
 
   ghc-options: -Wall
-               -O2
                -threaded
                -rtsopts
                -with-rtsopts=-N
