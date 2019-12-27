@@ -37,7 +37,7 @@ main = defaultMain $ fmap benchN
     , 1000
     , 10000
     , 100000
-    , 1000000
+--    , 1000000
     ]
   where
     benchN n = env (random n) $ bgroup (show n) . bgroup_
@@ -46,13 +46,13 @@ main = defaultMain $ fmap benchN
         [ encodeBench @Mem e
         , encodeBench @Bos e
         , encodeBench @B64 e
-        , encodeBench @T64 (T.decodeLatin1 e)
+ --       , encodeBench @T64 (T.decodeLatin1 e)
         ]
-      , bgroup "base64 decode"
-        [ decodeBench @Mem e
-        , decodeBench @Bos e
+      -- , bgroup "base64 decode"
+      --   [ decodeBench @Mem e
+      --   , decodeBench @Bos e
         -- , decodeBench @B64 e
-        ]
+--        ]
       ]
 
 encodeBench :: forall a. Harness a => Base64 a -> Benchmark
