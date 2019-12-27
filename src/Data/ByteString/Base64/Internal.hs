@@ -158,24 +158,27 @@ base64InternalPadded (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
     finalize !src !dst
       | src == end = return ()
       | otherwise = do
-        let peekSP n f = f <$> peekByteOff @Word8 src n
+
+        let peekSP :: Int -> (Word8 -> Word8) -> IO Word8
+            peekSP n f = f <$> peekByteOff src n
+
             !twoMore = plusPtr src 2 == end
 
         !a <- peekSP 0 ((`shiftR` 2) . (.&. 0xfc))
         !b <- peekSP 0 ((`shiftL` 4) . (.&. 0x03))
 
-        poke dst (ix a)
+        pokeByteOff dst 0 (ix a)
 
         if twoMore
         then do
           b' <- peekSP 1 ((.|. b) . (`shiftR` 4) . (.&. 0xf0))
-          poke (plusPtr dst 1) (ix b')
+          pokeByteOff dst 1 (ix b')
 
           c <- peekSP 1 ((`shiftL` 2) . (.&. 0x0f))
-          poke (dst `plusPtr` 2) (ix c)
+          pokeByteOff dst 2 (ix c)
         else do
-          poke (plusPtr dst 1) (ix b)
-          poke @Word8 (plusPtr dst 2) 0x3d
+          pokeByteOff dst 1 (ix b)
+          pokeByteOff @Word8 dst 2 0x3d
 
-        poke @Word8 (plusPtr dst 3) 0x3d
+        pokeByteOff @Word8 dst 3 0x3d
 {-# INLINE base64InternalPadded #-}
