@@ -30,7 +30,7 @@ import GHC.Word
 
 
 base64Padded :: T2 -> ByteString -> ByteString
-base64Padded (T2 !aptr !efp) (PS sfp !soff !slen) =
+base64Padded (T2 !aptr !efp) (PS !sfp !soff !slen) =
     unsafeCreate dlen $ \dptr ->
     withForeignPtr sfp $ \sptr ->
     withForeignPtr efp $ \eptr ->
@@ -38,6 +38,7 @@ base64Padded (T2 !aptr !efp) (PS sfp !soff !slen) =
   where
     dlen :: Int
     !dlen = 4 * ((slen + 2) `div` 3)
+{-# INLINE base64Padded #-}
 
 base64Unpadded :: T2 -> ByteString -> ByteString
 base64Unpadded (T2 _ !efp) (PS sfp !soff !slen) =
@@ -48,6 +49,7 @@ base64Unpadded (T2 _ !efp) (PS sfp !soff !slen) =
   where
     dlen :: Int
     !dlen = 4 * ((slen + 2) `div` 3)
+{-# INLINE base64Unpadded #-}
 
 -- | Only the lookup table need be a foreignptr,
 -- and then, only so that we can automate some touches to keep it alive
@@ -126,55 +128,54 @@ base64InternalPadded
     -> Ptr Word16
     -> Ptr Word8
     -> IO ()
-base64InternalPadded alpha etable sptr dptr end = go sptr dptr
+base64InternalPadded (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
   where
-    ix :: Int -> IO Word8
-    ix n = peek (plusPtr alpha n)
+    ix (W8# !i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
 
     w32 :: Word8 -> Word32
     w32 i = fromIntegral i
     {-# INLINE w32 #-}
 
     go !src !dst
-      | src `plusPtr` 2 >= end = finalize src (castPtr dst)
+      | plusPtr src 2 >= end = finalize src (castPtr dst)
       | otherwise = do
         !i <- w32 <$> peek src
-        !j <- w32 <$> peek (src `plusPtr` 1)
-        !k <- w32 <$> peek (src `plusPtr` 2)
+        !j <- w32 <$> peek (plusPtr src 1)
+        !k <- w32 <$> peek (plusPtr src 2)
 
-        let !w = (i `shiftL` 16) .|. (j `shiftL` 8) .|. k
+        let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
 
-        !x <- peekElemOff etable (fromIntegral (shiftR @Word32 w 12))
+        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
         !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
 
         poke dst x
         poke (plusPtr dst 2) y
 
-        go (src `plusPtr` 3) (dst `plusPtr` 4)
+        go (plusPtr src 3) (plusPtr dst 4)
 
 
     finalize :: Ptr Word8 -> Ptr Word8 -> IO ()
     finalize !src !dst
       | src == end = return ()
       | otherwise = do
-        let peekSP n f = f . fromIntegral <$> peek @Word8 (src `plusPtr` n)
-            !twoMore = src `plusPtr` 2 == end
+        let peekSP n f = f <$> peekByteOff @Word8 src n
+            !twoMore = plusPtr src 2 == end
 
         !a <- peekSP 0 ((`shiftR` 2) . (.&. 0xfc))
         !b <- peekSP 0 ((`shiftL` 4) . (.&. 0x03))
 
-        poke dst =<< ix a
+        poke dst (ix a)
 
         if twoMore
         then do
           b' <- peekSP 1 ((.|. b) . (`shiftR` 4) . (.&. 0xf0))
-          poke (plusPtr dst 1) =<< ix b'
+          poke (plusPtr dst 1) (ix b')
 
-          c <- ix =<< peekSP 1 ((`shiftL` 2) . (.&. 0x0f))
-          poke (dst `plusPtr` 2) c
+          c <- peekSP 1 ((`shiftL` 2) . (.&. 0x0f))
+          poke (dst `plusPtr` 2) (ix c)
         else do
-          poke (plusPtr dst 1) =<< ix b
-          poke @Word8 (dst `plusPtr` 2) 0x3d
+          poke (plusPtr dst 1) (ix b)
+          poke @Word8 (plusPtr dst 2) 0x3d
 
-        poke @Word8 (dst `plusPtr` 3) 0x3d
+        poke @Word8 (plusPtr dst 3) 0x3d
 {-# INLINE base64InternalPadded #-}

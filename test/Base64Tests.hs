@@ -24,7 +24,7 @@ main = defaultMain tests
 tests :: TestTree
 tests = testGroup "Base64 Tests"
     [ testVectors
-    , miscBase64Tests
+    , sanityTests
     ]
 
 testVectors :: TestTree
@@ -38,16 +38,17 @@ testVectors = testGroup "RFC 4648 Test Vectors"
     , testCaseB64 "foobar" "Zm9vYmFy"
     ]
   where
-    testCaseB64 s t = testCase (T.unpack s) $
-      t @=?  B64.encodeBase64 (T.encodeUtf8 s)
+    testCaseB64 s t =
+      testCase (T.unpack $ if s == "" then "empty" else s) $
+        t @=?  B64.encodeBase64 (T.encodeUtf8 s)
 
-miscBase64Tests :: TestTree
-miscBase64Tests = testGroup "Misc. Base64 Encoding Tests"
-    [ testCase "Encoding very large bytestrings" chonk
+sanityTests :: TestTree
+sanityTests = testGroup "Sanity tests"
+    [ testCase "very large bytestrings don't segfault" chonk
     , testGroup "`base64-bytestring` sanity checks"
-        [ sanity 3
-        , sanity 4
-        , sanity 5
+        [ compare64 3
+        , compare64 4
+        , compare64 5
         ]
     ]
   where
@@ -55,6 +56,6 @@ miscBase64Tests = testGroup "Misc. Base64 Encoding Tests"
       -- if no OOM or segfault, we good
       void $ encodeBase64 <$> random 1000000
 
-    sanity n = testCase ("Testing size " ++ show n ++ " bytestrings") $ do
+    compare64 n = testCase ("Testing size " ++ show n ++ " bytestrings") $ do
       bs <- random n
       B64.encodeBase64 bs @=? Bos.encode bs
