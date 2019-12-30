@@ -4,8 +4,10 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UnboxedTuples #-}
 module Data.ByteString.Base64.Internal
-( base64Padded
-, base64Unpadded
+( -- * Base64 encoding
+  encodeB64Padded
+, encodeB64Unpadded
+
   -- * Encoding Tables
   -- ** Standard
 , base64Table
@@ -28,28 +30,8 @@ import GHC.Exts
 import GHC.Word
 
 
-
-base64Padded :: T2 -> ByteString -> ByteString
-base64Padded (T2 !aptr !efp) (PS !sfp !soff !slen) =
-    unsafeCreate dlen $ \dptr ->
-    withForeignPtr sfp $ \sptr ->
-    withForeignPtr efp $ \eptr ->
-      base64InternalPadded aptr eptr sptr (castPtr dptr) (sptr `plusPtr` (soff + slen))
-  where
-    dlen :: Int
-    !dlen = 4 * ((slen + 2) `div` 3)
-{-# INLINE base64Padded #-}
-
-base64Unpadded :: T2 -> ByteString -> ByteString
-base64Unpadded (T2 _ !efp) (PS sfp !soff !slen) =
-    unsafeCreate dlen $ \dptr ->
-    withForeignPtr sfp $ \sptr ->
-    withForeignPtr efp $ \eptr ->
-      base64InternalUnpadded eptr sptr (castPtr dptr) (sptr `plusPtr` (soff + slen))
-  where
-    dlen :: Int
-    !dlen = 4 * ((slen + 2) `div` 3)
-{-# INLINE base64Unpadded #-}
+-- -------------------------------------------------------------------------- --
+-- Internal data
 
 -- | Only the lookup table need be a foreignptr,
 -- and then, only so that we can automate some touches to keep it alive
@@ -57,14 +39,6 @@ base64Unpadded (T2 _ !efp) (PS sfp !soff !slen) =
 data T2 = T2
   {-# UNPACK #-} !(Ptr Word8)
   {-# UNPACK #-} !(ForeignPtr Word16)
-
-base64Table :: T2
-base64Table = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
-{-# NOINLINE base64Table #-}
-
-base64UrlTable :: T2
-base64UrlTable = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"#
-{-# NOINLINE base64UrlTable #-}
 
 packTable :: Addr# -> T2
 packTable alphabet = T2 (Ptr alphabet) (castForeignPtr efp)
@@ -77,16 +51,42 @@ packTable alphabet = T2 (Ptr alphabet) (castForeignPtr efp)
     ix (I# n) = W8# (indexWord8OffAddr# alphabet n)
 {-# INLINE packTable #-}
 
+base64UrlTable :: T2
+base64UrlTable = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"#
+{-# NOINLINE base64UrlTable #-}
+
+base64Table :: T2
+base64Table = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
+{-# NOINLINE base64Table #-}
+
+-- -------------------------------------------------------------------------- --
+-- Unpadded Base64
+
+encodeB64Unpadded :: T2 -> ByteString -> ByteString
+encodeB64Unpadded (T2 _ !efp) (PS sfp !soff !slen) =
+    unsafeCreate dlen $ \dptr ->
+    withForeignPtr sfp $ \sptr ->
+    withForeignPtr efp $ \eptr ->
+      encodeB64UnpaddedInternal
+        eptr
+        sptr
+        (castPtr dptr)
+        (sptr `plusPtr` (soff + slen))
+  where
+    dlen :: Int
+    !dlen = 4 * ((slen + 2) `div` 3)
+{-# INLINE encodeB64Unpadded #-}
+
 -- | Unpadded Base64. The implicit assumption is that the input
 -- data has a length that is a multiple of 3
 --
-base64InternalUnpadded
+encodeB64UnpaddedInternal
     :: Ptr Word16
     -> Ptr Word8
     -> Ptr Word16
     -> Ptr Word8
     -> IO ()
-base64InternalUnpadded etable sptr dptr end = go sptr dptr
+encodeB64UnpaddedInternal etable sptr dptr end = go sptr dptr
   where
     _eq = 0x3d :: Word8
 
@@ -118,17 +118,35 @@ base64InternalUnpadded etable sptr dptr end = go sptr dptr
         poke (plusPtr dst 2) y
 
         go (src `plusPtr` 3) (dst `plusPtr` 4)
-{-# INLINE base64InternalUnpadded #-}
+{-# INLINE encodeB64UnpaddedInternal #-}
 
+-- -------------------------------------------------------------------------- --
+-- Padded Base64
 
-base64InternalPadded
+encodeB64Padded :: T2 -> ByteString -> ByteString
+encodeB64Padded (T2 !aptr !efp) (PS !sfp !soff !slen) =
+    unsafeCreate dlen $ \dptr ->
+    withForeignPtr sfp $ \sptr ->
+    withForeignPtr efp $ \eptr ->
+      encodeB64PaddedInternal
+        aptr
+        eptr
+        sptr
+        (castPtr dptr)
+        (sptr `plusPtr` (soff + slen))
+  where
+    dlen :: Int
+    !dlen = 4 * ((slen + 2) `div` 3)
+{-# INLINE encodeB64Padded #-}
+
+encodeB64PaddedInternal
     :: Ptr Word8
     -> Ptr Word16
     -> Ptr Word8
     -> Ptr Word16
     -> Ptr Word8
     -> IO ()
-base64InternalPadded (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
+encodeB64PaddedInternal (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
   where
     ix (W8# !i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
 
@@ -158,27 +176,25 @@ base64InternalPadded (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
     finalize !src !dst
       | src == end = return ()
       | otherwise = do
+        !k <- peekByteOff src 0
 
-        let peekSP :: Int -> (Word8 -> Word8) -> IO Word8
-            peekSP n f = f <$> peekByteOff src n
-
-            !twoMore = plusPtr src 2 == end
-
-        !a <- peekSP 0 ((`shiftR` 2) . (.&. 0xfc))
-        !b <- peekSP 0 ((`shiftL` 4) . (.&. 0x03))
+        let !a = shiftR (k .&. 0xfc) 2
+            !b = shiftL (k .&. 0x03) 4
 
         pokeByteOff dst 0 (ix a)
 
-        if twoMore
+        if plusPtr src 2 == end
         then do
-          b' <- peekSP 1 ((.|. b) . (`shiftR` 4) . (.&. 0xf0))
-          pokeByteOff dst 1 (ix b')
+          !k' <- peekByteOff src 1
 
-          c <- peekSP 1 ((`shiftL` 2) . (.&. 0x0f))
-          pokeByteOff dst 2 (ix c)
+          let !b' = shiftR (k' .&. 0xf0) 4 .|. b
+              !c' = shiftL (k' .&. 0x0f) 2
+
+          pokeByteOff dst 1 (ix b')
+          pokeByteOff dst 2 (ix c')
         else do
           pokeByteOff dst 1 (ix b)
           pokeByteOff @Word8 dst 2 0x3d
 
         pokeByteOff @Word8 dst 3 0x3d
-{-# INLINE base64InternalPadded #-}
+{-# INLINE encodeB64PaddedInternal #-}
