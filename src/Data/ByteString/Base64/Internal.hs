@@ -180,6 +180,8 @@ encodeB64PaddedInternal (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
       | otherwise = do
         !k <- peekByteOff src 0
 
+        -- this improves on Bos' algorithm removing an unnecessary read
+        --
         let !a = shiftR (k .&. 0xfc) 2
             !b = shiftL (k .&. 0x03) 4
 
