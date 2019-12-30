@@ -202,5 +202,3 @@ encodeB64PaddedInternal (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
 
         pokeByteOff @Word8 dst 3 0x3d
 {-# INLINE encodeB64PaddedInternal #-}
-
-decodeB64PaddedInternal ::
