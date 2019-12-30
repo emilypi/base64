@@ -109,7 +109,7 @@ encodeB64UnpaddedInternal etable sptr dptr end = go sptr dptr
         poke dst x
         poke (plusPtr dst 2) y
 
-        go (src `plusPtr` 3) (dst `plusPtr` 4)
+        go (plusPtr src 3) (plusPtr dst 4)
 {-# INLINE encodeB64UnpaddedInternal #-}
 
 -- -------------------------------------------------------------------------- --
@@ -151,7 +151,7 @@ encodeB64PaddedInternal (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
       | plusPtr src 2 >= end = finalize src (castPtr dst)
       | otherwise = do
 
-        -- ideally, we want to read @uint32_t w = src[0..3]@ and simply
+        -- ideally, we want to do single read @uint32_t w = src[0..3]@ and simply
         -- discard the upper bits. TODO.
         --
         !i <- w32 <$> peek src
@@ -180,8 +180,6 @@ encodeB64PaddedInternal (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
       | otherwise = do
         !k <- peekByteOff src 0
 
-        -- this improves on Bos' algorithm removing an unnecessary read
-        --
         let !a = shiftR (k .&. 0xfc) 2
             !b = shiftL (k .&. 0x03) 4
 
@@ -191,21 +189,18 @@ encodeB64PaddedInternal (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
         then do
           !k' <- peekByteOff src 1
 
-          -- pack hi/lo, single read
-          --
           let !b' = shiftR (k' .&. 0xf0) 4 .|. b
               !c' = shiftL (k' .&. 0x0f) 2
 
-          -- ideally, we'd want to pack this is in a single read, then
-          -- a single write
+          -- ideally, we'd want to pack this is in a single write
           --
           pokeByteOff dst 1 (ix b')
           pokeByteOff dst 2 (ix c')
         else do
-          -- same here
-          --
           pokeByteOff dst 1 (ix b)
           pokeByteOff @Word8 dst 2 0x3d
 
         pokeByteOff @Word8 dst 3 0x3d
 {-# INLINE encodeB64PaddedInternal #-}
+
+decodeB64PaddedInternal ::
