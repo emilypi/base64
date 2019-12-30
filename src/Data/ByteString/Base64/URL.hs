@@ -30,7 +30,7 @@ import Data.Text (Text)
 -- See: RFC-4648 section 5
 --
 encodeBase64 :: ByteString -> ByteString
-encodeBase64 = base64Padded base64UrlTable
+encodeBase64 = encodeB64Padded base64UrlTable
 
 -- | Decode a padded base64-url encoded 'ByteString'
 --
@@ -53,7 +53,7 @@ decodeBase64 = undefined
 -- See: RFC-4648 section 3.2
 --
 encodeBase64Unpadded :: ByteString -> ByteString
-encodeBase64Unpadded = base64Unpadded base64UrlTable
+encodeBase64Unpadded = encodeB64Unpadded base64UrlTable
 
 -- | Decode an unpadded base64-url encoded 'ByteString'
 --
