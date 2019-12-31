@@ -1,8 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MagicHash #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE UnboxedTuples #-}
 module Data.ByteString.Base64.Internal
 ( -- * Base64 encoding
   encodeB64Padded
@@ -27,8 +26,10 @@ import Foreign.Ptr
 import Foreign.Storable
 
 import GHC.Exts
+import GHC.ForeignPtr
 import GHC.Word
 
+import System.IO.Unsafe
 
 -- -------------------------------------------------------------------------- --
 -- Internal data
@@ -43,12 +44,27 @@ data T2 = T2
 packTable :: Addr# -> T2
 packTable alphabet = T2 (Ptr alphabet) (castForeignPtr efp)
   where
-    (PS efp _ _) = BS.pack . concat $
-      [ [ ix i, ix j ]
-        | !i <- [0..63]
-        , !j <- [0..63]
-      ]
     ix (I# n) = W8# (indexWord8OffAddr# alphabet n)
+    {-# INLINE ix #-}
+
+    efp = unsafeDupablePerformIO $ do
+
+      -- Bytestring pack without the intermediate wrapper.
+      -- TODO: factor out as CString
+      --
+      let bs = concat $
+            [ [ ix i, ix j ]
+            | !i <- [0..63]
+            , !j <- [0..63]
+            ]
+
+          go !_ []     = return ()
+          go !p (a:as) = poke p a >> go (plusPtr p 1) as
+          {-# INLINE go #-}
+
+      fp <- mallocPlainForeignPtrBytes 8192
+      withForeignPtr fp $ \p -> go p bs
+      return fp
 {-# INLINE packTable #-}
 
 base64UrlTable :: T2
@@ -58,6 +74,7 @@ base64UrlTable = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 base64Table :: T2
 base64Table = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
 {-# NOINLINE base64Table #-}
+
 
 -- -------------------------------------------------------------------------- --
 -- Unpadded Base64
