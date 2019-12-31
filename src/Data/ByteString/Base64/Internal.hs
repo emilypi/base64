@@ -51,7 +51,7 @@ packTable alphabet = etable
       -- Bytestring pack without the intermediate wrapper.
       -- TODO: factor out as CString
       --
-      let bs = concat $
+      let bs = concat
             [ [ ix i, ix j ]
             | !i <- [0..63]
             , !j <- [0..63]
