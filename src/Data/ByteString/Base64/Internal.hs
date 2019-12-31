@@ -18,7 +18,6 @@ module Data.ByteString.Base64.Internal
 
 import Data.Bits
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
 import Data.ByteString.Internal
 
 import Foreign.ForeignPtr
@@ -42,12 +41,12 @@ data T2 = T2
   {-# UNPACK #-} !(ForeignPtr Word16)
 
 packTable :: Addr# -> T2
-packTable alphabet = T2 (Ptr alphabet) (castForeignPtr efp)
+packTable alphabet = etable
   where
     ix (I# n) = W8# (indexWord8OffAddr# alphabet n)
     {-# INLINE ix #-}
 
-    efp = unsafeDupablePerformIO $ do
+    !etable = unsafeDupablePerformIO $ do
 
       -- Bytestring pack without the intermediate wrapper.
       -- TODO: factor out as CString
@@ -62,9 +61,9 @@ packTable alphabet = T2 (Ptr alphabet) (castForeignPtr efp)
           go !p (a:as) = poke p a >> go (plusPtr p 1) as
           {-# INLINE go #-}
 
-      fp <- mallocPlainForeignPtrBytes 8192
-      withForeignPtr fp $ \p -> go p bs
-      return fp
+      !efp <- mallocPlainForeignPtrBytes 8192
+      withForeignPtr efp $ \p -> go p bs
+      return (T2 (Ptr alphabet) (castForeignPtr efp))
 {-# INLINE packTable #-}
 
 base64UrlTable :: T2
@@ -105,10 +104,9 @@ encodeB64UnpaddedInternal
     -> IO ()
 encodeB64UnpaddedInternal etable sptr dptr end = go sptr dptr
   where
-    _eq = 0x3d :: Word8
-
     w32 :: Word8 -> Word32
     w32 i = fromIntegral i
+    {-# INLINE w32 #-}
 
     go !src !dst
       | src >= end = return ()
@@ -157,7 +155,7 @@ encodeB64PaddedInternal
     -> IO ()
 encodeB64PaddedInternal (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
   where
-    ix (W8# !i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
+    ix (W8# i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
     {-# INLINE ix #-}
 
     w32 :: Word8 -> Word32
@@ -179,12 +177,12 @@ encodeB64PaddedInternal (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
         --
         let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
 
-        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
-        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
-
         -- ideally, we'd want to pack this is in a single read, then
         -- a single write
         --
+        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
+        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
+
         poke dst x
         poke (plusPtr dst 2) y
 
@@ -209,7 +207,7 @@ encodeB64PaddedInternal (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
           let !b' = shiftR (k' .&. 0xf0) 4 .|. b
               !c' = shiftL (k' .&. 0x0f) 2
 
-          -- ideally, we'd want to pack this is in a single write
+          -- ideally, we'd want to pack these is in a single write
           --
           pokeByteOff dst 1 (ix b')
           pokeByteOff dst 2 (ix c')
