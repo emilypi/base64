@@ -57,7 +57,7 @@ packTable alphabet = etable
             , !j <- [0..63]
             ]
 
-          go !_ []     = return ()
+          go !_ [] = return ()
           go !p (a:as) = poke p a >> go (plusPtr p 1) as
           {-# INLINE go #-}
 
