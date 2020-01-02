@@ -314,8 +314,8 @@ decodeB64Internal
     -> IO (Either Text ByteString)
 decodeB64Internal !dtable !sptr !dptr !end !dfp = go dptr sptr 0
   where
-    bail = return . Left . T.pack
-    {-# INLINE bail #-}
+    err = return . Left . T.pack
+    {-# INLINE err #-}
 
     finalize !n = return (Right (PS dfp 0 n))
     {-# INLINE finalize #-}
@@ -339,12 +339,12 @@ decodeB64Internal !dtable !sptr !dptr !end !dfp = go dptr sptr 0
               (c `shiftL` 6) .|. d
 
         if a == 0x63 || b == 0x63
-        then bail
+        then err
           $ "invalid padding near offset: "
           ++ show (src `minusPtr` sptr)
         else
           if a .|. b .|. c .|. d == 0xff
-          then bail
+          then err
             $ "invalid base64 encoding near offset: "
             ++ show (src `minusPtr` sptr)
           else do
