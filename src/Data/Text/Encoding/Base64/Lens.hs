@@ -11,7 +11,7 @@
 -- Portability	: portable
 --
 -- This module contains the 'HasBase64' and 'HasBase64Unpadded' instances
--- for 'Text', which defined to be the collection of 'Prism's defining the
+-- for 'Text', which defined to be the collection of 'Control.Lens.Type.Prism's defining the
 -- RFC 4648 specification for the padded and unpadded Base64 encoding format.
 --
 -- These typeclasses are re-exported for convenience

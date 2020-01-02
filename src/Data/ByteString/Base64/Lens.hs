@@ -11,8 +11,8 @@
 -- Stability	: Experimental
 -- Portability	: portable
 --
--- This module contains the 'HasBase64' instance for 'Text', which is
--- defined to be the collection of 'Iso's and 'Prism's defining the
+-- This module contains the 'HasBase64' instance for @Text@, which is
+-- defined to be the collection of 'Control.Lens.Type.Prism's defining the
 -- RFC 4648 specification for the Base64 encoding format.
 --
 -- In order to expose this file, you must build the package with

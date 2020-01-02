@@ -1,0 +1,129 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE ConstraintKinds #-}</span><span>
+</span><a name="line-2"></a><span class="hs-pragma">{-# LANGUAGE FunctionalDependencies #-}</span><span>
+</span><a name="line-3"></a><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><a name="line-4"></a><span class="hs-pragma">{-# LANGUAGE TypeFamilies #-}</span><span>
+</span><a name="line-5"></a><span class="hs-comment">-- |</span><span>
+</span><a name="line-6"></a><span class="hs-comment">-- Module       : Data.Text.Encoding.Base64.Lens</span><span>
+</span><a name="line-7"></a><span class="hs-comment">-- Copyright 	: (c) 2019 Emily Pillmore</span><span>
+</span><a name="line-8"></a><span class="hs-comment">-- License	: BSD-style</span><span>
+</span><a name="line-9"></a><span class="hs-comment">--</span><span>
+</span><a name="line-10"></a><span class="hs-comment">-- Maintainer	: Emily Pillmore &lt;emilypi@cohomolo.gy&gt;</span><span>
+</span><a name="line-11"></a><span class="hs-comment">-- Stability	: Experimental</span><span>
+</span><a name="line-12"></a><span class="hs-comment">-- Portability	: portable</span><span>
+</span><a name="line-13"></a><span class="hs-comment">--</span><span>
+</span><a name="line-14"></a><span class="hs-comment">-- This module contains the 'HasBase64' instance for @Text@, which is</span><span>
+</span><a name="line-15"></a><span class="hs-comment">-- defined to be the collection of 'Control.Lens.Type.Prism's defining the</span><span>
+</span><a name="line-16"></a><span class="hs-comment">-- RFC 4648 specification for the Base64 encoding format.</span><span>
+</span><a name="line-17"></a><span class="hs-comment">--</span><span>
+</span><a name="line-18"></a><span class="hs-comment">-- In order to expose this file, you must build the package with</span><span>
+</span><a name="line-19"></a><span class="hs-comment">-- '-foptics' enabled.</span><span>
+</span><a name="line-20"></a><span class="hs-comment">--</span><span>
+</span><a name="line-21"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.ByteString.Base64.Lens</span><span>
+</span><a name="line-22"></a><span class="hs-special">(</span><span> </span><span class="hs-comment">-- * Classy Base64</span><span>
+</span><a name="line-23"></a><span>  </span><a href="Data.ByteString.Base64.Lens.html#HasBase64"><span class="hs-identifier hs-type">HasBase64</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-24"></a><span class="hs-special">,</span><span> </span><a href="Data.ByteString.Base64.Lens.html#HasBase64Unpadded"><span class="hs-identifier hs-type">HasBase64Unpadded</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-25"></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-26"></a><span>
+</span><a name="line-27"></a><span>
+</span><a name="line-28"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Lens</span><span>
+</span><a name="line-29"></a><span>
+</span><a name="line-30"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Data.ByteString</span><span>
+</span><a name="line-31"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><a href="Data.ByteString.Base64.html"><span class="hs-identifier">Data.ByteString.Base64</span></a><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">B64</span><span>
+</span><a name="line-32"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><a href="Data.ByteString.Base64.URL.html"><span class="hs-identifier">Data.ByteString.Base64.URL</span></a><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">B64U</span><span>
+</span><a name="line-33"></a><span>
+</span><a name="line-34"></a><span>
+</span><a name="line-35"></a><span class="hs-comment">-- | If a particular type @s@ has a base64 representation</span><span>
+</span><a name="line-36"></a><span class="hs-comment">-- for any of its focii, this class provides the optical interface</span><span>
+</span><a name="line-37"></a><span class="hs-comment">-- for satisfying the padded base64 spec in RFC 4648</span><span>
+</span><a name="line-38"></a><span class="hs-comment">--</span><span>
+</span><a name="line-39"></a><span class="hs-keyword">class</span><span> </span><a name="HasBase64"><a href="Data.ByteString.Base64.Lens.html#HasBase64"><span class="hs-identifier">HasBase64</span></a></a><span> </span><a name="local-6989586621679057729"><a href="#local-6989586621679057729"><span class="hs-identifier">s</span></a></a><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-40"></a><span>    </span><span class="hs-keyword">type</span><span> </span><a name="Base64"><a href="Data.ByteString.Base64.Lens.html#Base64"><span class="hs-identifier">Base64</span></a></a><span> </span><a name="local-6989586621679057729"><a href="#local-6989586621679057729"><span class="hs-identifier">s</span></a></a><span>
+</span><a name="line-41"></a><span>    </span><span class="hs-comment">-- | A prism into a base64-encoded focus of</span><span>
+</span><a name="line-42"></a><span>    </span><span class="hs-comment">-- some type</span><span>
+</span><a name="line-43"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-44"></a><span>    </span><span class="hs-comment">-- Examples:</span><span>
+</span><a name="line-45"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-46"></a><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; _Base64 @Text # &quot;Sun&quot;</span><span>
+</span><a name="line-47"></a><span>    </span><span class="hs-comment">-- &quot;UV3u&quot;</span><span>
+</span><a name="line-48"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-49"></a><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; _Base64 @Text # &quot;&lt;&lt;???&gt;&gt;&quot;</span><span>
+</span><a name="line-50"></a><span>    </span><span class="hs-comment">-- &quot;PDw/Pz8+Pg==&quot;</span><span>
+</span><a name="line-51"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-52"></a><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; &quot;PDw/Pz8+Pg==&quot; ^. _Base64</span><span>
+</span><a name="line-53"></a><span>    </span><span class="hs-comment">-- &quot;&lt;&lt;???&gt;&gt;&quot;</span><span>
+</span><a name="line-54"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-55"></a><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; &quot;PDw/Pz8+Pg==&quot; ^? _Base64</span><span>
+</span><a name="line-56"></a><span>    </span><span class="hs-comment">-- Just &quot;&lt;&lt;???&gt;&gt;&quot;</span><span>
+</span><a name="line-57"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-58"></a><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; &quot;PDw_Pz8-Pg==&quot; ^. _Base64</span><span>
+</span><a name="line-59"></a><span>    </span><span class="hs-comment">-- &quot;&quot;</span><span>
+</span><a name="line-60"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-61"></a><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; &quot;PDw_Pz8-Pg==&quot; ^? _Base64</span><span>
+</span><a name="line-62"></a><span>    </span><span class="hs-comment">-- Nothing</span><span>
+</span><a name="line-63"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-64"></a><span>    </span><a name="_Base64"><a href="Data.ByteString.Base64.Lens.html#_Base64"><span class="hs-identifier">_Base64</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Prism'</span><span> </span><a href="#local-6989586621679057729"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><a href="Data.ByteString.Base64.Lens.html#Base64"><span class="hs-identifier hs-type">Base64</span></a><span> </span><a href="#local-6989586621679057729"><span class="hs-identifier hs-type">s</span></a><span class="hs-special">)</span><span>
+</span><a name="line-65"></a><span>
+</span><a name="line-66"></a><span>    </span><span class="hs-comment">-- | A prism into the base64url-encoded focus of</span><span>
+</span><a name="line-67"></a><span>    </span><span class="hs-comment">-- some type</span><span>
+</span><a name="line-68"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-69"></a><span>    </span><span class="hs-comment">-- Examples:</span><span>
+</span><a name="line-70"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-71"></a><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; _Base64Url @Text # &quot;Sun&quot;</span><span>
+</span><a name="line-72"></a><span>    </span><span class="hs-comment">-- &quot;UV3u&quot;</span><span>
+</span><a name="line-73"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-74"></a><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; _Base64Url @Text # &quot;&lt;&lt;???&gt;&gt;&quot;</span><span>
+</span><a name="line-75"></a><span>    </span><span class="hs-comment">-- &quot;PDw_Pz8-Pg==&quot;</span><span>
+</span><a name="line-76"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-77"></a><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; &quot;PDw_Pz8-Pg==&quot; ^. _Base64Url</span><span>
+</span><a name="line-78"></a><span>    </span><span class="hs-comment">-- &quot;&lt;&lt;???&gt;&gt;&quot;</span><span>
+</span><a name="line-79"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-80"></a><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; &quot;PDw_Pz8-Pg==&quot; ^? _Base64Url</span><span>
+</span><a name="line-81"></a><span>    </span><span class="hs-comment">-- Just &quot;&lt;&lt;???&gt;&gt;&quot;</span><span>
+</span><a name="line-82"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-83"></a><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; &quot;PDw/Pz8+Pg==&quot; ^. _Base64Url</span><span>
+</span><a name="line-84"></a><span>    </span><span class="hs-comment">-- &quot;&quot;</span><span>
+</span><a name="line-85"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-86"></a><span>    </span><span class="hs-comment">-- &gt;&gt;&gt; &quot;PDw/Pz8+Pg==&quot; ^? _Base64Url</span><span>
+</span><a name="line-87"></a><span>    </span><span class="hs-comment">-- Nothing</span><span>
+</span><a name="line-88"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-89"></a><span>    </span><a name="_Base64Url"><a href="Data.ByteString.Base64.Lens.html#_Base64Url"><span class="hs-identifier">_Base64Url</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Prism'</span><span> </span><a href="#local-6989586621679057729"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><a href="Data.ByteString.Base64.Lens.html#Base64"><span class="hs-identifier hs-type">Base64</span></a><span> </span><a href="#local-6989586621679057729"><span class="hs-identifier hs-type">s</span></a><span class="hs-special">)</span><span>
+</span><a name="line-90"></a><span>
+</span><a name="line-91"></a><span class="hs-comment">-- | If a particular type @a@ has an unpadded base64 representation</span><span>
+</span><a name="line-92"></a><span class="hs-comment">-- for any of its focii, this class provides the optical interface</span><span>
+</span><a name="line-93"></a><span class="hs-comment">-- for satisfying the unpadded base64 spec in RFC 4648</span><span>
+</span><a name="line-94"></a><span class="hs-comment">--</span><span>
+</span><a name="line-95"></a><span class="hs-keyword">class</span><span> </span><a name="HasBase64Unpadded"><a href="Data.ByteString.Base64.Lens.html#HasBase64Unpadded"><span class="hs-identifier">HasBase64Unpadded</span></a></a><span> </span><a name="local-6989586621679057663"><a href="#local-6989586621679057663"><span class="hs-identifier">s</span></a></a><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-96"></a><span>    </span><span class="hs-keyword">type</span><span> </span><a name="Base64Nopad"><a href="Data.ByteString.Base64.Lens.html#Base64Nopad"><span class="hs-identifier">Base64Nopad</span></a></a><span> </span><a name="local-6989586621679057663"><a href="#local-6989586621679057663"><span class="hs-identifier">s</span></a></a><span>
+</span><a name="line-97"></a><span>
+</span><a name="line-98"></a><span>    </span><span class="hs-comment">-- | A prism into the unpadded base64-encoded focus of</span><span>
+</span><a name="line-99"></a><span>    </span><span class="hs-comment">-- some type</span><span>
+</span><a name="line-100"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-101"></a><span>    </span><a name="_Base64Unpadded"><a href="Data.ByteString.Base64.Lens.html#_Base64Unpadded"><span class="hs-identifier">_Base64Unpadded</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Prism'</span><span> </span><a href="#local-6989586621679057663"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><a href="Data.ByteString.Base64.Lens.html#Base64Nopad"><span class="hs-identifier hs-type">Base64Nopad</span></a><span> </span><a href="#local-6989586621679057663"><span class="hs-identifier hs-type">s</span></a><span class="hs-special">)</span><span>
+</span><a name="line-102"></a><span>
+</span><a name="line-103"></a><span>    </span><span class="hs-comment">-- | A prism into the unpadded base64url-encoded focus of</span><span>
+</span><a name="line-104"></a><span>    </span><span class="hs-comment">-- some type</span><span>
+</span><a name="line-105"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-106"></a><span>    </span><a name="_Base64UrlUnpadded"><a href="Data.ByteString.Base64.Lens.html#_Base64UrlUnpadded"><span class="hs-identifier">_Base64UrlUnpadded</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Prism'</span><span> </span><a href="#local-6989586621679057663"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><a href="Data.ByteString.Base64.Lens.html#Base64Nopad"><span class="hs-identifier hs-type">Base64Nopad</span></a><span> </span><a href="#local-6989586621679057663"><span class="hs-identifier hs-type">s</span></a><span class="hs-special">)</span><span>
+</span><a name="line-107"></a><span>
+</span><a name="line-108"></a><span class="hs-keyword">instance</span><span> </span><a href="Data.ByteString.Base64.Lens.html#HasBase64"><span class="hs-identifier hs-type">HasBase64</span></a><span> </span><span class="hs-identifier hs-type">ByteString</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-109"></a><span>    </span><span class="hs-keyword">type</span><span> </span><span class="hs-identifier">Base64</span><span> </span><span class="hs-identifier hs-type">ByteString</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-type">ByteString</span><span>
+</span><a name="line-110"></a><span>
+</span><a name="line-111"></a><span>    </span><a name="local-8214565720323832572"><a href="Data.ByteString.Base64.Lens.html#_Base64"><span class="hs-identifier">_Base64</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">prism'</span><span> </span><a href="Data.ByteString.Base64.html#encodeBase64"><span class="hs-identifier hs-var">B64.encodeBase64</span></a><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-glyph">\</span><a name="local-6989586621679057776"><a href="#local-6989586621679057776"><span class="hs-identifier">s</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">case</span><span> </span><a href="Data.ByteString.Base64.html#decodeBase64"><span class="hs-identifier hs-var">B64.decodeBase64</span></a><span> </span><a href="#local-6989586621679057776"><span class="hs-identifier hs-var">s</span></a><span> </span><span class="hs-keyword">of</span><span>
+</span><a name="line-112"></a><span>      </span><span class="hs-identifier hs-var">Left</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">Nothing</span><span>
+</span><a name="line-113"></a><span>      </span><span class="hs-identifier hs-var">Right</span><span> </span><a name="local-6989586621679057777"><a href="#local-6989586621679057777"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">Just</span><span> </span><a href="#local-6989586621679057777"><span class="hs-identifier hs-var">a</span></a><span>
+</span><a name="line-114"></a><span>
+</span><a name="line-115"></a><span>    </span><a name="local-8214565720323832573"><a href="Data.ByteString.Base64.Lens.html#_Base64Url"><span class="hs-identifier">_Base64Url</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">prism'</span><span> </span><a href="Data.ByteString.Base64.URL.html#encodeBase64"><span class="hs-identifier hs-var">B64U.encodeBase64</span></a><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-glyph">\</span><a name="local-6989586621679057778"><a href="#local-6989586621679057778"><span class="hs-identifier">s</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">case</span><span> </span><a href="Data.ByteString.Base64.URL.html#decodeBase64"><span class="hs-identifier hs-var">B64U.decodeBase64</span></a><span> </span><a href="#local-6989586621679057778"><span class="hs-identifier hs-var">s</span></a><span> </span><span class="hs-keyword">of</span><span>
+</span><a name="line-116"></a><span>      </span><span class="hs-identifier hs-var">Left</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">Nothing</span><span>
+</span><a name="line-117"></a><span>      </span><span class="hs-identifier hs-var">Right</span><span> </span><a name="local-6989586621679057779"><a href="#local-6989586621679057779"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">Just</span><span> </span><a href="#local-6989586621679057779"><span class="hs-identifier hs-var">a</span></a><span>
+</span><a name="line-118"></a><span>
+</span><a name="line-119"></a><span class="hs-keyword">instance</span><span> </span><a href="Data.ByteString.Base64.Lens.html#HasBase64Unpadded"><span class="hs-identifier hs-type">HasBase64Unpadded</span></a><span> </span><span class="hs-identifier hs-type">ByteString</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-120"></a><span>    </span><span class="hs-keyword">type</span><span> </span><span class="hs-identifier">Base64Nopad</span><span> </span><span class="hs-identifier hs-type">ByteString</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-type">ByteString</span><span>
+</span><a name="line-121"></a><span>
+</span><a name="line-122"></a><span>    </span><a name="local-8214565720323832568"><a href="Data.ByteString.Base64.Lens.html#_Base64Unpadded"><span class="hs-identifier">_Base64Unpadded</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">prism'</span><span> </span><a href="Data.ByteString.Base64.html#encodeBase64"><span class="hs-identifier hs-var">B64.encodeBase64</span></a><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-glyph">\</span><a name="local-6989586621679057772"><a href="#local-6989586621679057772"><span class="hs-identifier">s</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">case</span><span> </span><a href="Data.ByteString.Base64.URL.html#decodeBase64"><span class="hs-identifier hs-var">B64U.decodeBase64</span></a><span> </span><a href="#local-6989586621679057772"><span class="hs-identifier hs-var">s</span></a><span> </span><span class="hs-keyword">of</span><span>
+</span><a name="line-123"></a><span>      </span><span class="hs-identifier hs-var">Left</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">Nothing</span><span>
+</span><a name="line-124"></a><span>      </span><span class="hs-identifier hs-var">Right</span><span> </span><a name="local-6989586621679057773"><a href="#local-6989586621679057773"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">Just</span><span> </span><a href="#local-6989586621679057773"><span class="hs-identifier hs-var">a</span></a><span>
+</span><a name="line-125"></a><span>
+</span><a name="line-126"></a><span>    </span><a name="local-8214565720323832569"><a href="Data.ByteString.Base64.Lens.html#_Base64UrlUnpadded"><span class="hs-identifier">_Base64UrlUnpadded</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">prism'</span><span> </span><a href="Data.ByteString.Base64.html#encodeBase64"><span class="hs-identifier hs-var">B64.encodeBase64</span></a><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-glyph">\</span><a name="local-6989586621679057774"><a href="#local-6989586621679057774"><span class="hs-identifier">s</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">case</span><span> </span><a href="Data.ByteString.Base64.URL.html#decodeBase64Unpadded"><span class="hs-identifier hs-var">B64U.decodeBase64Unpadded</span></a><span> </span><a href="#local-6989586621679057774"><span class="hs-identifier hs-var">s</span></a><span> </span><span class="hs-keyword">of</span><span>
+</span><a name="line-127"></a><span>      </span><span class="hs-identifier hs-var">Left</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">Nothing</span><span>
+</span><a name="line-128"></a><span>      </span><span class="hs-identifier hs-var">Right</span><span> </span><a name="local-6989586621679057775"><a href="#local-6989586621679057775"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-var">Just</span><span> </span><a href="#local-6989586621679057775"><span class="hs-identifier hs-var">a</span></a><span>
+</span><a name="line-129"></a></pre></body></html>
