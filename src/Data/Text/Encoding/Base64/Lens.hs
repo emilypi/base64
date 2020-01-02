@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.Lens
 -- Copyright 	: (c) 2019 Emily Pillmore
@@ -13,7 +14,12 @@
 -- for 'Text', which defined to be the collection of 'Prism's defining the
 -- RFC 4648 specification for the padded and unpadded Base64 encoding format.
 --
-module Data.Text.Encoding.Base64.Lens where
+-- These typeclasses are re-exported for convenience
+--
+module Data.Text.Encoding.Base64.Lens
+( HasBase64(..)
+, HasBase64Unpadded(..)
+) where
 
 
 import Control.Lens
@@ -24,7 +30,8 @@ import qualified Data.Text.Encoding.Base64 as B64T
 import qualified Data.Text.Encoding.Base64.URL as B64TU
 
 
-instance HasBase64 Text Text where
+instance HasBase64 Text where
+    type Base64 Text = Text
     _Base64 = prism' B64T.encodeBase64 $ \s -> case B64T.decodeBase64 s of
       Left _ -> Nothing
       Right a -> Just a
@@ -33,7 +40,9 @@ instance HasBase64 Text Text where
       Left _ -> Nothing
       Right a -> Just a
 
-instance HasBase64Unpadded Text Text where
+instance HasBase64Unpadded Text where
+    type Base64Nopad Text = Text
+
     _Base64Unpadded = prism' B64T.encodeBase64 $ \s -> case B64T.decodeBase64 s of
       Left _ -> Nothing
       Right a -> Just a
