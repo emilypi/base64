@@ -37,7 +37,7 @@ encodeBase64 = encodeB64Padded base64UrlTable
 -- See: RFC-4648 section 4
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 = undefined
+decodeBase64 = decodeB64 decodeB64UrlTable
 
 -- | Encode a 'ByteString' in base64-url without padding.
 --
@@ -60,4 +60,4 @@ encodeBase64Unpadded = encodeB64Unpadded base64UrlTable
 -- See: RFC-4648 section 4
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
-decodeBase64Unpadded = undefined
+decodeBase64Unpadded = decodeB64 decodeB64UrlTable
