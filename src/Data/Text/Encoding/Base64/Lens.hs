@@ -17,9 +17,10 @@
 -- These typeclasses are re-exported for convenience
 --
 module Data.Text.Encoding.Base64.Lens
-( HasBase64(..)
-, HasBase64Unpadded(..)
-) where
+-- ( HasBase64(..)
+-- , HasBase64Unpadded(..)
+-- ) where
+where
 
 
 import Control.Lens
@@ -41,7 +42,7 @@ instance HasBase64 Text where
       Right a -> Just a
 
 instance HasBase64Unpadded Text where
-    type Base64Nopad Text = Text
+    type Base64Unpadded Text = Text
 
     _Base64Unpadded = prism' B64T.encodeBase64 $ \s -> case B64T.decodeBase64 s of
       Left _ -> Nothing

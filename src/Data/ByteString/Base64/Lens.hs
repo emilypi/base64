@@ -19,7 +19,7 @@
 -- '-foptics' enabled.
 --
 module Data.ByteString.Base64.Lens
-( -- * Classy Base64
+( -- * Classy Prisms
   HasBase64(..)
 , HasBase64Unpadded(..)
 ) where
@@ -93,17 +93,17 @@ class HasBase64 s where
 -- for satisfying the unpadded base64 spec in RFC 4648
 --
 class HasBase64Unpadded s where
-    type Base64Nopad s
-
+    type Base64Unpadded s
     -- | A prism into the unpadded base64-encoded focus of
     -- some type
     --
-    _Base64Unpadded :: Prism' s (Base64Nopad s)
+    _Base64Unpadded :: Prism' s (Base64Unpadded s)
 
     -- | A prism into the unpadded base64url-encoded focus of
     -- some type
     --
-    _Base64UrlUnpadded :: Prism' s (Base64Nopad s)
+    _Base64UrlUnpadded :: Prism' s (Base64Unpadded s)
+
 
 instance HasBase64 ByteString where
     type Base64 ByteString = ByteString
@@ -117,7 +117,7 @@ instance HasBase64 ByteString where
       Right a -> Just a
 
 instance HasBase64Unpadded ByteString where
-    type Base64Nopad ByteString = ByteString
+    type Base64Unpadded ByteString = ByteString
 
     _Base64Unpadded = prism' B64.encodeBase64 $ \s -> case B64U.decodeBase64 s of
       Left _ -> Nothing
