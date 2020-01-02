@@ -17,10 +17,9 @@
 -- These typeclasses are re-exported for convenience
 --
 module Data.Text.Encoding.Base64.Lens
--- ( HasBase64(..)
--- , HasBase64Unpadded(..)
--- ) where
-where
+( HasBase64(..)
+, HasBase64Unpadded(..)
+) where
 
 
 import Control.Lens
