@@ -1,5 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE MagicHash #-}
 -- |
 -- Module       : Data.ByteString.Base64.URL
 -- Copyright 	: (c) 2019 Emily Pillmore

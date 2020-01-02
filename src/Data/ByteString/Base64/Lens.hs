@@ -1,6 +1,3 @@
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.Lens
@@ -9,7 +6,7 @@
 --
 -- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
 -- Stability	: Experimental
--- Portability	: portable
+-- Portability	: TypeFamilies
 --
 -- This module contains the 'HasBase64' instance for @Text@, which is
 -- defined to be the collection of 'Control.Lens.Type.Prism's defining the
