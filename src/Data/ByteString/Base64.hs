@@ -32,13 +32,15 @@ import Data.Text (Text)
 --
 encodeBase64 :: ByteString -> ByteString
 encodeBase64 = encodeB64Padded base64Table
+{-# INLINE encodeBase64 #-}
 
 -- | Decode a padded base64-encoded 'ByteString'
 --
 -- See: RFC-4648 section 4
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 = undefined
+decodeBase64 = decodeB64 decodeB64Table
+{-# INLINE decodeBase64 #-}
 
 -- | Encode a 'ByteString' in base64 without padding.
 --
@@ -55,10 +57,12 @@ decodeBase64 = undefined
 --
 encodeBase64Unpadded :: ByteString -> ByteString
 encodeBase64Unpadded = encodeB64Unpadded base64Table
+{-# INLINE encodeBase64Unpadded #-}
 
 -- | Decode an unpadded base64-encoded 'ByteString'
 --
 -- See: RFC-4648 section 3.2
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
-decodeBase64Unpadded = undefined
+decodeBase64Unpadded = decodeB64 decodeB64Table
+{-# INLINE decodeBase64Unpadded #-}
