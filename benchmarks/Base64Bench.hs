@@ -41,7 +41,7 @@ main = defaultMain $ fmap benchN [25,100,1000,10000,100000]
         [ decodeBench @Mem e
         , decodeBench @Bos e
         , decodeBench @B64 e
-       ]
+        ]
       ]
 
 encodeBench :: forall a. Harness a => Base64 a -> Benchmark
