@@ -25,19 +25,10 @@ import "base64" Data.ByteString.Base64 as B64
 import Data.ByteString.Random (random)
 import Data.Text (Text)
 import qualified Data.Text.Encoding.Base64 as B64T
-import qualified Data.Text.Encoding as T
-
-import GHC.Natural
 
 
 main :: IO ()
-main = defaultMain $ fmap benchN
-    [ 25
-    , 100
-    , 1000
-    , 10000
-    , 100000
-    ]
+main = defaultMain $ fmap benchN [25,100,1000,10000,100000]
   where
     benchN n = env (random n) $ bgroup (show n) . bgroup_
     bgroup_ e =
@@ -45,7 +36,6 @@ main = defaultMain $ fmap benchN
         [ encodeBench @Mem e
         , encodeBench @Bos e
         , encodeBench @B64 e
- --       , encodeBench @T64 (T.decodeLatin1 e)
         ]
       , bgroup "base64 decode"
         [ decodeBench @Mem e
