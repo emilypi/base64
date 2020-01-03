@@ -108,10 +108,12 @@ instance HasBase64 ByteString where
     _Base64 = prism' B64.encodeBase64 $ \s -> case B64.decodeBase64 s of
       Left _ -> Nothing
       Right a -> Just a
+    {-# INLINE _Base64 #-}
 
     _Base64Url = prism' B64U.encodeBase64 $ \s -> case B64U.decodeBase64 s of
       Left _ -> Nothing
       Right a -> Just a
+    {-# INLINE _Base64Url #-}
 
 instance HasBase64Unpadded ByteString where
     type Base64Unpadded ByteString = ByteString
@@ -119,7 +121,9 @@ instance HasBase64Unpadded ByteString where
     _Base64Unpadded = prism' B64.encodeBase64 $ \s -> case B64U.decodeBase64 s of
       Left _ -> Nothing
       Right a -> Just a
+    {-# INLINE _Base64Unpadded #-}
 
     _Base64UrlUnpadded = prism' B64.encodeBase64 $ \s -> case B64U.decodeBase64Unpadded s of
       Left _ -> Nothing
       Right a -> Just a
+    {-# INLINE _Base64UrlUnpadded #-}

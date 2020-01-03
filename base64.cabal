@@ -30,6 +30,12 @@ flag optics
   manual: True
   default: True
 
+flag perf-flags
+  description: Performance tuning flags and information
+  manual: True
+  default: False
+
+
 library
   exposed-modules:     Data.ByteString.Base64
                      , Data.ByteString.Base64.URL
@@ -53,6 +59,12 @@ library
                      , Data.Text.Encoding.Base64.Lens
     build-depends:     lens ^>= 4.18
 
+  if flag(perf-flags)
+    ghc-options:       -ddump-simpl
+                       -ddump-to-file
+                       -ddump-stranal
+
+
 test-suite tasty
   default-language:    Haskell2010
   type:                exitcode-stdio-1.0
@@ -66,7 +78,7 @@ test-suite tasty
                      , tasty-hunit
                      , text
 
-  ghc-options: -Wall -threaded -with-rtsopts=-N
+  ghc-options:       -Wall -threaded -with-rtsopts=-N
 
 benchmark bench
   default-language:    Haskell2010
@@ -83,7 +95,8 @@ benchmark bench
                      , random-bytestring
                      , text
 
-  ghc-options: -Wall
-               -threaded
-               -rtsopts
-               -with-rtsopts=-N
+  ghc-options:
+    -Wall
+    -threaded
+    -rtsopts
+    -with-rtsopts=-N

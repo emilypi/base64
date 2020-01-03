@@ -31,13 +31,16 @@ import qualified Data.Text.Encoding.Base64.URL as B64TU
 
 instance HasBase64 Text where
     type Base64 Text = Text
+
     _Base64 = prism' B64T.encodeBase64 $ \s -> case B64T.decodeBase64 s of
       Left _ -> Nothing
       Right a -> Just a
+    {-# INLINE _Base64 #-}
 
     _Base64Url = prism' B64TU.encodeBase64 $ \s -> case B64TU.decodeBase64 s of
       Left _ -> Nothing
       Right a -> Just a
+    {-# INLINE _Base64Url #-}
 
 instance HasBase64Unpadded Text where
     type Base64Unpadded Text = Text
@@ -45,7 +48,9 @@ instance HasBase64Unpadded Text where
     _Base64Unpadded = prism' B64T.encodeBase64 $ \s -> case B64T.decodeBase64 s of
       Left _ -> Nothing
       Right a -> Just a
+    {-# INLINE _Base64Unpadded #-}
 
     _Base64UrlUnpadded = prism' B64TU.encodeBase64 $ \s -> case B64TU.decodeBase64Unpadded s of
       Left _ -> Nothing
       Right a -> Just a
+    {-# INLINE _Base64UrlUnpadded #-}
