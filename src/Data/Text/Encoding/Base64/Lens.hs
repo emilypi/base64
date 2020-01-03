@@ -23,7 +23,7 @@ module Data.Text.Encoding.Base64.Lens
 
 import Control.Lens
 
-import Data.Text
+import Data.Text (Text)
 import Data.ByteString.Base64.Lens
 import qualified Data.Text.Encoding.Base64 as B64T
 import qualified Data.Text.Encoding.Base64.URL as B64TU

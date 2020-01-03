@@ -24,7 +24,7 @@ module Data.ByteString.Base64.Lens
 
 import Control.Lens
 
-import Data.ByteString
+import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Base64.URL as B64U
 
@@ -42,21 +42,9 @@ class HasBase64 s where
     --
     -- >>> _Base64 @Text # "Sun"
     -- "UV3u"
-    --
-    -- >>> _Base64 @Text # "<<???>>"
-    -- "PDw/Pz8+Pg=="
-    --
-    -- >>> "PDw/Pz8+Pg==" ^. _Base64
-    -- "<<???>>"
-    --
+    --    --
     -- >>> "PDw/Pz8+Pg==" ^? _Base64
     -- Just "<<???>>"
-    --
-    -- >>> "PDw_Pz8-Pg==" ^. _Base64
-    -- ""
-    --
-    -- >>> "PDw_Pz8-Pg==" ^? _Base64
-    -- Nothing
     --
     _Base64 :: Prism' s (Base64 s)
 
@@ -68,20 +56,8 @@ class HasBase64 s where
     -- >>> _Base64Url @Text # "Sun"
     -- "UV3u"
     --
-    -- >>> _Base64Url @Text # "<<???>>"
-    -- "PDw_Pz8-Pg=="
-    --
-    -- >>> "PDw_Pz8-Pg==" ^. _Base64Url
-    -- "<<???>>"
-    --
     -- >>> "PDw_Pz8-Pg==" ^? _Base64Url
     -- Just "<<???>>"
-    --
-    -- >>> "PDw/Pz8+Pg==" ^. _Base64Url
-    -- ""
-    --
-    -- >>> "PDw/Pz8+Pg==" ^? _Base64Url
-    -- Nothing
     --
     _Base64Url :: Prism' s (Base64 s)
 
