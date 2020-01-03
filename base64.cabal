@@ -1,7 +1,7 @@
 cabal-version:       2.4
 
 name:                base64
-version:             0.1.0.1
+version:             0.0.1.0
 synopsis:            RFC 4648-compliant padded and unpadded base64 and base64url encodings
 description:
   RFC 4648-compliant padded and unpadded base64 and base64url encoding and decoding.
@@ -25,20 +25,10 @@ source-repository head
   location: https://github.com/emilypi/base64.git
 
 
--- flag ghc-flags
---   description: Generate .ghc.flags files during compilation
---   manual: True
---   default: False
-
 flag optics
   description: Enable optics for base64-encoding text and bytestrings
   manual: True
-  default: False
-
-flag perf-flags
-  description: Performance tuning flags and information
-  manual: True
-  default: False
+  default: True
 
 library
   exposed-modules:     Data.ByteString.Base64
@@ -62,16 +52,6 @@ library
     exposed-modules:   Data.ByteString.Base64.Lens
                      , Data.Text.Encoding.Base64.Lens
     build-depends:     lens ^>= 4.18
-
-  -- if flag(ghc-flags)
-  --   build-tool-depends: hsinspect:hsinspect
-  --   ghc-options: -fplugin GhcFlags.Plugin
-  --   build-depends: ghcflags
-
-  if flag(perf-flags)
-    ghc-options: -ddump-simpl
-                 -ddump-to-file
-
 
 test-suite tasty
   default-language:    Haskell2010
