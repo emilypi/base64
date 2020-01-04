@@ -47,7 +47,7 @@ foreign import ccall unsafe "generic_base64_decode" c_decodeBase64
     :: Ptr Word8 -> Ptr Word8 -> Int -> Int
 
 -- ---------------------------------------------------------------------------- --
--- Internal calls
+-- Encoding
 
 encodeBase64_ :: ByteString -> ByteString
 encodeBase64_ bs@(PS !sfp !soff !slen)
@@ -131,22 +131,25 @@ encodeBase64C !dlen (PS !sfp !soff !slen) =
       withForeignPtr sfp $ \sp ->
        let !l = c_encodeBase64 dp (plusPtr sp soff) slen
        in if l == -1 then error
-         $ "Encoding failed at offset: "
-         ++ show (plusPtr sp $ soff + l)
+         $ "Encoding failed: "
+         ++ show sp
        else return ()
 {-# INLINE encodeBase64C #-}
 
+-- ---------------------------------------------------------------------------- --
+-- Decoding
+
 decodeBase64_ :: ByteString -> Either Text ByteString
 decodeBase64_ (PS !sfp !soff !slen)
-    | r /= 0 = Left "Invalid padding"
+    | r /= 0 = Left "Decoding failed: invalid padding"
     | otherwise = unsafeDupablePerformIO $ do
       dfp <- mallocPlainForeignPtrBytes dlen
       withForeignPtr dfp $ \dp ->
         withForeignPtr sfp $ \sp ->
           let !l = c_decodeBase64 dp (plusPtr sp soff) slen
           in if l == -1 then return . Left . T.pack
-            $ "Decoding failed at offset: "
-            ++ show (plusPtr sp $ soff + l)
+            $ "Decoding failed: "
+            ++ show sp
           else return $! Right (PS dfp 0 l)
   where
     (!q, !r) = divMod slen 4
