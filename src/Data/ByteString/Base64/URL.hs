@@ -28,14 +28,14 @@ import Data.Text (Text)
 -- See: RFC-4648 section 5
 --
 encodeBase64 :: ByteString -> ByteString
-encodeBase64 = encodeB64Padded base64UrlTable
+encodeBase64 = undefined
 
 -- | Decode a padded base64-url encoded 'ByteString'
 --
 -- See: RFC-4648 section 4
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 = decodeB64 decodeB64UrlTable
+decodeBase64 = undefined
 
 -- | Encode a 'ByteString' in base64-url without padding.
 --
@@ -51,11 +51,11 @@ decodeBase64 = decodeB64 decodeB64UrlTable
 -- See: RFC-4648 section 3.2
 --
 encodeBase64Unpadded :: ByteString -> ByteString
-encodeBase64Unpadded = encodeB64Unpadded base64UrlTable
+encodeBase64Unpadded = undefined
 
 -- | Decode an unpadded base64-url encoded 'ByteString'
 --
 -- See: RFC-4648 section 4
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
-decodeBase64Unpadded = decodeB64 decodeB64UrlTable
+decodeBase64Unpadded = undefined

@@ -29,7 +29,7 @@ import Data.Text (Text)
 -- See: RFC-4648 section 4
 --
 encodeBase64 :: ByteString -> ByteString
-encodeBase64 = encodeB64Padded base64Table
+encodeBase64 = encodeBase64_
 {-# INLINE encodeBase64 #-}
 
 -- | Decode a padded base64-encoded 'ByteString'
@@ -37,7 +37,7 @@ encodeBase64 = encodeB64Padded base64Table
 -- See: RFC-4648 section 4
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 = decodeB64 decodeB64Table
+decodeBase64 = decodeBase64_
 {-# INLINE decodeBase64 #-}
 
 -- | Encode a 'ByteString' in base64 without padding.
@@ -49,12 +49,12 @@ decodeBase64 = decodeB64 decodeB64Table
 -- your bytestring in the form of "\NUL".
 --
 -- Only call unpadded variants when you can make assumptions about the length of
--- your input data.
+-- your input data. Otherwise, garbage in, garbage out.
 --
 -- See: RFC-4648 section 3.2
 --
 encodeBase64Unpadded :: ByteString -> ByteString
-encodeBase64Unpadded = encodeB64Unpadded base64Table
+encodeBase64Unpadded = encodeBase64_
 {-# INLINE encodeBase64Unpadded #-}
 
 -- | Decode an unpadded base64-encoded 'ByteString'
@@ -62,5 +62,5 @@ encodeBase64Unpadded = encodeB64Unpadded base64Table
 -- See: RFC-4648 section 3.2
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
-decodeBase64Unpadded = decodeB64 decodeB64Table
+decodeBase64Unpadded = undefined
 {-# INLINE decodeBase64Unpadded #-}
