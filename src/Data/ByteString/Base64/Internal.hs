@@ -61,17 +61,15 @@ encodeBase64_ (PS !sfp !soff !slen) =
     !dlen = 4 * ((slen + 2) `div` 3)
 
 decodeBase64_ :: ByteString -> Either Text ByteString
-decodeBase64_ (PS !sfp !soff !slen)
-    | r /= 0 = Left "invalid padding"
-    | otherwise = unsafeDupablePerformIO $ do
-      dfp <- mallocPlainForeignPtrBytes dlen
-      withForeignPtr dfp $ \dp ->
-        withForeignPtr sfp $ \sp ->
-          let !l = c_decodeBase64 dp (plusPtr sp soff) slen
-          in if l == -1 then return . Left . T.pack
-             $ "Decoding failed at offset: "
-             <> show (plusPtr sp $ soff + l)
-          else return $! Right (PS dfp 0 l)
+decodeBase64_ (PS !sfp !soff !slen) = unsafeDupablePerformIO $ do
+    dfp <- mallocPlainForeignPtrBytes dlen
+    withForeignPtr dfp $ \dp ->
+      withForeignPtr sfp $ \sp ->
+        let !l = c_decodeBase64 dp (plusPtr sp soff) slen
+        in if l == -1 then return . Left . T.pack
+           $ "Decoding failed at offset: "
+           <> show (plusPtr sp $ soff + l)
+        else return $! Right (PS dfp 0 l)
   where
     (!q, !r) = divMod slen 4
     !dlen = q * 3
