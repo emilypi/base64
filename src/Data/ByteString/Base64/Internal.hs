@@ -68,7 +68,6 @@ decodeBase64_ (PS !sfp !soff !slen)
       withForeignPtr dfp $ \dp ->
         withForeignPtr sfp $ \sp ->
           let !l = c_decodeBase64 dp (plusPtr sp soff) slen
-              !_ = unsafeDupablePerformIO $ print l
           in if l == -1 then return . Left . T.pack
              $ "Decoding from Base64 failed - invalid padding at offset: "
              <> show (plusPtr sp $ soff + l)
