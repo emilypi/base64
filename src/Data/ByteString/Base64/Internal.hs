@@ -132,7 +132,7 @@ encodeBase64C !dlen (PS !sfp !soff !slen) =
        let !l = c_encodeBase64 dp (plusPtr sp soff) slen
        in if l == -1 then error
          $ "Encoding failed at offset: "
-         <> show (plusPtr sp $ soff + l)
+         ++ show (plusPtr sp $ soff + l)
        else return ()
 {-# INLINE encodeBase64C #-}
 
@@ -146,7 +146,7 @@ decodeBase64_ (PS !sfp !soff !slen)
           let !l = c_decodeBase64 dp (plusPtr sp soff) slen
           in if l == -1 then return . Left . T.pack
             $ "Decoding failed at offset: "
-            <> show (plusPtr sp $ soff + l)
+            ++ show (plusPtr sp $ soff + l)
           else return $! Right (PS dfp 0 l)
   where
     (!q, !r) = divMod slen 4
