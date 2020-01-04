@@ -68,7 +68,7 @@ sanityTests = testGroup "Sanity tests"
     chonk = testCase ("Encoding huge bytestrings doesn't result in OOM or segfault") $ do
       bs <- random 1000000
       void $ return $ B64.encodeBase64 bs
-      void $ return $ B64U.encodeBase64 bs
+      -- void $ return $ B64U.encodeBase64 bs
 
     compare64 n = testCase ("Testing " ++ show n ++ "-sized bytestrings") $ do
       bs <- random n
@@ -77,4 +77,4 @@ sanityTests = testGroup "Sanity tests"
     roundtrip n = testCase ("Roundtrip encode/decode for " ++ show n ++ "-sized bytestrings") $ do
       bs <- random n
       B64.decodeBase64 (B64.encodeBase64 bs) @=? Right bs
-      B64U.decodeBase64 (B64U.encodeBase64 bs) @=? Right bs
+      -- B64U.decodeBase64 (B64U.encodeBase64 bs) @=? Right bs

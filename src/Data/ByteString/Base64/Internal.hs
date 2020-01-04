@@ -39,21 +39,21 @@ import System.IO.Unsafe
 -- ---------------------------------------------------------------------------- --
 -- C Foreign Imports
 
-foreign import ccall "generic_base64_encode" c_encodeBase64
+foreign import ccall unsafe "generic_base64_encode" c_encodeBase64
     :: Ptr Word8 -> Ptr Word8 -> Int -> Int
 
-foreign import ccall "generic_base64_decode" c_decodeBase64
+foreign import ccall unsafe "generic_base64_decode" c_decodeBase64
     :: Ptr Word8 -> Ptr Word8 -> Int -> Int
 
 -- ---------------------------------------------------------------------------- --
 -- Internal calls
 
 encodeBase64_ :: ByteString -> ByteString
-encodeBase64_ (PS !sfp soff !slen) =
+encodeBase64_ (PS !sfp !soff !slen) =
     unsafeCreate dlen $ \dp ->
       withForeignPtr sfp $ \sp ->
-       let !l = c_encodeBase64 dp sp slen
-       in if l /= dlen then error
+       let !l = c_encodeBase64 dp (plusPtr sp soff) slen
+       in if l == -1 then error
          $ "Encoding failed at offset: "
          <> show (plusPtr sp $ soff + l)
        else return ()
@@ -61,14 +61,15 @@ encodeBase64_ (PS !sfp soff !slen) =
     !dlen = 4 * ((slen + 2) `div` 3)
 
 decodeBase64_ :: ByteString -> Either Text ByteString
-decodeBase64_ (PS !sfp soff !slen)
+decodeBase64_ (PS !sfp !soff !slen)
     | r /= 0 = Left "invalid padding"
     | otherwise = unsafeDupablePerformIO $ do
       dfp <- mallocPlainForeignPtrBytes dlen
       withForeignPtr dfp $ \dp ->
         withForeignPtr sfp $ \sp ->
-          let !l = c_decodeBase64 dp sp slen
-          in if l /= dlen then return . Left . T.pack
+          let !l = c_decodeBase64 dp (plusPtr sp soff) slen
+              !_ = unsafeDupablePerformIO $ print l
+          in if l == -1 then return . Left . T.pack
              $ "Decoding from Base64 failed - invalid padding at offset: "
              <> show (plusPtr sp $ soff + l)
           else return $! Right (PS dfp 0 l)
