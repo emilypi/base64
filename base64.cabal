@@ -54,6 +54,12 @@ library
   default-language:    Haskell2010
   ghc-options:         -Wall
 
+  c-sources:           cbits/genericBase64.c
+  include-dirs:        include
+  includes:            genericBase64.h
+  install-includes:    genericBase64.h
+
+
   if flag(optics)
     exposed-modules:   Data.ByteString.Base64.Lens
                      , Data.Text.Encoding.Base64.Lens
