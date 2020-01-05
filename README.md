@@ -14,32 +14,34 @@ Of these, `memory` is geared towards integration with other memory primitives in
 
 ### Optics
 
-Structs may want to support encoding and decoding their substructures, which is supported with the following prismatic typeclass:
+`Prism`s for encoding and decoding `Text` and `ByteString` values are given as part of the library:
+
 
 ```haskell
-class AsBase64 s a | s -> a where
-    -- | A prism into a base64-encoded focus of
-    -- some type
-    --
-    _Base64 :: Prism' s a
+_Base64 :: Prism' ByteString ByteString
+_Base64Url :: Prism' ByteString ByteString
+_Base64Unpadded :: Prism' ByteString ByteString
+_Base64UrlUnpadded :: Prism' ByteString ByteString
 
-    -- | A prism into the base64url-encoded focus of
-    -- some type
-    --
-    _Base64Url :: Prism' s a
+-- and
+
+_Base64Text :: Prism' Text Text
+_Base64UrlText :: Prism' Text Text
+_Base64UnpaddedText :: Prism' Text Text
+_Base64UrlUnpaddedText :: Prism' Text Text
+
 ```
 
-The data of a `Prism` naturally conforms to this "encoding/decoding" dichotomy, where the `Review`, or "builder" half of the `Prism` of type `b -> t` is an encoding, and the "Matcher" half of the prism, of type `s -> Either t a`, represents a decoding of a similar structure. Monomorphizing for `t ~ s` and `a ~ b`, a simple `Prism` is formed:
+If a particular structure has a `Lens` into some `Text` or `ByteString` value they might want to encode (or decode), then composing such a `Lens` with these `Prisms` yields an affine `Traversal`, resulting in a structure which has the focus of its `Lens` encoded as or decoded from Base64(-url). All one needs to do is compose their optics:
 
 ```haskell
->>> _Base64 @Text # "<<???>>"
-"PDw/Pz8+Pg=="
 
->>> "PDw/Pz8+Pg==" ^? _Base64 @Text
-Just "<<???>>"
+myB64Struct :: Traversal' s Text
+myB64Struct = myLens . _Base64
+
 ```
 
-The two most obvious types for which we have an instance are those that are supported natively by the library: `ByteString` and `Text`. Trivially, their instances consist of the functions provided here in this library.
+The data of a `Prism` naturally conforms to this "encoding/decoding" dichotomy, where the `Review`, or "builder" half of the `Prism` of type `b -> t` is an encoding, and the "Matcher" half of the prism, of type `s -> Either t a`, represents a decoding of a similar structure. Hence, `Prism` is the most appropriate structure.
 
 ### Summary
 

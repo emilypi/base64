@@ -26,7 +26,7 @@ import Data.Text (Text)
 
 -- | Encode a 'ByteString' in base64 with padding.
 --
--- See: RFC-4648 section 4
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 encodeBase64 :: ByteString -> ByteString
 encodeBase64 = encodeB64Padded base64Table
@@ -34,7 +34,7 @@ encodeBase64 = encodeB64Padded base64Table
 
 -- | Decode a padded base64-encoded 'ByteString'
 --
--- See: RFC-4648 section 4
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 = decodeB64 decodeB64Table
@@ -42,7 +42,7 @@ decodeBase64 = decodeB64 decodeB64Table
 
 -- | Encode a 'ByteString' in base64 without padding.
 --
--- Note: in some circumstances, the use of padding ("=") in base-encoded data
+-- __Note:__ in some circumstances, the use of padding ("=") in base-encoded data
 -- is not required or used. This is not one of them. If you are absolutely sure
 -- the length of your bytestring is divisible by 3, this function will be the same
 -- as 'encodeBase64' with padding, however, if not, you may see garbage appended to
@@ -51,7 +51,7 @@ decodeBase64 = decodeB64 decodeB64Table
 -- Only call unpadded variants when you can make assumptions about the length of
 -- your input data.
 --
--- See: RFC-4648 section 3.2
+-- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 encodeBase64Unpadded :: ByteString -> ByteString
 encodeBase64Unpadded = encodeB64Unpadded base64Table
@@ -59,7 +59,7 @@ encodeBase64Unpadded = encodeB64Unpadded base64Table
 
 -- | Decode an unpadded base64-encoded 'ByteString'
 --
--- See: RFC-4648 section 3.2
+-- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded = decodeB64 decodeB64Table
