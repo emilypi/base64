@@ -39,7 +39,6 @@ module Data.ByteString.Base64.Internal
 
 import Data.Bits
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
 import Data.ByteString.Internal
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -59,41 +58,46 @@ import System.IO.Unsafe
 -- | Only the lookup table need be a foreignptr,
 -- and then, only so that we can automate some touches to keep it alive
 --
-data T2 = T2
+data EncodingTable = EncodingTable
   {-# UNPACK #-} !(Ptr Word8)
   {-# UNPACK #-} !(ForeignPtr Word16)
 
-packTable :: Addr# -> T2
+-- | Allocate and fill @n@ bytes with some data
+--
+writeNPlainForeignPtrBytes
+    :: ( Storable a
+       , Storable b
+       )
+    => Int
+    -> [a]
+    -> ForeignPtr b
+writeNPlainForeignPtrBytes !n as = unsafeDupablePerformIO $ do
+    fp <- mallocPlainForeignPtrBytes n
+    withForeignPtr fp $ \p -> go p as
+    return (castForeignPtr fp)
+  where
+    go !_ [] = return ()
+    go !p (x:xs) = poke p x >> go (plusPtr p 1) xs
+
+packTable :: Addr# -> EncodingTable
 packTable alphabet = etable
   where
     ix (I# n) = W8# (indexWord8OffAddr# alphabet n)
-    {-# INLINE ix #-}
 
-    !etable = unsafeDupablePerformIO $ do
-
-      -- Bytestring pack without the intermediate wrapper.
-      -- TODO: factor out as CString
-      --
+    !etable =
       let bs = concat
             [ [ ix i, ix j ]
             | !i <- [0..63]
             , !j <- [0..63]
             ]
-
-          go !_ [] = return ()
-          go !p (a:as) = poke p a >> go (plusPtr p 1) as
-          {-# INLINE go #-}
-
-      !efp <- mallocPlainForeignPtrBytes 8192
-      withForeignPtr efp $ \p -> go p bs
-      return (T2 (Ptr alphabet) (castForeignPtr efp))
+      in EncodingTable (Ptr alphabet) (writeNPlainForeignPtrBytes 8192 bs)
 {-# INLINE packTable #-}
 
-base64UrlTable :: T2
+base64UrlTable :: EncodingTable
 base64UrlTable = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"#
 {-# NOINLINE base64UrlTable #-}
 
-base64Table :: T2
+base64Table :: EncodingTable
 base64Table = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
 {-# NOINLINE base64Table #-}
 
@@ -101,8 +105,8 @@ base64Table = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012
 -- -------------------------------------------------------------------------- --
 -- Unpadded Base64
 
-encodeB64Unpadded :: T2 -> ByteString -> ByteString
-encodeB64Unpadded (T2 _ !efp) (PS sfp !soff !slen) =
+encodeB64Unpadded :: EncodingTable -> ByteString -> ByteString
+encodeB64Unpadded (EncodingTable _ !efp) (PS sfp !soff !slen) =
     unsafeCreate dlen $ \dptr ->
     withForeignPtr sfp $ \sptr ->
     withForeignPtr efp $ \eptr ->
@@ -112,7 +116,6 @@ encodeB64Unpadded (T2 _ !efp) (PS sfp !soff !slen) =
         (castPtr dptr)
         (plusPtr sptr (soff + slen))
   where
-    dlen :: Int
     !dlen = 4 * ((slen + 2) `div` 3)
 {-# INLINE encodeB64Unpadded #-}
 
@@ -153,8 +156,8 @@ encodeB64UnpaddedInternal etable sptr dptr end = go sptr dptr
 -- -------------------------------------------------------------------------- --
 -- Padded Base64
 
-encodeB64Padded :: T2 -> ByteString -> ByteString
-encodeB64Padded (T2 !aptr !efp) (PS !sfp !soff !slen) =
+encodeB64Padded :: EncodingTable -> ByteString -> ByteString
+encodeB64Padded (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
     unsafeCreate dlen $ \dptr ->
     withForeignPtr sfp $ \sptr ->
     withForeignPtr efp $ \eptr ->
@@ -247,9 +250,7 @@ encodeB64PaddedInternal (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
 -- | Non-URLsafe b64 decoding table (naive)
 --
 decodeB64Table :: ForeignPtr Word8
-decodeB64Table = dtfp
-  where
-    PS !dtfp _ _ = BS.pack
+decodeB64Table = writeNPlainForeignPtrBytes @Word8 256
       [ 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
       , 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
       , 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x3e,0xff,0xff,0xff,0x3f
@@ -270,9 +271,7 @@ decodeB64Table = dtfp
 {-# NOINLINE decodeB64Table #-}
 
 decodeB64UrlTable :: ForeignPtr Word8
-decodeB64UrlTable = dtfp
-  where
-    PS !dtfp _ _ = BS.pack
+decodeB64UrlTable = writeNPlainForeignPtrBytes @Word8 256
       [ 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
       , 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
       , 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x3e,0xff,0xff
@@ -295,11 +294,11 @@ decodeB64UrlTable = dtfp
 decodeB64 :: ForeignPtr Word8 -> ByteString -> Either Text ByteString
 decodeB64 !dtfp (PS !sfp !soff !slen)
     | r /= 0 = Left "invalid padding"
-    | otherwise = unsafeDupablePerformIO $ do
-      !dfp <- mallocPlainForeignPtrBytes dlen
-      withForeignPtr dfp $ \dptr ->
-        withForeignPtr dtfp $ \dtable ->
-        withForeignPtr sfp $ \sptr ->
+    | otherwise = unsafeDupablePerformIO $
+      withForeignPtr dtfp $ \dtable ->
+        withForeignPtr sfp $ \sptr -> do
+        dfp <- mallocPlainForeignPtrBytes dlen
+        withForeignPtr dfp $ \dptr ->
           decodeB64Internal
             dtable
             (plusPtr sptr soff)
@@ -341,13 +340,10 @@ decodeB64Internal !dtable !sptr !dptr !end !dfp = go dptr sptr 0
     go !dst !src !n
       | src >= end = return (Right (PS dfp 0 n))
       | otherwise = do
-        !a <- look src
-        !b <- look (src `plusPtr` 1)
-        !c <- look (src `plusPtr` 2)
-        !d <- look (src `plusPtr` 3)
-
-        let !w = (a `shiftL` 18) .|. (b `shiftL` 12) .|.
-              (c `shiftL` 6) .|. d
+        a <- look src
+        b <- look (src `plusPtr` 1)
+        c <- look (src `plusPtr` 2)
+        d <- look (src `plusPtr` 3)
 
         if a == 0x63 || b == 0x63
         then err
@@ -359,6 +355,11 @@ decodeB64Internal !dtable !sptr !dptr !end !dfp = go dptr sptr 0
             $ "invalid base64 encoding near offset: "
             ++ show (src `minusPtr` sptr)
           else do
+            let !w = (a `shiftL` 18)
+                  .|. (b `shiftL` 12)
+                  .|. (c `shiftL` 6)
+                  .|. d
+
             poke @Word8 dst (fromIntegral (w `shiftR` 16))
             if c == 0x63
             then finalize (n + 1)
