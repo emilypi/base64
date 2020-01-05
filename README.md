@@ -45,7 +45,7 @@ b :: Lens' MyStruct Text
 b = lens _b (\t b_ -> t { _b = b_ })
 
 myB64Struct :: Traversal' s Text
-myB64Struct = b . _Base64
+myB64Struct = b . _Base64Text
 
 -- >>> MyStruct 3 "U3Vu" ^? b . _Base64
 -- MyStruct {_a = 3, _b = "Sun"}
