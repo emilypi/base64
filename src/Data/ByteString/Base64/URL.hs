@@ -25,14 +25,14 @@ import Data.Text (Text)
 
 -- | Encode a 'ByteString' in base64-url with padding.
 --
--- See: RFC-4648 section 5
+-- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
 --
 encodeBase64 :: ByteString -> ByteString
 encodeBase64 = encodeB64Padded base64UrlTable
 
 -- | Decode a padded base64-url encoded 'ByteString'
 --
--- See: RFC-4648 section 4
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 = decodeB64 decodeB64UrlTable
@@ -48,14 +48,14 @@ decodeBase64 = decodeB64 decodeB64UrlTable
 -- Only call unpadded variants when you can make assumptions about the length of
 -- your input data.
 --
--- See: RFC-4648 section 3.2
+-- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 encodeBase64Unpadded :: ByteString -> ByteString
 encodeBase64Unpadded = encodeB64Unpadded base64UrlTable
 
 -- | Decode an unpadded base64-url encoded 'ByteString'
 --
--- See: RFC-4648 section 4
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded = decodeB64 decodeB64UrlTable

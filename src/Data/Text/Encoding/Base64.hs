@@ -26,14 +26,14 @@ import qualified Data.Text.Encoding as T
 
 -- | Encode 'Text' in base64 with padding.
 --
--- See: RFC-4648 section 5
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 encodeBase64 :: Text -> Text
 encodeBase64 = T.decodeUtf8 . B64.encodeBase64 . T.encodeUtf8
 
 -- | Decode a padded base64 encoded 'Text' value
 --
--- See: RFC-4648 section 4
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: Text -> Either Text Text
 decodeBase64 = fmap T.decodeUtf8 . B64.decodeBase64 . T.encodeUtf8
@@ -49,7 +49,7 @@ decodeBase64 = fmap T.decodeUtf8 . B64.decodeBase64 . T.encodeUtf8
 -- Only call unpadded variants when you can make assumptions about the length of
 -- your input data.
 --
--- See: RFC-4648 section 3.2
+-- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 encodeBase64Unpadded :: Text -> Text
 encodeBase64Unpadded = T.decodeUtf8
@@ -58,7 +58,7 @@ encodeBase64Unpadded = T.decodeUtf8
 
 -- | Decode an unpadded base64 encoded 'Text'
 --
--- See: RFC-4648 section 4
+-- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 decodeBase64Unpadded :: Text -> Either Text Text
 decodeBase64Unpadded = fmap T.decodeUtf8
