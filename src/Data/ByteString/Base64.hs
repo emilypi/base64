@@ -37,7 +37,7 @@ encodeBase64 = encodeBase64_ True base64Table
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 = decodeB64 decodeB64Table
+decodeBase64 = decodeBase64_ decodeB64Table
 {-# INLINE decodeBase64 #-}
 
 -- | Encode a 'ByteString' in base64 without padding.
@@ -62,5 +62,5 @@ encodeBase64Unpadded = encodeBase64_ False base64Table
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
-decodeBase64Unpadded = decodeB64 decodeB64Table
+decodeBase64Unpadded = decodeBase64_ decodeB64Table
 {-# INLINE decodeBase64Unpadded #-}
