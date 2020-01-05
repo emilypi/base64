@@ -19,7 +19,7 @@ module Data.ByteString.Base64.Internal
   encodeBase64_
 
   -- * Base64 decoding
-, decodeB64
+, decodeBase64_
 
   -- * Decoding Tables
   -- ** Standard
@@ -246,15 +246,15 @@ decodeB64UrlTable = writeNPlainForeignPtrBytes @Word8 256
       ]
 {-# NOINLINE decodeB64UrlTable #-}
 
-decodeB64 :: ForeignPtr Word8 -> ByteString -> Either Text ByteString
-decodeB64 !dtfp (PS !sfp !soff !slen)
+decodeBase64_ :: ForeignPtr Word8 -> ByteString -> Either Text ByteString
+decodeBase64_ !dtfp (PS !sfp !soff !slen)
     | r /= 0 = Left "invalid padding"
     | otherwise = unsafeDupablePerformIO $
       withForeignPtr dtfp $ \dtable ->
         withForeignPtr sfp $ \sptr -> do
         dfp <- mallocPlainForeignPtrBytes dlen
         withForeignPtr dfp $ \dptr ->
-          decodeB64Internal
+          decodeBase64_'
             dtable
             (plusPtr sptr soff)
             dptr
@@ -263,9 +263,9 @@ decodeB64 !dtfp (PS !sfp !soff !slen)
   where
     (!q, !r) = divMod slen 4
     !dlen = q * 3
-{-# INLINE decodeB64 #-}
+{-# INLINE decodeBase64_ #-}
 
-decodeB64Internal
+decodeBase64_'
     :: Ptr Word8
         -- ^ decode lookup table
     -> Ptr Word8
@@ -277,7 +277,7 @@ decodeB64Internal
     -> ForeignPtr Word8
         -- ^ dst foreign ptr (for consing bs)
     -> IO (Either Text ByteString)
-decodeB64Internal !dtable !sptr !dptr !end !dfp = go dptr sptr 0
+decodeBase64_' !dtable !sptr !dptr !end !dfp = go dptr sptr 0
   where
     err = return . Left . T.pack
     {-# INLINE err #-}
@@ -325,4 +325,4 @@ decodeB64Internal !dtable !sptr !dptr !end !dfp = go dptr sptr 0
               else do
                 poke @Word8 (dst `plusPtr` 2) (fromIntegral w)
                 go (dst `plusPtr` 3) (src `plusPtr` 4) (n + 3)
-{-# INLINE decodeB64Internal #-}
+{-# INLINE decodeBase64_' #-}

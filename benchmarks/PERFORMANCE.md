@@ -4,9 +4,11 @@ The story so far:
 
 - 3x encoding/decoding performance for bytestrings ∊ \[0, 100\[
 - 2x encoding/decoding performance for bytestrings ∊ ]100, 1000\[
-- Better performance improvements of 1-3μs up to 1,000,000, diminishing returns after. 
+- 1-2μs improvement in encoding/decoding performance for bytestrings ∊ ]1000, 10,000[
+- 2-3μs improvement in encoding/decoding performance for bytestrings ∊ ]10,000, 1,000,000]
+- Smaller heap footprint in general.
 
-Most of this performance increase for smaller bytestrings is due to optimization of the building of the encoding tables. Additionally, I've factored out several read/writes and unnecessary IO done in `bytestring-base64`. The inner loop is as optimized as it can be for `Word16`-based optimizations (3 8-Byte reads, 2 12-Byte writes), and the tail completion is optimized by elimating 4 unnecessary reads, and using one big `if-then-else` branch to eliminate 1 read and 1 write per case. Smaller improvements have been the elimination of unnecessary wrappers (i.e. not using `BS.pack` and simply `malloc`'ing and rolling my own pointers), as well as properly inlining auxiliary functions which failed to inline in Bos' version. Additionally, using unpacked `Addr#`'s for the alphabet means we don't have to use a `ForeignPtr` box or touch it unnecessarily. See the outputs in the benchmarks directory for more detail.. 
+Most of this performance increase for smaller bytestrings is due to optimization of the building of the encoding tables. Additionally, I've factored out several read/writes and unnecessary IO done in `bytestring-base64`. The inner loop is as optimized as it can be for `Word16`-based optimizations (3 8-Byte reads, 2 12-Byte writes), and the tail completion is optimized by elimating 4 unnecessary reads, and using one big `if-then-else` branch to eliminate 1 read and 1 write per case. Smaller improvements have been the elimination of unnecessary wrappers (i.e. not using `BS.pack` and simply `malloc`'ing and rolling my own pointers), as well as properly inlining auxiliary functions which failed to inline in Bos' version. Additionally, using unpacked `Addr#`'s for the alphabet means we don't have to use a `ForeignPtr` box or touch it unnecessarily. See the outputs in the benchmarks directory for more detail..
 
 ### Improvements
 
@@ -14,6 +16,8 @@ My suspicion is that we can get away with 1 `Word32` read, discard the upper 8 b
 
 ### To come later
 
-Daniel Lemire has a great [blog post](https://lemire.me/blog/2018/01/17/ridiculously-fast-base64-encoding-and-decoding/) detailing how he and Wojciech Mula implemented fast AVX and SSE base64 vectorization with a nifty library to boot. This has all been incorporated into Alfred Klomp's [base64](https://github.com/aklomp/base64) library, which is very up to date. The speed up people see is *massive*, and is BSD-2. We can inline the useful portions of the library along with the copyright notice in `cbits` and be very happy. 
+Daniel Lemire has a great [blog post](https://lemire.me/blog/2018/01/17/ridiculously-fast-base64-encoding-and-decoding/) detailing how he and Wojciech Mula implemented fast AVX and SSE base64 vectorization with a nifty library to boot. This has all been incorporated into Alfred Klomp's [base64](https://github.com/aklomp/base64) library, which is very up to date. The speed up people see is *massive*, and is BSD-2. We can inline the useful portions of the library along with the copyright notice in `cbits` and be very happy.
 
+### Update
 
+Using Wojciech Mula's implementation as Cbits, i'm happy to report that it may be a useful gain, but only for bytestrings greater than 1,000,000B in size, as the cost of an FFI call is too great for smaller bytestrings. The 12-bit lookup table for >=32-bit word architectures is still optimal. In the future, I'd like to implement Alfred Klomp's rounds in Haskell, optimizing for 64B words.
