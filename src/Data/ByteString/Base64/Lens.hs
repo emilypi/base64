@@ -104,18 +104,26 @@ _Base64UrlUnpadded = prism' B64U.encodeBase64Unpadded $ \s -> case B64U.decodeBa
 -- -------------------------------------------------------------------------- --
 -- Patterns
 
+-- | Unidirectional pattern synonym for base64-encoded 'ByteString' values.
+--
 pattern Base64 :: ByteString -> ByteString
 pattern Base64 a <- (preview _Base64 -> Just a) where
     Base64 a = _Base64 # a
 
+-- | Unidirectional pattern synonym for base64url-encoded 'ByteString' values.
+--
 pattern Base64Url :: ByteString -> ByteString
 pattern Base64Url a <- (preview _Base64Url -> Just a) where
     Base64Url a = _Base64Url # a
 
+-- | Unidirectional pattern synonym for unpadded base64-encoded 'ByteString' values.
+--
 pattern Base64Unpadded :: ByteString -> ByteString
 pattern Base64Unpadded a <- (preview _Base64Unpadded -> Just a) where
     Base64Unpadded a = _Base64Unpadded # a
 
+-- | Unidirectional pattern synonym for unpadded base64url-encoded 'ByteString' values.
+--
 pattern Base64UrlUnpadded :: ByteString -> ByteString
 pattern Base64UrlUnpadded a <- (preview _Base64UrlUnpadded -> Just a) where
     Base64UrlUnpadded a = _Base64UrlUnpadded # a
