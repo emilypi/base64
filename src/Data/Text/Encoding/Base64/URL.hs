@@ -1,3 +1,4 @@
+{-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.URL
 -- Copyright 	: (c) 2019 Emily Pillmore
