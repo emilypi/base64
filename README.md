@@ -1,6 +1,6 @@
 # Base64
 
-[![Build Status](https://travis-ci.com/emilypi/base64.svg?branch=master)](https://travis-ci.com/emilypi/base64
+[![Build Status](https://travis-ci.com/emilypi/base64.svg?branch=master)](https://travis-ci.com/emilypi/base64)
 [![Hackage](https://img.shields.io/hackage/v/base64.svg)](https://hackage.haskell.org/package/base64)
 
 Padded and unpadded base64 and base64url encodings for `Text` and `ByteString` values, along with their optics.
