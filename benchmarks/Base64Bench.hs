@@ -33,14 +33,14 @@ import qualified Data.Text.Encoding.Base64 as B64T
 
 main :: IO ()
 main = defaultMain
-    $ -- fmap (benchN random encode) sizes
-    fmap (benchN (fmap B64.encodeBase64 . random) decode) sizes
+    $ fmap (benchN random encode_) sizes
+    <> fmap (benchN (fmap B64.encodeBase64 . random) decode_) sizes
 
   where
     sizes = [25,100,1000,10000,100000]
     benchN f bs n = env (f n) $ bgroup (show n) . bs
 
-    encode e =
+    encode_ e =
       [ bgroup "base64 encode"
         [ encodeBench @'Mem e
         , encodeBench @'Bos e
@@ -48,7 +48,7 @@ main = defaultMain
         ]
       ]
 
-    decode e =
+    decode_ e =
       [ bgroup "base64 decode"
         [ decodeBench @'Mem e
         , decodeBench @'Bos e
