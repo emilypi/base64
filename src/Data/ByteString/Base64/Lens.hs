@@ -67,7 +67,7 @@ _Base64Url = prism' B64U.encodeBase64 $ \s -> case B64U.decodeBase64 s of
 -- Just "Sun"
 --
 _Base64Unpadded :: Prism' ByteString ByteString
-_Base64Unpadded = prism' B64.encodeBase64 $ \s -> case B64U.decodeBase64 s of
+_Base64Unpadded = prism' B64.encodeBase64Unpadded $ \s -> case B64.decodeBase64Unpadded s of
     Left _ -> Nothing
     Right a -> Just a
 {-# INLINE _Base64Unpadded #-}
@@ -85,7 +85,7 @@ _Base64Unpadded = prism' B64.encodeBase64 $ \s -> case B64U.decodeBase64 s of
 -- Just "<<??>>"
 --
 _Base64UrlUnpadded :: Prism' ByteString ByteString
-_Base64UrlUnpadded = prism' B64.encodeBase64 $ \s -> case B64U.decodeBase64Unpadded s of
+_Base64UrlUnpadded = prism' B64U.encodeBase64Unpadded $ \s -> case B64U.decodeBase64Unpadded s of
     Left _ -> Nothing
     Right a -> Just a
 {-# INLINE _Base64UrlUnpadded #-}
