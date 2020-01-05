@@ -6,11 +6,42 @@
 Padded and unpadded base64 and base64url encodings for `Text` and `ByteString` values, along with their optics.
 
 
-### Why?
+### Summary
+
+What does this library provide? Here is the summary:
+
+- Better performance over existing Base64 libraries (2x and 3x for most use-cases - see [PERFORMANCE.md](benchmarks/PERFORMANCE.md))
+- Support for unpadded Base64 and Base64-url
+- Support for `Text` encodings and decodings
+- Optics for handling more complex structures with Base64 representations
+
+
+### Motivation
 
 Haskell has two main libraries for Base64: `memory`, and `base64-bytestring`.
 
-Of these, `memory` is geared towards integration with other memory primitives in the library, without much of an eye towards performance, while `base64-bytestring` is built to exclusively address `ByteString` encoding and decoding, and is very performant. Many great strides have been made in the realm of Base64 performance and vectorization just in the past 5 years, which this library attempts to capture. Additionally, we attempt to fix percieved shortcomings with both APIs in the support of unpadded Base64 and Base64-url support (which `memory` provides, but not `base64-bytestring`), as well as supporting `Text` values (neither libraries provide), and also supplying some nice compositional optics for composing structures with Base64-encodable/decodable focii (neither libraries provide).
+Of these, `memory` is geared towards integration with other memory primitives in the library, without much of an eye towards performance, while `base64-bytestring` is built to exclusively address `ByteString` encoding and decoding, and is very performant. Many great strides have been made in the realm of Base64 performance and vectorization just in the past 5 years, which this library attempts to capture. Additionally, we attempt to fix percieved shortcomings with both APIs in the support of unpadded Base64 and Base64-url support (which `memory` provides, but not `base64-bytestring`), as well as supporting `Text` values (neither libraries provide), supplying some optics for composing structures with Base64-encodable/decodable focii (neither libraries provide), and convenient pattern synonyms (no library to date does this).
+
+### Patterns
+
+The pattern synonyms provided in this library are:
+
+```haskell
+pattern Base64 :: ByteString -> ByteString
+pattern Base64Url :: ByteString -> ByteString
+pattern Base64Unpadded :: ByteString -> ByteString
+pattern Base64UrlUnpadded :: ByteString -> ByteString
+
+-- and
+
+pattern Base64 :: Text -> Text
+pattern Base64Url :: Text -> Text
+pattern Base64Unpadded :: Text -> Text
+pattern Base64UrlUnpadded :: Text -> Text
+```
+
+These provide a convenient high level interface for passing Base64 encoded values.
+
 
 ### Optics
 
@@ -58,12 +89,3 @@ bRe = unto (\b -> MyStruct 0 b)
 ```
 
 The data of a `Prism` naturally conforms to this "encoding/decoding" dichotomy, where the `Review`, or "builder" half of the `Prism` of type `b -> t` is an encoding, and the "Matcher" half of the prism, of type `s -> Either t a`, represents a decoding of a similar structure. Hence, `Prism` is the most appropriate structure.
-
-### Summary
-
-What does this library provide? Here is the summary:
-
-- Better performance over existing Base64 libraries (2x and 3x for most use-cases - see [PERFORMANCE.md](benchmarks/PERFORMANCE.md))
-- Support for unpadded Base64 and Base64-url
-- Support for `Text` encodings and decodings
-- Classy optics for handling more complex structures with Base64 representations
