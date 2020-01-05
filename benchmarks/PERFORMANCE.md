@@ -1,11 +1,4 @@
-# Base64
-
-[![Build Status](https://travis-ci.com/emilypi/base64.svg?branch=master)](https://travis-ci.com/emilypi/base64)
-
-Padded and unpadded base64 and base64url encodings
-
-
-### Performance
+## Performance
 
 The story so far:
 
