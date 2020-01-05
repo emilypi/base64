@@ -36,8 +36,19 @@ If a particular structure has a `Lens` into some `Text` or `ByteString` value th
 
 ```haskell
 
+data MyStruct = MyStruct
+  { _a :: Int
+  , _b :: Text
+  }
+
+b :: Lens' MyStruct Text
+b = lens _b (\t b_ -> t { _b = b_ })
+
 myB64Struct :: Traversal' s Text
-myB64Struct = myLens . _Base64
+myB64Struct = b . _Base64
+
+-- >>> MyStruct 3 "U3Vu" ^? b . _Base64
+-- MyStruct 3 "Sun"
 
 ```
 
