@@ -17,8 +17,8 @@
 --
 module Data.ByteString.Base64.Lens
 ( -- * Classy Prisms
-  HasBase64(..)
-, HasBase64Unpadded(..)
+  AsBase64(..)
+, AsBase64Unpadded(..)
 ) where
 
 
@@ -33,7 +33,7 @@ import qualified Data.ByteString.Base64.URL as B64U
 -- for any of its focii, this class provides the optical interface
 -- for satisfying the padded base64 spec in RFC 4648
 --
-class HasBase64 s where
+class AsBase64 s where
     type Base64 s
     -- | A prism into a base64-encoded focus of
     -- some type
@@ -65,7 +65,7 @@ class HasBase64 s where
 -- for any of its focii, this class provides the optical interface
 -- for satisfying the unpadded base64 spec in RFC 4648
 --
-class HasBase64Unpadded s where
+class AsBase64Unpadded s where
     type Base64Unpadded s
     -- | A prism into the unpadded base64-encoded focus of
     -- some type
@@ -78,7 +78,7 @@ class HasBase64Unpadded s where
     _Base64UrlUnpadded :: Prism' s (Base64Unpadded s)
 
 
-instance HasBase64 ByteString where
+instance AsBase64 ByteString where
     type Base64 ByteString = ByteString
 
     _Base64 = prism' B64.encodeBase64 $ \s -> case B64.decodeBase64 s of
@@ -91,7 +91,7 @@ instance HasBase64 ByteString where
       Right a -> Just a
     {-# INLINE _Base64Url #-}
 
-instance HasBase64Unpadded ByteString where
+instance AsBase64Unpadded ByteString where
     type Base64Unpadded ByteString = ByteString
 
     _Base64Unpadded = prism' B64.encodeBase64 $ \s -> case B64U.decodeBase64 s of
