@@ -17,17 +17,16 @@ Of these, `memory` is geared towards integration with other memory primitives in
 Structs may want to support encoding and decoding their substructures, which is supported with the following prismatic typeclass:
 
 ```haskell
-class AsBase64 s where
-    type Base64 s
+class AsBase64 s a | s -> a where
     -- | A prism into a base64-encoded focus of
     -- some type
     --
-    _Base64 :: Prism' s (Base64 s)
+    _Base64 :: Prism' s a
 
     -- | A prism into the base64url-encoded focus of
     -- some type
     --
-    _Base64Url :: Prism' s (Base64 s)
+    _Base64Url :: Prism' s a
 ```
 
 The data of a `Prism` naturally conforms to this "encoding/decoding" dichotomy, where the `Review`, or "builder" half of the `Prism` of type `b -> t` is an encoding, and the "Matcher" half of the prism, of type `s -> Either t a`, represents a decoding of a similar structure. Monomorphizing for `t ~ s` and `a ~ b`, a simple `Prism` is formed:
