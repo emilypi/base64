@@ -25,10 +25,10 @@ _Base64UrlUnpadded :: Prism' ByteString ByteString
 
 -- and
 
-_Base64Text :: Prism' Text Text
-_Base64UrlText :: Prism' Text Text
-_Base64UnpaddedText :: Prism' Text Text
-_Base64UrlUnpaddedText :: Prism' Text Text
+_Base64 :: Prism' Text Text
+_Base64Url :: Prism' Text Text
+_Base64Unpadded :: Prism' Text Text
+_Base64UrlUnpadded :: Prism' Text Text
 
 ```
 
@@ -45,7 +45,7 @@ b :: Lens' MyStruct Text
 b = lens _b (\t b_ -> t { _b = b_ })
 
 myB64Struct :: Traversal' s Text
-myB64Struct = b . _Base64Text
+myB64Struct = b . _Base64
 
 -- >>> MyStruct 3 "U3Vu" ^? b . _Base64
 -- MyStruct {_a = 3, _b = "Sun"}
@@ -53,7 +53,7 @@ myB64Struct = b . _Base64Text
 bRe :: Review MyStruct Text
 bRe = unto (\b -> MyStruct 0 b)
 
--- >>> bRe . _Base64Text # "Sun"
+-- >>> bRe . _Base64 # "Sun"
 -- MyStruct {_a = 0, _b = "UV3u"}
 ```
 

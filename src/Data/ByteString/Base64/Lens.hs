@@ -1,3 +1,5 @@
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE ViewPatterns #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.Lens
 -- Copyright 	: (c) 2019 Emily Pillmore
@@ -5,7 +7,7 @@
 --
 -- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
 -- Stability	: Experimental
--- Portability	: portable
+-- Portability	: non-portable
 --
 -- This module contains 'Control.Lens.Type.Prism's Base64-encoding and
 -- decoding 'ByteString' values.
@@ -16,6 +18,11 @@ module Data.ByteString.Base64.Lens
 , _Base64Url
 , _Base64Unpadded
 , _Base64UrlUnpadded
+  -- * Patterns
+, pattern Base64
+, pattern Base64Url
+, pattern Base64Unpadded
+, pattern Base64UrlUnpadded
 ) where
 
 
@@ -24,6 +31,10 @@ import Control.Lens
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Base64.URL as B64U
+
+
+-- -------------------------------------------------------------------------- --
+-- Optics
 
 -- | A 'Control.Lens.Type.Prism' into the Base64 encoding of a 'ByteString' value
 --
@@ -89,3 +100,22 @@ _Base64UrlUnpadded = prism' B64U.encodeBase64Unpadded $ \s -> case B64U.decodeBa
     Left _ -> Nothing
     Right a -> Just a
 {-# INLINE _Base64UrlUnpadded #-}
+
+-- -------------------------------------------------------------------------- --
+-- Patterns
+
+pattern Base64 :: ByteString -> ByteString
+pattern Base64 a <- (preview _Base64 -> Just a) where
+    Base64 a = _Base64 # a
+
+pattern Base64Url :: ByteString -> ByteString
+pattern Base64Url a <- (preview _Base64Url -> Just a) where
+    Base64Url a = _Base64Url # a
+
+pattern Base64Unpadded :: ByteString -> ByteString
+pattern Base64Unpadded a <- (preview _Base64Unpadded -> Just a) where
+    Base64Unpadded a = _Base64Unpadded # a
+
+pattern Base64UrlUnpadded :: ByteString -> ByteString
+pattern Base64UrlUnpadded a <- (preview _Base64UrlUnpadded -> Just a) where
+    Base64UrlUnpadded a = _Base64UrlUnpadded # a
