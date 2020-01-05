@@ -34,7 +34,7 @@ import qualified Data.Text.Encoding.Base64 as B64T
 main :: IO ()
 main = defaultMain
     $ fmap (benchN random encode_) sizes
-    <> fmap (benchN (fmap B64.encodeBase64 . random) decode_) sizes
+    ++ fmap (benchN (fmap B64.encodeBase64 . random) decode_) sizes
 
   where
     sizes = [25,100,1000,10000,100000]
