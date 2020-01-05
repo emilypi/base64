@@ -28,7 +28,7 @@ import Data.Text (Text)
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
 --
 encodeBase64 :: ByteString -> ByteString
-encodeBase64 = encodeBase64_ True base64Table
+encodeBase64 = encodeBase64_ True base64UrlTable
 
 -- | Decode a padded base64-url encoded 'ByteString'
 --
