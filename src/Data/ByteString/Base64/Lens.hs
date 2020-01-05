@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.Lens
 -- Copyright 	: (c) 2019 Emily Pillmore
@@ -8,14 +7,15 @@
 -- Stability	: Experimental
 -- Portability	: portable
 --
--- This module contains the 'AsBase64' instance for @Text@, which is
--- defined to be the collection of 'Control.Lens.Type.Prism's defining the
--- RFC 4648 specification for the Base64 encoding format.
+-- This module contains 'Control.Lens.Type.Prism's Base64-encoding and
+-- decoding 'ByteString' values.
 --
 module Data.ByteString.Base64.Lens
-( -- * Classy Prisms
-  AsBase64(..)
-, AsBase64Unpadded(..)
+( -- * Prisms
+  _Base64
+, _Base64Url
+, _Base64Unpadded
+, _Base64UrlUnpadded
 ) where
 
 
@@ -25,72 +25,35 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Base64.URL as B64U
 
-
--- | If a particular type @s@ has a base64 representation
--- for any of its focii, this class provides the optical interface
--- for satisfying the padded base64 spec in RFC 4648
+-- | A 'Control.Lens.Type.Prism' into the Base64 encoding of a 'ByteString' value
 --
-class AsBase64 s where
-    -- | A prism into a base64-encoded focus of
-    -- some type
-    --
-    -- Examples:
-    --
-    -- >>> _Base64 @ByteString # "Sun"
-    -- "UV3u"
-    --    --
-    -- >>> "PDw/Pz8+Pg==" ^? _Base64
-    -- Just "<<???>>"
-    --
-    _Base64 :: Prism' s ByteString
+_Base64 :: Prism' ByteString ByteString
+_Base64 = prism' B64.encodeBase64 $ \s -> case B64.decodeBase64 s of
+    Left _ -> Nothing
+    Right a -> Just a
+{-# INLINE _Base64 #-}
 
-    -- | A prism into the base64url-encoded focus of
-    -- some type
-    --
-    -- Examples:
-    --
-    -- >>> _Base64Url @ByteString # "Sun"
-    -- "UV3u"
-    --
-    -- >>> "PDw_Pz8-Pg==" ^? _Base64Url
-    -- Just "<<???>>"
-    --
-    _Base64Url :: Prism' s ByteString
-
--- | If a particular type @a@ has an unpadded base64 representation
--- for any of its focii, this class provides the optical interface
--- for satisfying the unpadded base64 spec in RFC 4648
+-- | A 'Control.Lens.Type.Prism' into the Base64-url encoding of a 'ByteString' value
 --
-class AsBase64Unpadded s where
-    -- | A prism into the unpadded base64-encoded focus of
-    -- some type
-    --
-    _Base64Unpadded :: Prism' s ByteString
+_Base64Url :: Prism' ByteString ByteString
+_Base64Url = prism' B64U.encodeBase64 $ \s -> case B64U.decodeBase64 s of
+    Left _ -> Nothing
+    Right a -> Just a
+{-# INLINE _Base64Url #-}
 
-    -- | A prism into the unpadded base64url-encoded focus of
-    -- some type
-    --
-    _Base64UrlUnpadded :: Prism' s ByteString
+-- | A 'Control.Lens.Type.Prism' into the unpadded Base64 encoding of a
+-- 'ByteString' value
+--
+_Base64Unpadded :: Prism' ByteString ByteString
+_Base64Unpadded = prism' B64.encodeBase64 $ \s -> case B64U.decodeBase64 s of
+    Left _ -> Nothing
+    Right a -> Just a
+{-# INLINE _Base64Unpadded #-}
 
-
-instance AsBase64 ByteString where
-    _Base64 = prism' B64.encodeBase64 $ \s -> case B64.decodeBase64 s of
-      Left _ -> Nothing
-      Right a -> Just a
-    {-# INLINE _Base64 #-}
-
-    _Base64Url = prism' B64U.encodeBase64 $ \s -> case B64U.decodeBase64 s of
-      Left _ -> Nothing
-      Right a -> Just a
-    {-# INLINE _Base64Url #-}
-
-instance AsBase64Unpadded ByteString where
-    _Base64Unpadded = prism' B64.encodeBase64 $ \s -> case B64U.decodeBase64 s of
-      Left _ -> Nothing
-      Right a -> Just a
-    {-# INLINE _Base64Unpadded #-}
-
-    _Base64UrlUnpadded = prism' B64.encodeBase64 $ \s -> case B64U.decodeBase64Unpadded s of
-      Left _ -> Nothing
-      Right a -> Just a
-    {-# INLINE _Base64UrlUnpadded #-}
+-- | A 'Control.Lens.Type.Prism' into the Base64-url encoding of a 'ByteString' value
+--
+_Base64UrlUnpadded :: Prism' ByteString ByteString
+_Base64UrlUnpadded = prism' B64.encodeBase64 $ \s -> case B64U.decodeBase64Unpadded s of
+    Left _ -> Nothing
+    Right a -> Just a
+{-# INLINE _Base64UrlUnpadded #-}
