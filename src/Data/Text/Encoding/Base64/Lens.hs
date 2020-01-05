@@ -9,14 +9,14 @@
 -- Stability	: Experimental
 -- Portability	: TypeFamilies
 --
--- This module contains the 'HasBase64' and 'HasBase64Unpadded' instances
+-- This module contains the 'AsBase64' and 'AsBase64Unpadded' instances
 -- for 'Text', which defined to be the collection of 'Control.Lens.Type.Prism's defining the
 -- RFC 4648 specification for the padded and unpadded Base64 encoding format.
 --
 -- These typeclasses are re-exported for convenience
 --
 module Data.Text.Encoding.Base64.Lens
-( HasBase64(..)
+( AsBase64(..)
 , AsBase64Unpadded(..)
 ) where
 
