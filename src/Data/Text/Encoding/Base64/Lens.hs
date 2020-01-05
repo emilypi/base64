@@ -17,7 +17,7 @@
 --
 module Data.Text.Encoding.Base64.Lens
 ( HasBase64(..)
-, HasBase64Unpadded(..)
+, AsBase64Unpadded(..)
 ) where
 
 
@@ -29,7 +29,7 @@ import qualified Data.Text.Encoding.Base64 as B64T
 import qualified Data.Text.Encoding.Base64.URL as B64TU
 
 
-instance HasBase64 Text where
+instance AsBase64 Text where
     type Base64 Text = Text
 
     _Base64 = prism' B64T.encodeBase64 $ \s -> case B64T.decodeBase64 s of
@@ -42,7 +42,7 @@ instance HasBase64 Text where
       Right a -> Just a
     {-# INLINE _Base64Url #-}
 
-instance HasBase64Unpadded Text where
+instance AsBase64Unpadded Text where
     type Base64Unpadded Text = Text
 
     _Base64Unpadded = prism' B64T.encodeBase64 $ \s -> case B64T.decodeBase64 s of
