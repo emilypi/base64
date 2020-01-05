@@ -16,8 +16,7 @@
 --
 module Data.ByteString.Base64.Internal
 ( -- * Base64 encoding
-  encodeB64Padded
-, encodeB64Unpadded
+  encodeBase64_
 
   -- * Base64 decoding
 , decodeB64
@@ -36,6 +35,8 @@ module Data.ByteString.Base64.Internal
 , base64UrlTable
 ) where
 
+
+import Control.Monad (when)
 
 import Data.Bits
 import Data.ByteString (ByteString)
@@ -103,65 +104,15 @@ base64Table = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012
 
 
 -- -------------------------------------------------------------------------- --
--- Unpadded Base64
+-- Encode Base64
 
-encodeB64Unpadded :: EncodingTable -> ByteString -> ByteString
-encodeB64Unpadded (EncodingTable _ !efp) (PS sfp !soff !slen) =
+encodeBase64_ :: Bool -> EncodingTable -> ByteString -> ByteString
+encodeBase64_ padding (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
     unsafeCreate dlen $ \dptr ->
     withForeignPtr sfp $ \sptr ->
     withForeignPtr efp $ \eptr ->
-      encodeB64UnpaddedInternal
-        eptr
-        (plusPtr sptr soff)
-        (castPtr dptr)
-        (plusPtr sptr (soff + slen))
-  where
-    !dlen = 4 * ((slen + 2) `div` 3)
-{-# INLINE encodeB64Unpadded #-}
-
--- | Unpadded Base64. The implicit assumption is that the input
--- data has a length that is a multiple of 3
---
-encodeB64UnpaddedInternal
-    :: Ptr Word16
-    -> Ptr Word8
-    -> Ptr Word16
-    -> Ptr Word8
-    -> IO ()
-encodeB64UnpaddedInternal etable sptr dptr end = go sptr dptr
-  where
-    w32 :: Word8 -> Word32
-    w32 i = fromIntegral i
-    {-# INLINE w32 #-}
-
-    go !src !dst
-      | src >= end = return ()
-      | otherwise = do
-
-        !i <- w32 <$> peek src
-        !j <- w32 <$> peek (plusPtr src 1)
-        !k <- w32 <$> peek (plusPtr src 2)
-
-        let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
-
-        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
-        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
-
-        poke dst x
-        poke (plusPtr dst 2) y
-
-        go (plusPtr src 3) (plusPtr dst 4)
-{-# INLINE encodeB64UnpaddedInternal #-}
-
--- -------------------------------------------------------------------------- --
--- Padded Base64
-
-encodeB64Padded :: EncodingTable -> ByteString -> ByteString
-encodeB64Padded (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
-    unsafeCreate dlen $ \dptr ->
-    withForeignPtr sfp $ \sptr ->
-    withForeignPtr efp $ \eptr ->
-      encodeB64PaddedInternal
+      encodeBase64_'
+        padding
         aptr
         eptr
         (plusPtr sptr soff)
@@ -170,16 +121,17 @@ encodeB64Padded (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
   where
     dlen :: Int
     !dlen = 4 * ((slen + 2) `div` 3)
-{-# INLINE encodeB64Padded #-}
+{-# INLINE encodeBase64_ #-}
 
-encodeB64PaddedInternal
-    :: Ptr Word8
+encodeBase64_'
+    :: Bool
+    -> Ptr Word8
     -> Ptr Word16
     -> Ptr Word8
     -> Ptr Word16
     -> Ptr Word8
     -> IO ()
-encodeB64PaddedInternal (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
+encodeBase64_' !padded (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
   where
     ix (W8# i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
     {-# INLINE ix #-}
@@ -237,12 +189,15 @@ encodeB64PaddedInternal (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
           --
           pokeByteOff dst 1 (ix b')
           pokeByteOff dst 2 (ix c')
+
+          when padded (pokeByteOff @Word8 dst 3 0x3d)
+
         else do
           pokeByteOff dst 1 (ix b)
-          pokeByteOff @Word8 dst 2 0x3d
-
-        pokeByteOff @Word8 dst 3 0x3d
-{-# INLINE encodeB64PaddedInternal #-}
+          when padded $ do
+            pokeByteOff @Word8 dst 2 0x3d
+            pokeByteOff @Word8 dst 3 0x3d
+{-# INLINE encodeBase64_' #-}
 
 -- -------------------------------------------------------------------------- --
 -- Decoding Base64
