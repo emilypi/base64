@@ -18,7 +18,7 @@ extra-source-files:
   CHANGELOG.md
   README.md
 
-tested-with:         GHC ==8.8.1 || ==8.6.5 || ==8.6.3 || ==8.4.4 || ==8.4.3 || ==8.0.2
+tested-with:         GHC ==8.8.1 || ==8.6.5 || ==8.6.3 || ==8.4.4 || ==8.4.3 || ==8.2.2
 
 source-repository head
   type:     git
@@ -45,7 +45,7 @@ library
 
   other-modules:       Data.ByteString.Base64.Internal
 
-  build-depends:       base       >=4.9 && <5
+  build-depends:       base       >=4.10 && <5
                      , bytestring
                      , deepseq
                      , text
@@ -70,7 +70,7 @@ test-suite tasty
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Base64Tests.hs
-  build-depends:       base >=4.9 && <5
+  build-depends:       base >=4.10 && <5
                      , base64
                      , base64-bytestring
                      , random-bytestring
@@ -85,7 +85,7 @@ benchmark bench
   type:                exitcode-stdio-1.0
   hs-source-dirs:      benchmarks
   main-is:             Base64Bench.hs
-  build-depends:       base >=4.9 && <5
+  build-depends:       base >=4.10 && <5
                      , base64
                      , base64-bytestring
                      , bytestring
