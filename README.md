@@ -39,7 +39,7 @@ If a particular structure has a `Lens` into some `Text` or `ByteString` value th
 data MyStruct = MyStruct
   { _a :: Int
   , _b :: Text
-  }
+  } deriving Show
 
 b :: Lens' MyStruct Text
 b = lens _b (\t b_ -> t { _b = b_ })
@@ -48,8 +48,13 @@ myB64Struct :: Traversal' s Text
 myB64Struct = b . _Base64
 
 -- >>> MyStruct 3 "U3Vu" ^? b . _Base64
--- MyStruct 3 "Sun"
+-- MyStruct {_a = 3, _b = "Sun"}
 
+bRe :: Review MyStruct Text
+bRe = unto (\b -> MyStruct 0 b)
+
+-- >>> bRe . _Base64Text # "Sun"
+-- MyStruct {_a = 0, _b = "UV3u"}
 ```
 
 The data of a `Prism` naturally conforms to this "encoding/decoding" dichotomy, where the `Review`, or "builder" half of the `Prism` of type `b -> t` is an encoding, and the "Matcher" half of the prism, of type `s -> Either t a`, represents a decoding of a similar structure. Hence, `Prism` is the most appropriate structure.
