@@ -57,6 +57,9 @@ encodeBase64Unpadded = BS.takeWhile ((/=) 0x3d) . encodeBase64_ True base64UrlTa
 -- of 4, then padding chars will /not/ be added to fill out the input to a multiple of
 -- 4.
 --
+-- In general, unless unpadded base64url is explicitly required, it is
+-- safer to call the padded decode fuction.
+--
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
@@ -65,9 +68,8 @@ decodeBase64Unpadded = decodeBase64_ False decodeB64UrlTable
 -- | Decode an unpadded base64-url encoded 'ByteString'. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the bytestring.
 --
--- __Note:__ this function is not RFC 4648 compliant, but covers a common use-case in
--- base6url encoded data in which padding is considered optional. In general you should
--- prefer to call this function if you're ever working with foreign encoded data.
+-- __Note:__ This function is not RFC 4648 compliant, but it will never throw due to
+-- parsing errors.
 --
 decodeBase64Lenient :: ByteString -> ByteString
 decodeBase64Lenient = undefined
