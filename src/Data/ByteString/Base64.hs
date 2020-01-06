@@ -78,5 +78,5 @@ decodeBase64Unpadded = decodeBase64_ False decodeB64Table
 -- base64 encoded data (only base64url), but it's trivial to support.
 --
 decodeBase64Lenient :: ByteString -> ByteString
-decodeBase64Lenient = fromRight mempty . decodeBase64_ True decodeB64Table
+decodeBase64Lenient = undefined
 {-# INLINE decodeBase64Lenient #-}
