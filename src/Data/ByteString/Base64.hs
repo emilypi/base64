@@ -16,6 +16,7 @@ module Data.ByteString.Base64
 , decodeBase64
 , encodeBase64Unpadded
 , decodeBase64Unpadded
+, decodeBase64Lenient
 ) where
 
 
@@ -57,10 +58,24 @@ encodeBase64Unpadded :: ByteString -> ByteString
 encodeBase64Unpadded = encodeBase64_ False base64Table
 {-# INLINE encodeBase64Unpadded #-}
 
--- | Decode an unpadded base64-encoded 'ByteString'
+-- | Decode an unpadded base64-encoded 'ByteString'.
+--
+-- __Note:__ Only call unpadded variants when you can make assumptions
+-- about the length of your input data.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded = decodeBase64_ False decodeB64Table
+{-# INLINE decodeBase64Unpadded #-}
+
+-- | Decode an unpadded base64-encoded 'ByteString' by padding out its
+-- bytes to a multiple of 4 first, then decoding.
+--
+-- __Note:__ This is not RFC 4648-compliant, but covers a common use-case
+-- in which padding is considered optional. This isn't usually the case for
+-- base64 encoded data (only base64url), but it's trivial to support.
+--
+decodeBase64Lenient :: ByteString -> Either Text ByteString
+decodeBase64Lenient = decodeBase64_ True decodeB64Table
 {-# INLINE decodeBase64Unpadded #-}
