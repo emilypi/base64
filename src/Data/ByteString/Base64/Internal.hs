@@ -139,7 +139,9 @@ encodeBase64_' !padded (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
     w32 = fromIntegral
 
     go !src !dst
-      | plusPtr src 2 >= end = finalize src (castPtr dst)
+      | plusPtr src 2 >= end
+      , padded = finalize src (castPtr dst)
+      | src >= end = return ()
       | otherwise = do
 
         -- ideally, we want to do single read @uint32_t w = src[0..3]@ and simply
