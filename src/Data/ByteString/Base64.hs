@@ -22,6 +22,7 @@ module Data.ByteString.Base64
 
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64.Internal
+import Data.Either (fromRight)
 import Data.Text (Text)
 
 
@@ -76,6 +77,6 @@ decodeBase64Unpadded = decodeBase64_ False decodeB64Table
 -- in which padding is considered optional. This isn't usually the case for
 -- base64 encoded data (only base64url), but it's trivial to support.
 --
-decodeBase64Lenient :: ByteString -> Either Text ByteString
-decodeBase64Lenient = decodeBase64_ True decodeB64Table
-{-# INLINE decodeBase64Unpadded #-}
+decodeBase64Lenient :: ByteString -> ByteString
+decodeBase64Lenient = fromRight mempty . decodeBase64_ True decodeB64Table
+{-# INLINE decodeBase64Lenient #-}
