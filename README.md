@@ -5,6 +5,8 @@
 
 Padded and unpadded base64 and base64url encodings for `Text` and `ByteString` values, along with their optics.
 
+For the companion `Prism`s and pattern synonyms, see [base64-lens](https://hackage.haskell.org/package/base64-lens).
+
 
 ### Summary
 
