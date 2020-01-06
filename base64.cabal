@@ -24,18 +24,6 @@ source-repository head
   type:     git
   location: https://github.com/emilypi/base64.git
 
-
-flag optics
-  description: Enable optics for base64-encoding text and bytestrings
-  manual: True
-  default: True
-
-flag perf-flags
-  description: Performance tuning flags and information
-  manual: True
-  default: False
-
-
 library
   exposed-modules:     Data.ByteString.Base64
                      , Data.ByteString.Base64.URL
@@ -45,24 +33,14 @@ library
 
   other-modules:       Data.ByteString.Base64.Internal
 
-  build-depends:       base       >=4.10 && <5
-                     , bytestring
-                     , deepseq
-                     , text
+  build-depends:       base        >=4.10 && <5
+                     , bytestring ^>=0.10
+                     , deepseq    ^>=1.4
+                     , text       ^>=1.2
 
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall
-
-  if flag(optics)
-    exposed-modules:   Data.ByteString.Base64.Lens
-                     , Data.Text.Encoding.Base64.Lens
-    build-depends:     lens ^>= 4.18
-
-  if flag(perf-flags)
-    ghc-options:       -ddump-simpl
-                       -ddump-to-file
-                       -ddump-stranal
 
 
 test-suite tasty
