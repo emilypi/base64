@@ -19,6 +19,7 @@ module Data.ByteString.Base64.URL
 ) where
 
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 import Data.ByteString.Base64.Internal
 import Data.Text (Text)
 
@@ -37,23 +38,21 @@ encodeBase64 = encodeBase64_ True base64UrlTable
 decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 = decodeBase64_ False decodeB64UrlTable
 
--- | Encode a 'ByteString' in base64-url without padding.
+-- | Encode a 'ByteString' in base64-url without padding. Note that for Base64url,
+-- padding is optional. If you call this function, you will simply be encoding
+-- as base64 and stripping padding chars from the output.
 --
--- Note: in some circumstances, the use of padding ("=") in base-encoded data
--- is not required or used. If you are absolutely sure the length of your
--- input data is divisible by 3, this function will be the same as 'encodeBase64'
--- with padding. However, if not, you may see garbage appended to output in the
--- form of "\NUL".
---
--- Only call unpadded variants when you can make assumptions about the length of
--- your input data.
+-- When decoding, these padding chars will be added back to ensure that
+-- decoding is properly padded.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 encodeBase64Unpadded :: ByteString -> ByteString
-encodeBase64Unpadded = encodeBase64_ False base64UrlTable
+encodeBase64Unpadded = BS.takeWhile ((/=) 0x3d) . encodeBase64_ True base64UrlTable
 
--- | Decode an unpadded base64-url encoded 'ByteString'
+-- | Decode an unpadded base64-url encoded 'ByteString'. If its length is not a multiple
+-- of 4, then padding chars will be added to fill out the input to a multiple of
+-- 4 for safe decoding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
