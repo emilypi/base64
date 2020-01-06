@@ -92,7 +92,6 @@ packTable alphabet = etable
             , !j <- [0..63]
             ]
       in EncodingTable (Ptr alphabet) (writeNPlainForeignPtrBytes 8192 bs)
-{-# INLINE packTable #-}
 
 base64UrlTable :: EncodingTable
 base64UrlTable = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"#
@@ -134,11 +133,9 @@ encodeBase64_'
 encodeBase64_' !padded (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
   where
     ix (W8# i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
-    {-# INLINE ix #-}
 
     w32 :: Word8 -> Word32
     w32 = fromIntegral
-    {-# INLINE w32 #-}
 
     go !src !dst
       | plusPtr src 2 >= end = finalize src (castPtr dst)
@@ -280,17 +277,14 @@ decodeBase64_'
 decodeBase64_' !dtable !sptr !dptr !end !dfp = go dptr sptr 0
   where
     err = return . Left . T.pack
-    {-# INLINE err #-}
 
     finalize !n = return (Right (PS dfp 0 n))
-    {-# INLINE finalize #-}
 
     look :: Ptr Word8 -> IO Word32
     look p = do
       !i <- peekByteOff @Word8 p 0
       !v <- peekByteOff @Word8 dtable (fromIntegral i)
       return (fromIntegral v)
-    {-# INLINE look #-}
 
     go !dst !src !n
       | src >= end = return (Right (PS dfp 0 n))
