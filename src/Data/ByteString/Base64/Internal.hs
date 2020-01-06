@@ -40,6 +40,7 @@ import Control.Monad (when)
 
 import Data.Bits
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 import Data.ByteString.Internal
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -243,10 +244,18 @@ decodeB64UrlTable = writeNPlainForeignPtrBytes @Word8 256
       ]
 {-# NOINLINE decodeB64UrlTable #-}
 
-decodeBase64_ :: ForeignPtr Word8 -> ByteString -> Either Text ByteString
-decodeBase64_ !dtfp (PS !sfp !soff !slen)
-    | r /= 0 = Left "invalid padding"
-    | otherwise = unsafeDupablePerformIO $
+decodeBase64_ :: Bool -> ForeignPtr Word8 -> ByteString -> Either Text ByteString
+decodeBase64_ !padding !dtfp bs@(PS _ _ !slen)
+    | padding =
+      let !b = BS.append bs (BS.replicate r 0x3d)
+      in go b
+    | r /= 0 && (not padding) = Left "invalid padding"
+    | otherwise = go bs
+  where
+    (!q, !r) = divMod slen 4
+    !dlen = q * 3
+
+    go (PS !sfp !soff !slen') = unsafeDupablePerformIO $
       withForeignPtr dtfp $ \dtable ->
         withForeignPtr sfp $ \sptr -> do
         dfp <- mallocPlainForeignPtrBytes dlen
@@ -255,11 +264,8 @@ decodeBase64_ !dtfp (PS !sfp !soff !slen)
             dtable
             (plusPtr sptr soff)
             dptr
-            (plusPtr sptr (soff + slen))
+            (plusPtr sptr (soff + slen'))
             dfp
-  where
-    (!q, !r) = divMod slen 4
-    !dlen = q * 3
 {-# INLINE decodeBase64_ #-}
 
 decodeBase64_'
