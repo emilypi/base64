@@ -246,9 +246,7 @@ decodeB64UrlTable = writeNPlainForeignPtrBytes @Word8 256
 
 decodeBase64_ :: Bool -> ForeignPtr Word8 -> ByteString -> Either Text ByteString
 decodeBase64_ !padding !dtfp bs@(PS _ _ !slen)
-    | padding =
-      let !b = BS.append bs (BS.replicate r 0x3d)
-      in go b
+    | padding =  go (BS.append bs (BS.replicate r 0x3d))
     | r /= 0 && (not padding) = Left "invalid padding"
     | otherwise = go bs
   where
