@@ -35,7 +35,9 @@ encodeBase64 = encodeBase64_ True base64UrlTable
 
 -- | Decode a padded base64-url encoded 'ByteString'. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
--- 4 for safe decoding.
+-- 4 for safe decoding as base64url encodings are optionally padded.
+--
+-- For a decoder that fails on unpadded input of incorrect size, use 'decodeBase64Unpadded'.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -45,9 +47,6 @@ decodeBase64 = decodeBase64_ True decodeB64UrlTable
 -- | Encode a 'ByteString' in base64-url without padding. Note that for Base64url,
 -- padding is optional. If you call this function, you will simply be encoding
 -- as base64 and stripping padding chars from the output.
---
--- When decoding, these padding chars will be added back to ensure that
--- decoding is properly padded.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
@@ -71,5 +70,5 @@ decodeBase64Unpadded = decodeBase64_ False decodeB64UrlTable
 -- prefer to call this function if you're ever working with foreign encoded data.
 --
 decodeBase64Lenient :: ByteString -> ByteString
-decodeBase64Lenient = fromRight mempty . decodeBase64_ True decodeB64UrlTable
+decodeBase64Lenient = undefined
 {-# INLINE decodeBase64Lenient #-}
