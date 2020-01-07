@@ -34,7 +34,8 @@ import qualified Data.Text.Encoding as T
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 encodeBase64 :: Text -> Text
-encodeBase64 = T.decodeUtf8 . B64.encodeBase64 . T.encodeUtf8
+encodeBase64 = B64.encodeBase64 . T.encodeUtf8
+{-# INLINE encodeBase64 #-}
 
 -- | Decode a padded base64 encoded 'Text' value
 --
@@ -42,6 +43,7 @@ encodeBase64 = T.decodeUtf8 . B64.encodeBase64 . T.encodeUtf8
 --
 decodeBase64 :: Text -> Either Text Text
 decodeBase64 = fmap T.decodeUtf8 . B64.decodeBase64 . T.encodeUtf8
+{-# INLINE decodeBase64 #-}
 
 -- | Encode a 'Text' in base64 without padding.
 --
@@ -56,11 +58,9 @@ decodeBase64 = fmap T.decodeUtf8 . B64.decodeBase64 . T.encodeUtf8
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
-
 encodeBase64Unpadded :: Text -> Text
-encodeBase64Unpadded = T.decodeUtf8
-    . B64.encodeBase64Unpadded
-    . T.encodeUtf8
+encodeBase64Unpadded = B64.encodeBase64Unpadded . T.encodeUtf8
+{-# INLINE encodeBase64Unpadded #-}
 
 -- | Decode an unpadded base64 encoded 'Text'
 --
@@ -70,6 +70,7 @@ decodeBase64Unpadded :: Text -> Either Text Text
 decodeBase64Unpadded = fmap T.decodeUtf8
     . B64.decodeBase64Unpadded
     . T.encodeUtf8
+{-# INLINE decodeBase64Unpadded #-}
 
 -- | Leniently decode an unpadded base64-encoded 'Text'. This function
 -- will not generate parse errors. If input data contains padding chars,
@@ -90,3 +91,4 @@ isBase64 :: Text -> Bool
 isBase64 = T.all (isJust . flip T.find alphabet . (==))
   where
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+{-# INLINE isBase64 #-}

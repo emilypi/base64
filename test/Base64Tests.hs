@@ -11,8 +11,6 @@ import "base64" Data.ByteString.Base64.URL as B64U
 import "base64-bytestring" Data.ByteString.Base64 as Bos
 import Data.ByteString.Random (random)
 import Data.Functor (void)
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -40,8 +38,8 @@ testVectors = testGroup "RFC 4648 Test Vectors"
     ]
   where
     testCaseB64 s t =
-      testCase (T.unpack $ if s == "" then "empty" else s) $
-        t @=?  B64.encodeBase64 (T.encodeUtf8 s)
+      testCase (show $ if s == "" then "empty" else s) $
+        t @=?  B64.encodeBase64' s
 
 sanityTests :: TestTree
 sanityTests = testGroup "Sanity tests"
@@ -67,14 +65,14 @@ sanityTests = testGroup "Sanity tests"
   where
     chonk = testCase ("Encoding huge bytestrings doesn't result in OOM or segfault") $ do
       bs <- random 1000000
-      void $ return $ B64.encodeBase64 bs
-      void $ return $ B64U.encodeBase64 bs
+      void $ return $ B64.encodeBase64' bs
+      void $ return $ B64U.encodeBase64' bs
 
     compare64 n = testCase ("Testing " ++ show n ++ "-sized bytestrings") $ do
       bs <- random n
-      B64.encodeBase64 bs @=? Bos.encode bs
+      B64.encodeBase64' bs @=? Bos.encode bs
 
     roundtrip n = testCase ("Roundtrip encode/decode for " ++ show n ++ "-sized bytestrings") $ do
       bs <- random n
-      B64.decodeBase64 (B64.encodeBase64 bs) @=? Right bs
-      B64U.decodeBase64 (B64U.encodeBase64 bs) @=? Right bs
+      B64.decodeBase64 (B64.encodeBase64' bs) @=? Right bs
+      B64U.decodeBase64 (B64U.encodeBase64' bs) @=? Right bs

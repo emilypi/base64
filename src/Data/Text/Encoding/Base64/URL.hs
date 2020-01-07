@@ -33,7 +33,8 @@ import qualified Data.Text.Encoding as T
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
 --
 encodeBase64 :: Text -> Text
-encodeBase64 = T.decodeUtf8 . B64U.encodeBase64 . T.encodeUtf8
+encodeBase64 = B64U.encodeBase64 . T.encodeUtf8
+{-# INLINE encodeBase64 #-}
 
 -- | Decode a padded base64-url encoded 'ByteString'. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
@@ -45,6 +46,7 @@ encodeBase64 = T.decodeUtf8 . B64U.encodeBase64 . T.encodeUtf8
 --
 decodeBase64 :: Text -> Either Text Text
 decodeBase64 = fmap T.decodeUtf8 . B64U.decodeBase64 . T.encodeUtf8
+{-# INLINE decodeBase64 #-}
 
 -- | Encode a 'ByteString' in base64-url without padding. Note that for Base64url,
 -- padding is optional. If you call this function, you will simply be encoding
@@ -53,9 +55,8 @@ decodeBase64 = fmap T.decodeUtf8 . B64U.decodeBase64 . T.encodeUtf8
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 encodeBase64Unpadded :: Text -> Text
-encodeBase64Unpadded = T.decodeUtf8
-    . B64U.encodeBase64Unpadded
-    . T.encodeUtf8
+encodeBase64Unpadded = B64U.encodeBase64Unpadded . T.encodeUtf8
+{-# INLINE encodeBase64Unpadded #-}
 
 -- | Decode an unpadded base64-url encoded 'Text' value
 --
@@ -65,6 +66,7 @@ decodeBase64Unpadded :: Text -> Either Text Text
 decodeBase64Unpadded = fmap T.decodeUtf8
     . B64U.decodeBase64Unpadded
     . T.encodeUtf8
+{-# INLINE decodeBase64Unpadded #-}
 
 -- | Leniently decode an unpadded base64url-encoded 'Text'. This function
 -- will not generate parse errors. If input data contains padding chars,
@@ -84,3 +86,4 @@ isBase64Url :: Text -> Bool
 isBase64Url = T.all (isJust . flip T.find alphabet . (==))
   where
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+{-# INLINE isBase64Url #-}
