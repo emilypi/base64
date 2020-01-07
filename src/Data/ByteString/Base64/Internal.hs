@@ -364,9 +364,9 @@ decodeBase64Lenient_' !dtable !sptr !dptr !end !dfp = go dptr sptr 0
         -> Ptr Word8
         -> (Ptr Word8 -> Word32 -> IO ByteString)
         -> IO ByteString
-    look skip p_ f = k p_
+    look !skip !p_ f = k p_
       where
-        k p
+        k !p
           | p >= end = f (plusPtr end (-1)) 0x63
           | otherwise = do
             !i <- peekByteOff @Word8 p 0
