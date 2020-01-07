@@ -34,7 +34,7 @@ import qualified Data.Text.Encoding.Base64 as B64T
 main :: IO ()
 main = defaultMain
     $ fmap (benchN random encode_) sizes
-    ++ fmap (benchN (fmap B64.encodeBase64 . random) decode_) sizes
+    ++ fmap (benchN (fmap B64.encodeBase64' . random) decode_) sizes
 
   where
     sizes = [25,100,1000,10000,100000]
@@ -94,7 +94,7 @@ instance Harness 'B64 where
     type Base64 'B64 = ByteString
     type Err 'B64 = Text
     label = "base64"
-    encoder = B64.encodeBase64
+    encoder = B64.encodeBase64'
     decoder = B64.decodeBase64
 
 instance Harness 'T64 where
