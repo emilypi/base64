@@ -35,7 +35,7 @@ import qualified Data.Text.Encoding as T
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
 --
 encodeBase64 :: ByteString -> Text
-encodeBase64 = T.decodeUtf8 . encodeBase64_ True base64UrlTable
+encodeBase64 = T.decodeUtf8 . encodeBase64'
 {-# INLINE encodeBase64 #-}
 
 -- | Encode a 'ByteString' as a base64-url 'ByteString' with padding.
@@ -67,7 +67,7 @@ decodeBase64 = decodeBase64_ True decodeB64UrlTable
 encodeBase64Unpadded :: ByteString -> Text
 encodeBase64Unpadded = T.decodeUtf8
     . BS.takeWhile ((/=) 0x3d)
-    . encodeBase64_ True base64UrlTable
+    . encodeBase64Unpadded'
 {-# INLINE encodeBase64Unpadded #-}
 
 -- | Encode a 'ByteString' in base64-url without padding. Note that for Base64url,
@@ -77,7 +77,7 @@ encodeBase64Unpadded = T.decodeUtf8
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 encodeBase64Unpadded' :: ByteString -> ByteString
-encodeBase64Unpadded' = BS.takeWhile ((/=) 0x3d) . encodeBase64_ True base64UrlTable
+encodeBase64Unpadded' = BS.takeWhile ((/=) 0x3d) . encodeBase64'
 {-# INLINE encodeBase64Unpadded' #-}
 
 -- | Decode a padded base64-url encoded 'ByteString'. If its length is not a multiple

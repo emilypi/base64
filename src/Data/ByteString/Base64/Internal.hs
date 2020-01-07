@@ -136,14 +136,15 @@ encodeBase64_'
 encodeBase64_' !padded (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
   where
     ix (W8# i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
+    {-# INLINE ix #-}
 
     w32 :: Word8 -> Word32
     w32 = fromIntegral
+    {-# INLINE w32 #-}
 
     go !src !dst
       | src >= end = return ()
-      | plusPtr src 2 >= end
-      , padded = finalize src (castPtr dst)
+      | plusPtr src 2 >= end, padded = finalize src (castPtr dst)
       | otherwise = do
 
         -- ideally, we want to do single read @uint32_t w = src[0..3]@ and simply
@@ -285,8 +286,10 @@ decodeBase64_'
 decodeBase64_' !dtable !sptr !dptr !end !dfp = go dptr sptr 0
   where
     err = return . Left . T.pack
+    {-# INLINE err #-}
 
     finalize !n = return (Right (PS dfp 0 n))
+    {-# INLINE finalize #-}
 
     look :: Ptr Word8 -> IO Word32
     look p = do
@@ -358,6 +361,7 @@ decodeBase64Lenient_'
 decodeBase64Lenient_' !dtable !sptr !dptr !end !dfp = go dptr sptr 0
   where
     finalize !n = return (PS dfp 0 n)
+    {-# INLINE finalize #-}
 
     look
         :: Bool
