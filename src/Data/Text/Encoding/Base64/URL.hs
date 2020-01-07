@@ -1,4 +1,4 @@
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.URL
 -- Copyright 	: (c) 2019 Emily Pillmore
@@ -17,12 +17,15 @@ module Data.Text.Encoding.Base64.URL
 , encodeBase64Unpadded
 , decodeBase64Unpadded
 , decodeBase64Lenient
+, isBase64Url
 ) where
 
 
 import qualified Data.ByteString.Base64.URL as B64U
 
+import Data.Maybe (isJust)
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 -- | Encode a 'Text' in base64-url with padding.
@@ -74,3 +77,10 @@ decodeBase64Lenient = T.decodeUtf8
     . B64U.decodeBase64Lenient
     . T.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
+
+-- | Tell whether a 'Text' value is base64-encoded
+--
+isBase64Url :: Text -> Bool
+isBase64Url = T.all (isJust . flip T.find alphabet . (==))
+  where
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"

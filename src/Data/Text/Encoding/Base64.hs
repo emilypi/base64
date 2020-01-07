@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64
 -- Copyright 	: (c) 2019 Emily Pillmore
@@ -17,12 +18,15 @@ module Data.Text.Encoding.Base64
 , encodeBase64Unpadded
 , decodeBase64Unpadded
 , decodeBase64Lenient
+, isBase64
 ) where
 
 
 import qualified Data.ByteString.Base64 as B64
 
+import Data.Maybe (isJust)
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 -- | Encode 'Text' in base64 with padding.
@@ -78,3 +82,11 @@ decodeBase64Lenient = T.decodeUtf8
     . B64.decodeBase64Lenient
     . T.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
+
+
+-- | Tell whether a 'Text' value is base64-encoded
+--
+isBase64 :: Text -> Bool
+isBase64 = T.all (isJust . flip T.find alphabet . (==))
+  where
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
