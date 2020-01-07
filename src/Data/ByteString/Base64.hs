@@ -36,7 +36,7 @@ import qualified Data.Text.Encoding as T
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 encodeBase64 :: ByteString -> Text
-encodeBase64 = T.decodeUtf8 . encodeBase64_ True base64Table
+encodeBase64 = T.decodeUtf8 . encodeBase64'
 {-# INLINE encodeBase64 #-}
 
 -- | Encode a 'ByteString' as a base64 'ByteString'  value with padding.
@@ -69,7 +69,7 @@ decodeBase64 = decodeBase64_ False decodeB64Table
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 encodeBase64Unpadded :: ByteString -> Text
-encodeBase64Unpadded = T.decodeUtf8 . encodeBase64_ False base64Table
+encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
 {-# INLINE encodeBase64Unpadded #-}
 
 -- | Encode a 'ByteString' in base64 without padding.
