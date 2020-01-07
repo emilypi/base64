@@ -31,7 +31,7 @@ import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 
 
--- | Encode a 'ByteString' as base64 'Text' with padding.
+-- | Encode a 'ByteString' value as Base64 'Text' with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -39,7 +39,7 @@ encodeBase64 :: ByteString -> Text
 encodeBase64 = T.decodeUtf8 . encodeBase64'
 {-# INLINE encodeBase64 #-}
 
--- | Encode a 'ByteString' as a base64 'ByteString'  value with padding.
+-- | Encode a 'ByteString' value as a Base64 'ByteString'  value with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -47,7 +47,7 @@ encodeBase64' :: ByteString -> ByteString
 encodeBase64' = encodeBase64_ base64Table
 {-# INLINE encodeBase64' #-}
 
--- | Decode a padded base64-encoded 'ByteString'
+-- | Decode a padded Base64-encoded 'ByteString' value.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -55,7 +55,7 @@ decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 = decodeBase64_ False decodeB64Table
 {-# INLINE decodeBase64 #-}
 
--- | Encode a 'ByteString' as base64-encoded 'Text' without padding.
+-- | Encode a 'ByteString' value as Base64 'Text' without padding.
 --
 -- __Note:__ in some circumstances, the use of padding ("=") in base-encoded data
 -- is not required or used. This is not one of them. If you are absolutely sure
@@ -72,7 +72,7 @@ encodeBase64Unpadded :: ByteString -> Text
 encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
 {-# INLINE encodeBase64Unpadded #-}
 
--- | Encode a 'ByteString' in base64 without padding.
+-- | Encode a 'ByteString' value as Base64 without padding.
 --
 -- __Note:__ in some circumstances, the use of padding ("=") in base-encoded data
 -- is not required or used. This is not one of them. If you are absolutely sure
@@ -89,7 +89,7 @@ encodeBase64Unpadded' :: ByteString -> ByteString
 encodeBase64Unpadded' =  BS.takeWhile ((/=) 0x3d) . encodeBase64_ base64Table
 {-# INLINE encodeBase64Unpadded' #-}
 
--- | Decode an unpadded base64-encoded 'ByteString'.
+-- | Decode an unpadded Base64-encoded 'ByteString'.
 --
 -- __Note:__ Only call unpadded variants when you can make assumptions
 -- about the length of your input data.
@@ -100,7 +100,7 @@ decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded = decodeBase64_ False decodeB64Table
 {-# INLINE decodeBase64Unpadded #-}
 
--- | Leniently decode an unpadded base64-encoded 'ByteString'. This function
+-- | Leniently decode an unpadded Base64-encoded 'ByteString' value. This function
 -- will not generate parse errors. If input data contains padding chars,
 -- then the input will be parsed up until the first pad character.
 --
@@ -110,7 +110,7 @@ decodeBase64Lenient :: ByteString -> ByteString
 decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 {-# INLINE decodeBase64Lenient #-}
 
--- | Tell whether a 'Bytestring' value is base64-encoded
+-- | Tell whether a 'Bytestring' value is Base64-encoded
 --
 isBase64 :: ByteString -> Bool
 isBase64 = BS.all (`BS.elem` alphabet)
