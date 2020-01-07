@@ -1,7 +1,7 @@
-cabal-version:       2.4
+\cabal-version:       2.4
 
 name:                base64
-version:             0.2.0.0
+version:             0.3.0.0
 synopsis:            RFC 4648-compliant padded and unpadded base64 and base64url encodings
 description:
   RFC 4648-compliant padded and unpadded base64 and base64url encoding and decoding.
