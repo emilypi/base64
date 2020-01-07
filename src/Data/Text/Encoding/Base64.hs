@@ -29,7 +29,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
--- | Encode 'Text' in base64 with padding.
+-- | Encode a 'Text' value in Base64 with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -37,7 +37,7 @@ encodeBase64 :: Text -> Text
 encodeBase64 = B64.encodeBase64 . T.encodeUtf8
 {-# INLINE encodeBase64 #-}
 
--- | Decode a padded base64 encoded 'Text' value
+-- | Decode a padded Base64-encoded 'Text' value
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -45,13 +45,13 @@ decodeBase64 :: Text -> Either Text Text
 decodeBase64 = fmap T.decodeUtf8 . B64.decodeBase64 . T.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
--- | Encode a 'Text' in base64 without padding.
+-- | Encode a 'Text' value in Base64 without padding.
 --
 -- __Note:__ in some circumstances, the use of padding ("=") in base-encoded data
 -- is not required or used. This is not one of them. If you are absolutely sure
--- the length of your bytestring is divisible by 3, this function will be the same
+-- the length of your text is divisible by 3, this function will be the same
 -- as 'encodeBase64' with padding, however, if not, you may see garbage appended to
--- your bytestring.
+-- your text.
 --
 -- Only call unpadded variants when you can make assumptions about the length of
 -- your input data.
@@ -62,7 +62,7 @@ encodeBase64Unpadded :: Text -> Text
 encodeBase64Unpadded = B64.encodeBase64Unpadded . T.encodeUtf8
 {-# INLINE encodeBase64Unpadded #-}
 
--- | Decode an unpadded base64 encoded 'Text'
+-- | Decode an unpadded Base64-encoded 'Text'
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
@@ -72,7 +72,7 @@ decodeBase64Unpadded = fmap T.decodeUtf8
     . T.encodeUtf8
 {-# INLINE decodeBase64Unpadded #-}
 
--- | Leniently decode an unpadded base64-encoded 'Text'. This function
+-- | Leniently decode a Base64-encoded 'Text' value. This function
 -- will not generate parse errors. If input data contains padding chars,
 -- then the input will be parsed up until the first pad character.
 --
@@ -85,7 +85,7 @@ decodeBase64Lenient = T.decodeUtf8
 {-# INLINE decodeBase64Lenient #-}
 
 
--- | Tell whether a 'Text' value is base64-encoded
+-- | Tell whether a 'Text' value is Base64-encoded
 --
 isBase64 :: Text -> Bool
 isBase64 = T.all (isJust . flip T.find alphabet . (==))
