@@ -22,7 +22,6 @@ module Data.ByteString.Base64
 
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64.Internal
-import Data.Either (fromRight)
 import Data.Text (Text)
 
 
@@ -48,7 +47,7 @@ decodeBase64 = decodeBase64_ False decodeB64Table
 -- is not required or used. This is not one of them. If you are absolutely sure
 -- the length of your bytestring is divisible by 3, this function will be the same
 -- as 'encodeBase64' with padding, however, if not, you may see garbage appended to
--- your bytestring in the form of "\NUL".
+-- your bytestring.
 --
 -- Only call unpadded variants when you can make assumptions about the length of
 -- your input data.
@@ -70,13 +69,12 @@ decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded = decodeBase64_ False decodeB64Table
 {-# INLINE decodeBase64Unpadded #-}
 
--- | Decode an unpadded base64-encoded 'ByteString' by padding out its
--- bytes to a multiple of 4 first, then decoding.
+-- | Leniently decode an unpadded base64-encoded 'ByteString'. This function
+-- will not generate parse errors. If input data contains padding chars,
+-- then the input will be parsed up until the first pad character.
 --
--- __Note:__ This is not RFC 4648-compliant, but covers a common use-case
--- in which padding is considered optional. This isn't usually the case for
--- base64 encoded data (only base64url), but it's trivial to support.
+-- __Note:__ This is not RFC 4648-compliant.
 --
 decodeBase64Lenient :: ByteString -> ByteString
-decodeBase64Lenient = undefined
+decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 {-# INLINE decodeBase64Lenient #-}
