@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module       : Data.ByteString.Base64
 -- Copyright 	: (c) 2019 Emily Pillmore
@@ -17,10 +18,12 @@ module Data.ByteString.Base64
 , encodeBase64Unpadded
 , decodeBase64Unpadded
 , decodeBase64Lenient
+, isBase64
 ) where
 
 
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 import Data.ByteString.Base64.Internal
 import Data.Text (Text)
 
@@ -78,3 +81,10 @@ decodeBase64Unpadded = decodeBase64_ False decodeB64Table
 decodeBase64Lenient :: ByteString -> ByteString
 decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 {-# INLINE decodeBase64Lenient #-}
+
+-- | Tell whether a 'Bytestring' value is base64-encoded
+--
+isBase64 :: ByteString -> Bool
+isBase64 = BS.all (`BS.elem` alphabet)
+  where
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
