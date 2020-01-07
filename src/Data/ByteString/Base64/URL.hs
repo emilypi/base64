@@ -22,7 +22,6 @@ module Data.ByteString.Base64.URL
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.ByteString.Base64.Internal
-import Data.Either (fromRight)
 import Data.Text (Text)
 
 
@@ -65,12 +64,12 @@ encodeBase64Unpadded = BS.takeWhile ((/=) 0x3d) . encodeBase64_ True base64UrlTa
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded = decodeBase64_ False decodeB64UrlTable
 
--- | Decode an unpadded base64-url encoded 'ByteString'. If its length is not a multiple
--- of 4, then padding chars will be added to fill out the bytestring.
+-- | Leniently decode an unpadded base64url-encoded 'ByteString'. This function
+-- will not generate parse errors. If input data contains padding chars,
+-- then the input will be parsed up until the first pad character.
 --
--- __Note:__ This function is not RFC 4648 compliant, but it will never throw due to
--- parsing errors.
+-- __Note:__ This is not RFC 4648-compliant.
 --
 decodeBase64Lenient :: ByteString -> ByteString
-decodeBase64Lenient = undefined
+decodeBase64Lenient = decodeBase64Lenient_ decodeB64UrlTable
 {-# INLINE decodeBase64Lenient #-}

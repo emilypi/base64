@@ -16,6 +16,7 @@ module Data.Text.Encoding.Base64.URL
 , decodeBase64
 , encodeBase64Unpadded
 , decodeBase64Unpadded
+, decodeBase64Lenient
 ) where
 
 
@@ -31,23 +32,20 @@ import qualified Data.Text.Encoding as T
 encodeBase64 :: Text -> Text
 encodeBase64 = T.decodeUtf8 . B64U.encodeBase64 . T.encodeUtf8
 
--- | Decode a padded base64-url encoded 'Text'
+-- | Decode a padded base64-url encoded 'ByteString'. If its length is not a multiple
+-- of 4, then padding chars will be added to fill out the input to a multiple of
+-- 4 for safe decoding as base64url encodings are optionally padded.
+--
+-- For a decoder that fails on unpadded input of incorrect size, use 'decodeBase64Unpadded'.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: Text -> Either Text Text
 decodeBase64 = fmap T.decodeUtf8 . B64U.decodeBase64 . T.encodeUtf8
 
--- | Encode a 'Text' value in base64-url without padding.
---
--- __Note:__ in some circumstances, the use of padding ("=") in base-encoded data
--- is not required or used. If you are absolutely sure the length of your
--- input data is divisible by 3, this function will be the same as 'encodeBase64'
--- with padding. However, if not, you may see garbage appended to output in the
--- form of "\NUL".
---
--- Only call unpadded variants when you can make assumptions about the length of
--- your input data.
+-- | Encode a 'ByteString' in base64-url without padding. Note that for Base64url,
+-- padding is optional. If you call this function, you will simply be encoding
+-- as base64 and stripping padding chars from the output.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
@@ -64,3 +62,15 @@ decodeBase64Unpadded :: Text -> Either Text Text
 decodeBase64Unpadded = fmap T.decodeUtf8
     . B64U.decodeBase64Unpadded
     . T.encodeUtf8
+
+-- | Leniently decode an unpadded base64url-encoded 'Text'. This function
+-- will not generate parse errors. If input data contains padding chars,
+-- then the input will be parsed up until the first pad character.
+--
+-- __Note:__ This is not RFC 4648-compliant.
+--
+decodeBase64Lenient :: Text -> Text
+decodeBase64Lenient = T.decodeUtf8
+    . B64U.decodeBase64Lenient
+    . T.encodeUtf8
+{-# INLINE decodeBase64Lenient #-}

@@ -16,6 +16,7 @@ module Data.Text.Encoding.Base64
 , decodeBase64
 , encodeBase64Unpadded
 , decodeBase64Unpadded
+, decodeBase64Lenient
 ) where
 
 
@@ -40,17 +41,18 @@ decodeBase64 = fmap T.decodeUtf8 . B64.decodeBase64 . T.encodeUtf8
 
 -- | Encode a 'Text' in base64 without padding.
 --
--- Note: in some circumstances, the use of padding ("=") in base-encoded data
--- is not required or used. If you are absolutely sure the length of your
--- input data is divisible by 3, this function will be the same as 'encodeBase64'
--- with padding. However, if not, you may see garbage appended to output in the
--- form of "\NUL".
+-- __Note:__ in some circumstances, the use of padding ("=") in base-encoded data
+-- is not required or used. This is not one of them. If you are absolutely sure
+-- the length of your bytestring is divisible by 3, this function will be the same
+-- as 'encodeBase64' with padding, however, if not, you may see garbage appended to
+-- your bytestring.
 --
 -- Only call unpadded variants when you can make assumptions about the length of
 -- your input data.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
+
 encodeBase64Unpadded :: Text -> Text
 encodeBase64Unpadded = T.decodeUtf8
     . B64.encodeBase64Unpadded
@@ -64,3 +66,15 @@ decodeBase64Unpadded :: Text -> Either Text Text
 decodeBase64Unpadded = fmap T.decodeUtf8
     . B64.decodeBase64Unpadded
     . T.encodeUtf8
+
+-- | Leniently decode an unpadded base64-encoded 'Text'. This function
+-- will not generate parse errors. If input data contains padding chars,
+-- then the input will be parsed up until the first pad character.
+--
+-- __Note:__ This is not RFC 4648-compliant.
+--
+decodeBase64Lenient :: Text -> Text
+decodeBase64Lenient = T.decodeUtf8
+    . B64.decodeBase64Lenient
+    . T.encodeUtf8
+{-# INLINE decodeBase64Lenient #-}

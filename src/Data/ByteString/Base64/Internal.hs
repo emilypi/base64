@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MagicHash #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
@@ -20,6 +21,7 @@ module Data.ByteString.Base64.Internal
 
   -- * Base64 decoding
 , decodeBase64_
+, decodeBase64Lenient_
 
   -- * Decoding Tables
   -- ** Standard
@@ -139,9 +141,9 @@ encodeBase64_' !padded (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
     w32 = fromIntegral
 
     go !src !dst
+      | src >= end = return ()
       | plusPtr src 2 >= end
       , padded = finalize src (castPtr dst)
-      | src >= end = return ()
       | otherwise = do
 
         -- ideally, we want to do single read @uint32_t w = src[0..3]@ and simply
@@ -303,26 +305,96 @@ decodeBase64_' !dtable !sptr !dptr !end !dfp = go dptr sptr 0
         if a == 0x63 || b == 0x63
         then err
           $ "invalid padding near offset: "
-          ++ show (src `minusPtr` sptr)
+          ++ show (minusPtr src sptr)
         else
           if a .|. b .|. c .|. d == 0xff
           then err
             $ "invalid base64 encoding near offset: "
-            ++ show (src `minusPtr` sptr)
+            ++ show (minusPtr src sptr)
           else do
-            let !w = (a `shiftL` 18)
-                  .|. (b `shiftL` 12)
-                  .|. (c `shiftL` 6)
-                  .|. d
+            let !w = (shiftL a 18) .|. (shiftL b 12) .|. (shiftL c 6) .|. d
 
-            poke @Word8 dst (fromIntegral (w `shiftR` 16))
+            poke @Word8 dst (fromIntegral (shiftR w 16))
             if c == 0x63
             then finalize (n + 1)
             else do
-              poke @Word8 (dst `plusPtr` 1) (fromIntegral (w `shiftR` 8))
+              poke @Word8 (plusPtr dst 1) (fromIntegral (shiftR w 8))
               if d == 0x63
               then finalize (n + 2)
               else do
-                poke @Word8 (dst `plusPtr` 2) (fromIntegral w)
-                go (dst `plusPtr` 3) (src `plusPtr` 4) (n + 3)
+                poke @Word8 (plusPtr dst 2) (fromIntegral w)
+                go (plusPtr dst 3) (plusPtr src 4) (n + 3)
 {-# INLINE decodeBase64_' #-}
+
+decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
+decodeBase64Lenient_ !dtfp (PS !sfp !soff !slen) = unsafeDupablePerformIO $
+    withForeignPtr dtfp $ \dtable ->
+    withForeignPtr sfp $ \sptr -> do
+      dfp <- mallocPlainForeignPtrBytes dlen
+      withForeignPtr dfp $ \dptr ->
+        decodeBase64Lenient_'
+          dtable
+          (plusPtr sptr soff)
+          dptr
+          (plusPtr sptr (soff + slen))
+          dfp
+  where
+    !dlen = ((slen + 3) `div` 4) * 3
+{-# INLINE decodeBase64Lenient_ #-}
+
+
+decodeBase64Lenient_'
+    :: Ptr Word8
+        -- ^ decode lookup table
+    -> Ptr Word8
+        -- ^ src pointer
+    -> Ptr Word8
+        -- ^ dst pointer
+    -> Ptr Word8
+        -- ^ end of src ptr
+    -> ForeignPtr Word8
+        -- ^ dst foreign ptr (for consing bs)
+    -> IO ByteString
+decodeBase64Lenient_' !dtable !sptr !dptr !end !dfp = go dptr sptr 0
+  where
+    finalize !n = return (PS dfp 0 n)
+
+    look
+        :: Bool
+        -> Ptr Word8
+        -> (Ptr Word8 -> Word32 -> IO ByteString)
+        -> IO ByteString
+    look skip p f
+      | p >= end = f (plusPtr end (-1)) 0x63
+      | otherwise = do
+        !i <- peekByteOff @Word8 p 0
+        !v <- peekByteOff @Word8 dtable (fromIntegral i)
+        if
+          | v == 0xff -> look skip (plusPtr p 1) f
+          | v == 0x63, skip -> look skip (plusPtr p 1) f
+          | otherwise -> f (plusPtr p 1) (fromIntegral v)
+
+    go !dst !src !n
+      | src >= end = finalize n
+      | otherwise =
+        look True src $ \ap a ->
+        look True ap $ \bp b ->
+          if
+            | a == 0x63 -> finalize n
+            | b == 0x63 -> finalize n
+            | otherwise ->
+              look False bp $ \cp c ->
+              look False cp $ \dp d -> do
+                let !w = (shiftL a 18) .|. (shiftL b 12) .|. (shiftL c 6) .|. d
+
+                poke @Word8 dst (fromIntegral (shiftR w 16))
+                if c == 0x63
+                then finalize (n + 1)
+                else do
+                  poke @Word8 (plusPtr dst 1) (fromIntegral (w `shiftR` 8))
+                  if d == 0x63
+                  then finalize (n + 2)
+                  else do
+                    poke @Word8 (plusPtr dst 2) (fromIntegral w)
+                    go (plusPtr dst 3) dp (n + 3)
+{-# INLINE decodeBase64Lenient_' #-}
