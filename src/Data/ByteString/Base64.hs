@@ -110,7 +110,7 @@ decodeBase64Lenient :: ByteString -> ByteString
 decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 {-# INLINE decodeBase64Lenient #-}
 
--- | Tell whether a 'Bytestring' value is Base64-encoded
+-- | Tell whether a 'ByteString' value is Base64-encoded
 --
 isBase64 :: ByteString -> Bool
 isBase64 = BS.all (`BS.elem` alphabet)
