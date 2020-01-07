@@ -35,18 +35,12 @@ main :: IO ()
 main = defaultMain $ bench' random encode_
     ++ bench' (fmap B64.encodeBase64' . random) decode_
     ++ bench' (fmap B64.encodeBase64' . random) lenient_
-    ++ bench' random encodeT
 
   where
     bench' f b = fmap (benchN f b) sizes
     sizes = [25,100,1000,10000,100000]
     benchN f bs n = env (f n) $ bgroup (show n) . bs
 
-    encodeT e =
-      [ bgroup "base64 Bytestring -> Text"
-        [ bench "encodeBase64" $ nf $ B64.encodeBase64 e
-        ]
-      ]
     encode_ e =
       [ bgroup "base64 encode"
         [ encodeBench @'Mem e
@@ -84,7 +78,7 @@ data Bench where
   Bos :: Bench
   B64 :: Bench
   T64 :: Bench
-  N64 :: Bench
+
 
 class (NFData (Base64 a), NFData (Err a)) => Harness (a :: Bench) where
     type Base64 a :: Type
