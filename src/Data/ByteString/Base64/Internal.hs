@@ -38,8 +38,6 @@ module Data.ByteString.Base64.Internal
 ) where
 
 
-import Control.Monad (when)
-
 import Data.Bits
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
@@ -108,13 +106,12 @@ base64Table = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012
 -- -------------------------------------------------------------------------- --
 -- Encode Base64
 
-encodeBase64_ :: Bool -> EncodingTable -> ByteString -> ByteString
-encodeBase64_ padding (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
+encodeBase64_ :: EncodingTable -> ByteString -> ByteString
+encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
     unsafeCreate dlen $ \dptr ->
     withForeignPtr sfp $ \sptr ->
     withForeignPtr efp $ \eptr ->
       encodeBase64_'
-        padding
         aptr
         eptr
         (plusPtr sptr soff)
@@ -126,14 +123,13 @@ encodeBase64_ padding (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
 {-# INLINE encodeBase64_ #-}
 
 encodeBase64_'
-    :: Bool
-    -> Ptr Word8
+    :: Ptr Word8
     -> Ptr Word16
     -> Ptr Word8
     -> Ptr Word16
     -> Ptr Word8
     -> IO ()
-encodeBase64_' !padded (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
+encodeBase64_' (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
   where
     ix (W8# i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
     {-# INLINE ix #-}
@@ -143,8 +139,7 @@ encodeBase64_' !padded (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
     {-# INLINE w32 #-}
 
     go !src !dst
-      | src >= end = return ()
-      | plusPtr src 2 >= end, padded = finalize src (castPtr dst)
+      | plusPtr src 2 >= end = finalize src (castPtr dst)
       | otherwise = do
 
         -- ideally, we want to do single read @uint32_t w = src[0..3]@ and simply
@@ -192,14 +187,12 @@ encodeBase64_' !padded (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
           --
           pokeByteOff dst 1 (ix b')
           pokeByteOff dst 2 (ix c')
-
-          when padded (pokeByteOff @Word8 dst 3 0x3d)
+          pokeByteOff @Word8 dst 3 0x3d
 
         else do
           pokeByteOff dst 1 (ix b)
-          when padded $ do
-            pokeByteOff @Word8 dst 2 0x3d
-            pokeByteOff @Word8 dst 3 0x3d
+          pokeByteOff @Word8 dst 2 0x3d
+          pokeByteOff @Word8 dst 3 0x3d
 {-# INLINE encodeBase64_' #-}
 
 -- -------------------------------------------------------------------------- --
