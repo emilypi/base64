@@ -43,7 +43,7 @@ encodeBase64 = T.decodeUtf8 . encodeBase64'
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
 --
 encodeBase64' :: ByteString -> ByteString
-encodeBase64' = encodeBase64_ True base64UrlTable
+encodeBase64' = encodeBase64_ base64UrlTable
 {-# INLINE encodeBase64' #-}
 
 -- | Decode a padded base64-url encoded 'ByteString'. If its length is not a multiple
@@ -75,7 +75,7 @@ encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 encodeBase64Unpadded' :: ByteString -> ByteString
-encodeBase64Unpadded' = encodeBase64_ False base64UrlTable
+encodeBase64Unpadded' = BS.takeWhile ((/=) 0x3d) . encodeBase64_ base64UrlTable
 {-# INLINE encodeBase64Unpadded' #-}
 
 -- | Decode a padded base64-url encoded 'ByteString'. If its length is not a multiple
