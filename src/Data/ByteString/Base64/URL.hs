@@ -14,8 +14,10 @@
 --
 module Data.ByteString.Base64.URL
 ( encodeBase64
+, encodeBase64'
 , decodeBase64
 , encodeBase64Unpadded
+, encodeBase64Unpadded'
 , decodeBase64Unpadded
 , decodeBase64Lenient
 , isBase64Url
@@ -25,14 +27,24 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.ByteString.Base64.Internal
 import Data.Text (Text)
+import qualified Data.Text.Encoding as T
 
 
--- | Encode a 'ByteString' in base64-url with padding.
+-- | Encode a 'ByteString' as base64-url 'Text' with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
 --
-encodeBase64 :: ByteString -> ByteString
-encodeBase64 = encodeBase64_ True base64UrlTable
+encodeBase64 :: ByteString -> Text
+encodeBase64 = T.decodeUtf8 . encodeBase64_ True base64UrlTable
+{-# INLINE encodeBase64 #-}
+
+-- | Encode a 'ByteString' as a base64-url 'ByteString' with padding.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
+--
+encodeBase64' :: ByteString -> ByteString
+encodeBase64' = encodeBase64_ True base64UrlTable
+{-# INLINE encodeBase64' #-}
 
 -- | Decode a padded base64-url encoded 'ByteString'. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
@@ -44,6 +56,19 @@ encodeBase64 = encodeBase64_ True base64UrlTable
 --
 decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 = decodeBase64_ True decodeB64UrlTable
+{-# INLINE decodeBase64 #-}
+
+-- | Encode a 'ByteString' as base64-url 'Text' without padding. Note that for Base64url,
+-- padding is optional. If you call this function, you will simply be encoding
+-- as base64 and stripping padding chars from the output.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
+--
+encodeBase64Unpadded :: ByteString -> Text
+encodeBase64Unpadded = T.decodeUtf8
+    . BS.takeWhile ((/=) 0x3d)
+    . encodeBase64_ True base64UrlTable
+{-# INLINE encodeBase64Unpadded #-}
 
 -- | Encode a 'ByteString' in base64-url without padding. Note that for Base64url,
 -- padding is optional. If you call this function, you will simply be encoding
@@ -51,8 +76,9 @@ decodeBase64 = decodeBase64_ True decodeB64UrlTable
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
-encodeBase64Unpadded :: ByteString -> ByteString
-encodeBase64Unpadded = BS.takeWhile ((/=) 0x3d) . encodeBase64_ True base64UrlTable
+encodeBase64Unpadded' :: ByteString -> ByteString
+encodeBase64Unpadded' = BS.takeWhile ((/=) 0x3d) . encodeBase64_ True base64UrlTable
+{-# INLINE encodeBase64Unpadded' #-}
 
 -- | Decode a padded base64-url encoded 'ByteString'. If its length is not a multiple
 -- of 4, then padding chars will /not/ be added to fill out the input to a multiple of
@@ -65,6 +91,7 @@ encodeBase64Unpadded = BS.takeWhile ((/=) 0x3d) . encodeBase64_ True base64UrlTa
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded = decodeBase64_ False decodeB64UrlTable
+{-# INLINE decodeBase64Unpadded #-}
 
 -- | Leniently decode an unpadded base64url-encoded 'ByteString'. This function
 -- will not generate parse errors. If input data contains padding chars,
@@ -82,3 +109,4 @@ isBase64Url :: ByteString -> Bool
 isBase64Url = BS.all (`BS.elem` alphabet)
   where
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+{-# INLINE isBase64Url #-}
