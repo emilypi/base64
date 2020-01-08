@@ -2,10 +2,10 @@
 
 The story so far:
 
-- 3x encoding/decoding performance for bytestrings ∊ \[0, 100\[
-- 2x encoding/decoding performance for bytestrings ∊ ]100, 1000\[
-- 1-2μs improvement in encoding/decoding performance for bytestrings ∊ ]1000, 10,000[
-- 2-3μs improvement in encoding/decoding performance for bytestrings ∊ ]10,000, 1,000,000]
+- Good encoding/decoding performance for bytestrings ∊ \[0, 100\[ compared to `base64-bytestring`
+- Good encoding/decoding performance for bytestrings ∊ ]100, 1000\[ compared to `base64-bytestring`
+- Good improvement in encoding/decoding performance for bytestrings ∊ ]1000, 10,000[ compared to `base64-bytestring`
+- Good improvement in encoding/decoding performance for bytestrings ∊ ]10,000, 1,000,000] compared to `base64-bytestring`
 - Smaller heap footprint in general.
 
 Most of this performance increase for smaller bytestrings is due to optimization of the building of the encoding tables. Additionally, I've factored out several read/writes and unnecessary IO done in `bytestring-base64`. The inner loop is as optimized as it can be for `Word16`-based optimizations (3 8-Byte reads, 2 12-Byte writes), and the tail completion is optimized by elimating 4 unnecessary reads, and using one big `if-then-else` branch to eliminate 1 read and 1 write per case. Smaller improvements have been the elimination of unnecessary wrappers (i.e. not using `BS.pack` and simply `malloc`'ing and rolling my own pointers), as well as properly inlining auxiliary functions which failed to inline in Bos' version. Additionally, using unpacked `Addr#`'s for the alphabet means we don't have to use a `ForeignPtr` box or touch it unnecessarily. See the outputs in the benchmarks directory for more detail..

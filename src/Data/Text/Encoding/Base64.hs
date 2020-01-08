@@ -19,6 +19,7 @@ module Data.Text.Encoding.Base64
 , decodeBase64Unpadded
 , decodeBase64Lenient
 , isBase64
+, isValidBase64
 ) where
 
 
@@ -88,7 +89,11 @@ decodeBase64Lenient = T.decodeUtf8
 -- | Tell whether a 'Text' value is Base64-encoded
 --
 isBase64 :: Text -> Bool
-isBase64 = T.all (isJust . flip T.find alphabet . (==))
-  where
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+isBase64 = B64.isBase64 . T.encodeUtf8
 {-# INLINE isBase64 #-}
+
+-- | Tell whether a 'Text' value is valid Base64
+--
+isValidBase64 :: Text -> Bool
+isValidBase64 = B64.isValidBase64 . T.encodeUtf8
+{-# INLINE isValidBase64 #-}

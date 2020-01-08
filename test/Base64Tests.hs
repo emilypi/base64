@@ -94,10 +94,12 @@ alphabetTests = testGroup "Alphabet tests"
   where
     base64Tests n = testCase ("Conforms to Base64 alphabet: " ++ show n) $ do
       bs <- random n
-      assertBool "failed" $
-        B64.isBase64 (B64.encodeBase64Unpadded' bs)
+      let b = B64.encodeBase64' bs
+      assertBool ("failed validity: " ++ show b) $ B64.isValidBase64 b
+      assertBool ("failed correctness: " ++ show b) $ B64.isBase64 b
 
     base64UrlTests n = testCase ("Conforms to Base64url alphabet: " ++ show n) $ do
       bs <- random n
-      assertBool "failed" $
-        B64U.isBase64Url (B64U.encodeBase64Unpadded' bs)
+      let b = B64U.encodeBase64' bs
+      assertBool ("failed validity: " ++ show b) $ B64U.isValidBase64Url b
+      assertBool ("failed correctness: " ++ show b) $ B64U.isBase64Url b

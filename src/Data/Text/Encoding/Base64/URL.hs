@@ -18,14 +18,13 @@ module Data.Text.Encoding.Base64.URL
 , decodeBase64Unpadded
 , decodeBase64Lenient
 , isBase64Url
+, isValidBase64Url
 ) where
 
 
 import qualified Data.ByteString.Base64.URL as B64U
 
-import Data.Maybe (isJust)
 import Data.Text (Text)
-import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 -- | Encode a 'Text' value in Base64url with padding.
@@ -83,7 +82,11 @@ decodeBase64Lenient = T.decodeUtf8
 -- | Tell whether a 'Text' value is Base64url-encoded
 --
 isBase64Url :: Text -> Bool
-isBase64Url = T.all (isJust . flip T.find alphabet . (==))
-  where
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+isBase64Url = B64U.isBase64Url . T.encodeUtf8
 {-# INLINE isBase64Url #-}
+
+-- | Tell whether a 'Text' value is valid Base64url
+--
+isValidBase64Url :: Text -> Bool
+isValidBase64Url = B64U.isValidBase64Url . T.encodeUtf8
+{-# INLINE isValidBase64Url #-}
