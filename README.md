@@ -12,7 +12,7 @@ For the companion `Prism`s and pattern synonyms, see [base64-lens](https://hacka
 
 What does this library provide? Here is the summary:
 
-- Better performance over existing Base64 libraries (2x and 3x for most use-cases - see [PERFORMANCE.md](benchmarks/PERFORMANCE.md))
+- Better performance over existing Base64 libraries (see [PERFORMANCE.md](benchmarks/PERFORMANCE.md))
 - Support for unpadded Base64 and Base64-url
 - Support for `Text` encodings and decodings
 - Optics for handling more complex structures with Base64 representations via the `base64-lens` package

@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module       : Data.ByteString.Base64
@@ -21,12 +22,14 @@ module Data.ByteString.Base64
 , decodeBase64Unpadded
 , decodeBase64Lenient
 , isBase64
+, isValidBase64
 ) where
 
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.ByteString.Base64.Internal
+import Data.Either (isRight)
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 
@@ -110,10 +113,23 @@ decodeBase64Lenient :: ByteString -> ByteString
 decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 {-# INLINE decodeBase64Lenient #-}
 
--- | Tell whether a 'ByteString' value is Base64-encoded
+-- | Tell whether a 'ByteString' value is base64 encoded (is valid and can be decoded)
 --
 isBase64 :: ByteString -> Bool
-isBase64 = BS.all (`BS.elem` alphabet)
-  where
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+isBase64 bs = isValidBase64 bs && isRight (decodeBase64 bs)
 {-# INLINE isBase64 #-}
+
+-- | Tell whether a 'ByteString' value is valid Base64
+--
+isValidBase64 :: ByteString -> Bool
+isValidBase64 bs = snd (BS.foldr' go (0, True) bs)
+  where
+    go w (!acc, !b)
+      | acc == l = (acc, b)
+      | w == 0x3d, acc == (l - 1) = (succ acc, True && b)
+      | w == 0x3d, acc == (l - 2) = (succ acc, True && b)
+      | w == 0x3d = (succ acc, False && b)
+      | otherwise = (succ acc, w `BS.elem` alphabet && b)
+    !l = BS.length bs
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+{-# INLINE isValidBase64 #-}
