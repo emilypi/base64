@@ -45,8 +45,6 @@ encodeBase64 = T.decodeUtf8 . encodeBase64'
 encodeBase64' :: ByteString -> ByteString
 encodeBase64' = encodeBase64_ base64UrlTable
 {-# INLINE [1] encodeBase64' #-}
-{-# RULES "encodeBase64/text" forall x.
-  T.decodeUtf8 (encodeBase64' x) = encodeBase64 x; #-}
 
 -- | Decode a padded Base64url encoded 'ByteString' value. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
@@ -79,8 +77,6 @@ encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
 encodeBase64Unpadded' :: ByteString -> ByteString
 encodeBase64Unpadded' = BS.takeWhile ((/=) 0x3d) . encodeBase64_ base64UrlTable
 {-# INLINE [1] encodeBase64Unpadded' #-}
-{-# RULES "encodeBase64Unpadded/text" forall x.
-  T.decodeUtf8 (encodeBase64Unpadded' x) = encodeBase64Unpadded x; #-}
 
 -- | Decode a padded Base64url-encoded 'ByteString' value. If its length is not a multiple
 -- of 4, then padding chars will /not/ be added to fill out the input to a multiple of
