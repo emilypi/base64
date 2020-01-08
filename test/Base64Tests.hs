@@ -24,6 +24,7 @@ tests :: TestTree
 tests = testGroup "Base64 Tests"
     [ testVectors
     , sanityTests
+    , alphabetTests
     ]
 
 testVectors :: TestTree
@@ -76,3 +77,27 @@ sanityTests = testGroup "Sanity tests"
       bs <- random n
       B64.decodeBase64 (B64.encodeBase64' bs) @=? Right bs
       B64U.decodeBase64 (B64U.encodeBase64' bs) @=? Right bs
+
+alphabetTests :: TestTree
+alphabetTests = testGroup "Alphabet tests"
+    [ base64Tests 0
+    , base64Tests 4
+    , base64Tests 5
+    , base64Tests 6
+    , base64Tests 100
+    , base64UrlTests 0
+    , base64UrlTests 4
+    , base64UrlTests 5
+    , base64UrlTests 6
+    , base64UrlTests 100
+    ]
+  where
+    base64Tests n = testCase ("Conforms to Base64 alphabet: " ++ show n) $ do
+      bs <- random n
+      assertBool "failed" $
+        B64.isBase64 (B64.encodeBase64Unpadded' bs)
+
+    base64UrlTests n = testCase ("Conforms to Base64url alphabet: " ++ show n) $ do
+      bs <- random n
+      assertBool "failed" $
+        B64U.isBase64Url (B64U.encodeBase64Unpadded' bs)
