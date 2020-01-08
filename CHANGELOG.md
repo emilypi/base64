@@ -1,5 +1,9 @@
 # Revision history for base64
 
+## 0.3.1.0 -- 2020-01-08
+
+* Bug fix for `isBase64` and `isBase64Url` - wrong alphabet was used, is now correct
+
 ## 0.3.0.0 -- 2020-01-07
 
 * After a discussion with lexilambda, we're making 'encodeBase64' be `ByteString -> Text` by default, offering `ByteString -> ByteString` as
