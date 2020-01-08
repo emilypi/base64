@@ -115,5 +115,5 @@ decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 isBase64 :: ByteString -> Bool
 isBase64 = BS.all (`BS.elem` alphabet)
   where
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 {-# INLINE isBase64 #-}

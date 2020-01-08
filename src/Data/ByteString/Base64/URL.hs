@@ -106,5 +106,5 @@ decodeBase64Lenient = decodeBase64Lenient_ decodeB64UrlTable
 isBase64Url :: ByteString -> Bool
 isBase64Url = BS.all (`BS.elem` alphabet)
   where
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 {-# INLINE isBase64Url #-}
