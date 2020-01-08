@@ -85,5 +85,5 @@ decodeBase64Lenient = T.decodeUtf8
 isBase64Url :: Text -> Bool
 isBase64Url = T.all (isJust . flip T.find alphabet . (==))
   where
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 {-# INLINE isBase64Url #-}
