@@ -24,7 +24,7 @@ tests :: TestTree
 tests = testGroup "Base64 Tests"
     [ testVectors
     , sanityTests
-    -- , alphabetTests
+    , alphabetTests
     ]
 
 testVectors :: TestTree

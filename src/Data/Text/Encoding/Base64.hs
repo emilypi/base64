@@ -25,9 +25,7 @@ module Data.Text.Encoding.Base64
 
 import qualified Data.ByteString.Base64 as B64
 
-import Data.Maybe (isJust)
 import Data.Text (Text)
-import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 -- | Encode a 'Text' value in Base64 with padding.

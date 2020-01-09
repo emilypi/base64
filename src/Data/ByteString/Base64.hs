@@ -122,14 +122,5 @@ isBase64 bs = isValidBase64 bs && isRight (decodeBase64 bs)
 -- | Tell whether a 'ByteString' value is valid Base64
 --
 isValidBase64 :: ByteString -> Bool
-isValidBase64 bs = snd (BS.foldr' go (0, True) bs)
-  where
-    go w (!acc, !b)
-      | acc == l = (acc, b)
-      | w == 0x3d, acc == (l - 1) = (succ acc, True && b)
-      | w == 0x3d, acc == (l - 2) = (succ acc, True && b)
-      | w == 0x3d = (succ acc, False && b)
-      | otherwise = (succ acc, w `BS.elem` alphabet && b)
-    !l = BS.length bs
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+isValidBase64 = validateBase64 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 {-# INLINE isValidBase64 #-}

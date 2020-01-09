@@ -113,13 +113,5 @@ isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 bs)
 -- | Tell whether a 'ByteString' is valid Base64url.
 --
 isValidBase64Url :: ByteString -> Bool
-isValidBase64Url bs = snd (BS.foldl' go (0, True) bs)
-  where
-    go (!acc, !b) w
-      | w == 0x3d, acc == l = (succ acc, True && b)
-      | w == 0x3d, acc == (l - 1) = (succ acc, True && b)
-      | w == 0x3d = (succ acc, False && b)
-      | otherwise = (succ acc, w `BS.elem` alphabet && b)
-    !l = BS.length bs
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+isValidBase64Url = validateBase64 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 {-# INLINE isValidBase64Url #-}
