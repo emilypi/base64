@@ -126,6 +126,8 @@ validateBase64 !alphabet (PS !fp off !l) =
               | otherwise = BS.elem a alphabet
 
         if f w then go (plusPtr p 1) end else return False
+{-# INLINE validateBase64 #-}
+
 -- -------------------------------------------------------------------------- --
 -- Encode Base64
 

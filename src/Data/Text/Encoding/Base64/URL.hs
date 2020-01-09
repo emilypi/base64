@@ -85,7 +85,11 @@ isBase64Url :: Text -> Bool
 isBase64Url = B64U.isBase64Url . T.encodeUtf8
 {-# INLINE isBase64Url #-}
 
--- | Tell whether a 'Text' value is valid Base64url
+-- | Tell whether a 'Text' value is valid Base64url (is it the correct format?)
+--
+-- This will not tell you whether or not this is a correct Base64url representation,
+-- only that it conforms to the correct shape. To check whether it is a true
+-- Base64 encoded 'Text' value, use 'isBase64Url'.
 --
 isValidBase64Url :: Text -> Bool
 isValidBase64Url = B64U.isValidBase64Url . T.encodeUtf8

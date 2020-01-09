@@ -110,7 +110,11 @@ isBase64Url :: ByteString -> Bool
 isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 bs)
 {-# INLINE isBase64Url #-}
 
--- | Tell whether a 'ByteString' is valid Base64url.
+-- | Tell whether a 'ByteString' is valid Base64url (is it the correct format?)
+--
+-- This will not tell you whether or not this is a correct Base64url representation,
+-- only that it conforms to the correct shape. To check whether it is a true
+-- Base64 encoded 'ByteString' value, use 'isBase64Url'.
 --
 isValidBase64Url :: ByteString -> Bool
 isValidBase64Url = validateBase64 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
