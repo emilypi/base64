@@ -2,7 +2,9 @@
 
 ## 0.3.1.0 -- 2020-01-08
 
-* Bug fix for `isBase64` and `isBase64Url` - wrong alphabet was used, is now correct
+* Bug fix for `isBase64` and `isBase64Url` - wrong alphabet was used, is now correct, also has correct unutterable semantic
+* Dropped Cabal version to 2.0 for backcompat with Stack
+* Better documentation
 
 ## 0.3.0.0 -- 2020-01-07
 
