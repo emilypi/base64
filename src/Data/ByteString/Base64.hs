@@ -113,13 +113,13 @@ decodeBase64Lenient :: ByteString -> ByteString
 decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 {-# INLINE decodeBase64Lenient #-}
 
--- | Tell whether a 'ByteString' value is base64 encoded (is valid and can be decoded)
+-- | Tell whether a 'ByteString' value is base64 encoded.
 --
 isBase64 :: ByteString -> Bool
 isBase64 bs = isValidBase64 bs && isRight (decodeBase64 bs)
 {-# INLINE isBase64 #-}
 
--- | Tell whether a 'ByteString' value is valid Base64 (is it the correct format?)
+-- | Tell whether a 'ByteString' value is a valid Base64 format.
 --
 -- This will not tell you whether or not this is a correct Base64url representation,
 -- only that it conforms to the correct shape. To check whether it is a true
