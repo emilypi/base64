@@ -17,7 +17,7 @@ What does this library provide? Here is the summary:
 - Support for `Text` encodings and decodings
 - Optics for handling more complex structures with Base64 representations via the `base64-lens` package
 
-There are no dependencies aside from `base`:
+There are no dependencies aside from those bundled with GHC:
 
 ![base64 dependencies](https://i.imgur.com/qynI5HM.png)
 
