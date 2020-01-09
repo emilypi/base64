@@ -35,6 +35,9 @@ module Data.ByteString.Base64.Internal
 
   -- ** Base64-url
 , base64UrlTable
+
+  -- * Validating Base64
+, validateBase64
 ) where
 
 
@@ -103,6 +106,26 @@ base64Table = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012
 {-# NOINLINE base64Table #-}
 
 
+-- -------------------------------------------------------------------------- --
+-- Validating Base64
+
+validateBase64 :: ByteString -> ByteString -> Bool
+validateBase64 !alphabet (PS !fp off !l) =
+    accursedUnutterablePerformIO $ withForeignPtr fp $ \p ->
+      go (plusPtr p off) (plusPtr p (l + off))
+  where
+    go !p !end
+      | p == end = return True
+      | otherwise = do
+        !w <- peek p
+
+        let f !a
+              | a == 0x3d, plusPtr p 1 == end = True
+              | a == 0x3d, plusPtr p 2 == end = True
+              | a == 0x3d = False
+              | otherwise = BS.elem a alphabet
+
+        if f w then go (plusPtr p 1) end else return False
 -- -------------------------------------------------------------------------- --
 -- Encode Base64
 
