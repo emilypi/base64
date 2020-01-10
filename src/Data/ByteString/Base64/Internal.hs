@@ -43,7 +43,6 @@ module Data.ByteString.Base64.Internal
 
 
 import Data.Bits
-import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.ByteString.Internal
 import Data.Text (Text)
