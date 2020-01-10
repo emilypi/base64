@@ -35,7 +35,7 @@ main :: IO ()
 main = defaultMain $ bench' stepwise random encode_
     ++ bench' stepwise (fmap B64.encodeBase64' . random) decode_
     ++ bench' stepwise (fmap B64.encodeBase64' . random) lenient_
-    bench' chonkers random mbPerSec
+    ++ bench' chonkers random mbPerSec
 
   where
     bench' sz f b = fmap (benchN f b) sz
