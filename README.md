@@ -3,9 +3,9 @@
 [![Build Status](https://travis-ci.com/emilypi/base64.svg?branch=master)](https://travis-ci.com/emilypi/base64)
 [![Hackage](https://img.shields.io/hackage/v/base64.svg)](https://hackage.haskell.org/package/base64)
 
-Padded and unpadded base64 and base64url encodings for `Text` and `ByteString` values, along with their optics.
+Padded and unpadded base64 and base64url encoding and decoding for `Text` and `ByteString` values.
 
-For the companion `Prism`s and pattern synonyms, see [base64-lens](https://hackage.haskell.org/package/base64-lens).
+For the companion optics and pattern synonyms, see [base64-lens](https://hackage.haskell.org/package/base64-lens).
 
 
 ### Summary
