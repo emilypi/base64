@@ -2,7 +2,8 @@
 
 ## 0.3.1.0 -- 2020-01-08
 
-* Bug fix for `isBase64` and `isBase64Url` - wrong alphabet was used, is now correct, also has correct unutterable semantic
+* Bug fix for `isBase64` and `isBase64Url` - wrong alphabet was used
+* Added `isValidBase64` and `isValidBase64Url` for alphabet conformity. The `isBase64*` functions now tell if it's *correct* base64 now in the sense that it's decodable and valid.
 * Dropped Cabal version to 2.0 for backcompat with Stack
 * Better documentation
 

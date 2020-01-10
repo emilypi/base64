@@ -32,13 +32,15 @@ import qualified Data.Text.Encoding.Base64 as B64T
 
 
 main :: IO ()
-main = defaultMain $ bench' random encode_
-    ++ bench' (fmap B64.encodeBase64' . random) decode_
-    ++ bench' (fmap B64.encodeBase64' . random) lenient_
+main = defaultMain $ bench' stepwise random encode_
+    ++ bench' stepwise (fmap B64.encodeBase64' . random) decode_
+    ++ bench' stepwise (fmap B64.encodeBase64' . random) lenient_
+    bench' chonkers random mbPerSec
 
   where
-    bench' f b = fmap (benchN f b) sizes
-    sizes = [25,100,1000,10000,100000]
+    bench' sz f b = fmap (benchN f b) sz
+    stepwise = [25,100,1000,10000,100000]
+    chonkers = fmap (* 1000000) [1..5]
     benchN f bs n = env (f n) $ bgroup (show n) . bs
 
     encode_ e =
@@ -61,6 +63,14 @@ main = defaultMain $ bench' random encode_
       [ bgroup "base64 decode-lenient"
         [ lenientBench @'Bos e
         , lenientBench @'B64 e
+        ]
+      ]
+
+    mbPerSec e =
+      [ bgroup "base64 MB/s benches"
+        [ encodeBench @'Mem e
+        , encodeBench @'Bos e
+        , encodeBench @'B64 e
         ]
       ]
 
