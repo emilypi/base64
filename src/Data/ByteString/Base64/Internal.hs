@@ -132,6 +132,77 @@ validateBase64 !alphabet (PS fp off l) =
 -- -------------------------------------------------------------------------- --
 -- Encode Base64
 
+-- | Read 'Word8' index off alphabet addr
+--
+aix :: Word8 -> Addr# -> Word8
+aix (W8# i) alpha = W8# (indexWord8OffAddr# alpha (word2Int# i))
+{-# INLINE aix #-}
+
+w32 :: Word8 -> Word32
+w32 = fromIntegral
+{-# INLINE w32 #-}
+
+-- | Encoding inner loop. Packs 3 bytes from src pointer into
+-- the first 6 bytes of 4 'Word8''s (using the encoding table,
+-- as 2 'Word12''s ), writing these to the dst pointer.
+--
+innerLoop
+    :: Ptr Word16
+    -> Ptr Word8
+    -> Ptr Word16
+    -> Ptr Word8
+    -> (Ptr Word8 -> Ptr Word8 -> IO ())
+    -> IO ()
+innerLoop etable sptr dptr end finalize = go sptr dptr
+  where
+    go !src !dst
+      | plusPtr src 2 >= end = finalize src (castPtr dst)
+      | otherwise = do
+
+        !i <- w32 <$> peek src
+        !j <- w32 <$> peek (plusPtr src 1)
+        !k <- w32 <$> peek (plusPtr src 2)
+
+        let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
+
+        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
+        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
+
+        poke dst x
+        poke (plusPtr dst 2) y
+
+        go (plusPtr src 3) (plusPtr dst 4)
+{-# INLINE innerLoop #-}
+
+-- | Unpadded encoding loop, finalized as a bytestring using the
+-- resultant length count.
+--
+innerLoopNopad
+    :: Ptr Word16
+    -> Ptr Word8
+    -> Ptr Word16
+    -> Ptr Word8
+    -> (Ptr Word8 -> Ptr Word8 -> Int -> IO ByteString)
+    -> IO ByteString
+innerLoopNopad etable sptr dptr end finalize = go sptr dptr 0
+  where
+    go !src !dst !n
+      | plusPtr src 2 >= end = finalize src (castPtr dst) n
+      | otherwise = do
+        !i <- w32 <$> peek src
+        !j <- w32 <$> peek (plusPtr src 1)
+        !k <- w32 <$> peek (plusPtr src 2)
+
+        let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
+        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
+        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
+
+        poke dst x
+        poke (plusPtr dst 2) y
+
+        go (plusPtr src 3) (plusPtr dst 4) (n + 4)
+{-# INLINE innerLoopNopad #-}
+
 encodeBase64_ :: EncodingTable -> ByteString -> ByteString
 encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
     unsafeCreate dlen $ \dptr ->
@@ -154,41 +225,9 @@ encodeBase64_'
     -> Ptr Word16
     -> Ptr Word8
     -> IO ()
-encodeBase64_' (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
+encodeBase64_' (Ptr !alpha) !etable !sptr !dptr !end =
+    innerLoop etable sptr dptr end finalize
   where
-    ix (W8# i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
-    {-# INLINE ix #-}
-
-    w32 :: Word8 -> Word32
-    w32 = fromIntegral
-    {-# INLINE w32 #-}
-
-    go !src !dst
-      | plusPtr src 2 >= end = finalize src (castPtr dst)
-      | otherwise = do
-
-        -- ideally, we want to do single read @uint32_t w = src[0..3]@ and simply
-        -- discard the upper bits. TODO.
-        --
-        !i <- w32 <$> peek src
-        !j <- w32 <$> peek (plusPtr src 1)
-        !k <- w32 <$> peek (plusPtr src 2)
-
-        -- pack 3 'Word8's into a the first 24 bits of a 'Word32'
-        --
-        let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
-
-        -- ideally, we'd want to pack this is in a single read, then
-        -- a single write
-        --
-        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
-        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
-
-        poke dst x
-        poke (plusPtr dst 2) y
-
-        go (plusPtr src 3) (plusPtr dst 4)
-
     finalize !src !dst
       | src == end = return ()
       | otherwise = do
@@ -197,7 +236,7 @@ encodeBase64_' (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
         let !a = shiftR (k .&. 0xfc) 2
             !b = shiftL (k .&. 0x03) 4
 
-        pokeByteOff dst 0 (ix a)
+        pokeByteOff dst 0 (aix a alpha)
 
         if plusPtr src 2 == end
         then do
@@ -206,14 +245,12 @@ encodeBase64_' (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
           let !b' = shiftR (k' .&. 0xf0) 4 .|. b
               !c' = shiftL (k' .&. 0x0f) 2
 
-          -- ideally, we'd want to pack these is in a single write
-          --
-          pokeByteOff dst 1 (ix b')
-          pokeByteOff dst 2 (ix c')
+          pokeByteOff dst 1 (aix b' alpha)
+          pokeByteOff dst 2 (aix c' alpha)
           pokeByteOff @Word8 dst 3 0x3d
 
         else do
-          pokeByteOff dst 1 (ix b)
+          pokeByteOff dst 1 (aix b alpha)
           pokeByteOff @Word8 dst 2 0x3d
           pokeByteOff @Word8 dst 3 0x3d
 {-# INLINE encodeBase64_' #-}
@@ -244,49 +281,23 @@ encodeBase64Nopad_'
     -> Ptr Word8
     -> ForeignPtr Word8
     -> IO ByteString
-encodeBase64Nopad_' (Ptr !alpha) !etable !sptr !dptr !end !dfp = go sptr dptr 0
+encodeBase64Nopad_' (Ptr !alpha) !etable !sptr !dptr !end !dfp =
+    innerLoopNopad etable sptr dptr end finalize
   where
-    ix (W8# i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
-    {-# INLINE ix #-}
-
-    finish !n = return (PS dfp 0 n)
-    {-# INLINE finish #-}
-
-    w32 :: Word8 -> Word32
-    w32 = fromIntegral
-    {-# INLINE w32 #-}
-
-    go !src !dst !n
-      | plusPtr src 2 >= end = finalize src (castPtr dst) n
-      | otherwise = do
-        !i <- w32 <$> peek src
-        !j <- w32 <$> peek (plusPtr src 1)
-        !k <- w32 <$> peek (plusPtr src 2)
-
-        let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
-
-        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
-        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
-
-        poke dst x
-        poke (plusPtr dst 2) y
-
-        go (plusPtr src 3) (plusPtr dst 4) (n + 4)
-
     finalize !src !dst !n
-      | src == end = finish n
+      | src == end = return (PS dfp 0 n)
       | otherwise = do
         !k <- peekByteOff src 0
 
         let !a = shiftR (k .&. 0xfc) 2
             !b = shiftL (k .&. 0x03) 4
 
-        pokeByteOff dst 0 (ix a)
+        pokeByteOff dst 0 (aix a alpha)
 
         if plusPtr src 2 /= end
         then do
-          pokeByteOff dst 1 (ix b)
-          finish (n + 2)
+          pokeByteOff dst 1 (aix b alpha)
+          return (PS dfp 0 (n + 2))
         else do
           !k' <- peekByteOff src 1
 
@@ -295,9 +306,9 @@ encodeBase64Nopad_' (Ptr !alpha) !etable !sptr !dptr !end !dfp = go sptr dptr 0
 
           -- ideally, we'd want to pack these is in a single write
           --
-          pokeByteOff dst 1 (ix b')
-          pokeByteOff dst 2 (ix c')
-          finish (n + 3)
+          pokeByteOff dst 1 (aix b' alpha)
+          pokeByteOff dst 2 (aix c' alpha)
+          return (PS dfp 0 (n + 3))
 
 
 -- -------------------------------------------------------------------------- --
