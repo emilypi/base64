@@ -110,16 +110,16 @@ base64Table = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012
 -- Validating Base64
 
 validateBase64 :: ByteString -> ByteString -> Bool
-validateBase64 !alphabet (PS !fp off !l) =
+validateBase64 !alphabet (PS fp off l) =
     accursedUnutterablePerformIO $ withForeignPtr fp $ \p ->
       go (plusPtr p off) (plusPtr p (l + off))
   where
     go !p !end
       | p == end = return True
       | otherwise = do
-        !w <- peek p
+        w <- peek p
 
-        let f !a
+        let f a
               | a == 0x3d, plusPtr p 1 == end = True
               | a == 0x3d, plusPtr p 2 == end = True
               | a == 0x3d = False
