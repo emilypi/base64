@@ -27,7 +27,6 @@ module Data.ByteString.Base64
 
 
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
 import Data.ByteString.Base64.Internal
 import Data.Either (isRight)
 import Data.Text (Text)
@@ -89,7 +88,7 @@ encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 encodeBase64Unpadded' :: ByteString -> ByteString
-encodeBase64Unpadded' =  BS.takeWhile ((/=) 0x3d) . encodeBase64_ base64Table
+encodeBase64Unpadded' = encodeBase64Nopad_ base64Table
 {-# INLINE encodeBase64Unpadded' #-}
 
 -- | Decode an unpadded Base64-encoded 'ByteString'.

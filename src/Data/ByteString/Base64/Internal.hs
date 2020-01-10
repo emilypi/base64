@@ -18,6 +18,7 @@
 module Data.ByteString.Base64.Internal
 ( -- * Base64 encoding
   encodeBase64_
+, encodeBase64Nopad_
 
   -- * Base64 decoding
 , decodeBase64_
@@ -143,7 +144,6 @@ encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
         (castPtr dptr)
         (plusPtr sptr (soff + slen))
   where
-    dlen :: Int
     !dlen = 4 * ((slen + 2) `div` 3)
 {-# INLINE encodeBase64_ #-}
 
@@ -189,8 +189,6 @@ encodeBase64_' (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
 
         go (plusPtr src 3) (plusPtr dst 4)
 
-
-    finalize :: Ptr Word8 -> Ptr Word8 -> IO ()
     finalize !src !dst
       | src == end = return ()
       | otherwise = do
@@ -219,6 +217,88 @@ encodeBase64_' (Ptr !alpha) !etable !sptr !dptr !end = go sptr dptr
           pokeByteOff @Word8 dst 2 0x3d
           pokeByteOff @Word8 dst 3 0x3d
 {-# INLINE encodeBase64_' #-}
+
+
+encodeBase64Nopad_ :: EncodingTable -> ByteString -> ByteString
+encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
+    unsafeDupablePerformIO $ do
+      dfp <- mallocPlainForeignPtrBytes dlen
+      withForeignPtr dfp $ \dptr ->
+        withForeignPtr efp $ \etable ->
+        withForeignPtr sfp $ \sptr ->
+          encodeBase64Nopad_'
+            aptr
+            etable
+            (plusPtr sptr soff)
+            (castPtr dptr)
+            (plusPtr sptr (soff + slen))
+            dfp
+  where
+    !dlen = 4 * ((slen + 2) `div` 3)
+
+encodeBase64Nopad_'
+    :: Ptr Word8
+    -> Ptr Word16
+    -> Ptr Word8
+    -> Ptr Word16
+    -> Ptr Word8
+    -> ForeignPtr Word8
+    -> IO ByteString
+encodeBase64Nopad_' (Ptr !alpha) !etable !sptr !dptr !end !dfp = go sptr dptr 0
+  where
+    ix (W8# i) = W8# (indexWord8OffAddr# alpha (word2Int# i))
+    {-# INLINE ix #-}
+
+    finish !n = return (PS dfp 0 n)
+    {-# INLINE finish #-}
+
+    w32 :: Word8 -> Word32
+    w32 = fromIntegral
+    {-# INLINE w32 #-}
+
+    go !src !dst !n
+      | plusPtr src 2 >= end = finalize src (castPtr dst) n
+      | otherwise = do
+        !i <- w32 <$> peek src
+        !j <- w32 <$> peek (plusPtr src 1)
+        !k <- w32 <$> peek (plusPtr src 2)
+
+        let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
+
+        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
+        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
+
+        poke dst x
+        poke (plusPtr dst 2) y
+
+        go (plusPtr src 3) (plusPtr dst 4) (n + 4)
+
+    finalize !src !dst !n
+      | src == end = finish n
+      | otherwise = do
+        !k <- peekByteOff src 0
+
+        let !a = shiftR (k .&. 0xfc) 2
+            !b = shiftL (k .&. 0x03) 4
+
+        pokeByteOff dst 0 (ix a)
+
+        if plusPtr src 2 /= end
+        then do
+          pokeByteOff dst 1 (ix b)
+          finish (n + 2)
+        else do
+          !k' <- peekByteOff src 1
+
+          let !b' = shiftR (k' .&. 0xf0) 4 .|. b
+              !c' = shiftL (k' .&. 0x0f) 2
+
+          -- ideally, we'd want to pack these is in a single write
+          --
+          pokeByteOff dst 1 (ix b')
+          pokeByteOff dst 2 (ix c')
+          finish (n + 3)
+
 
 -- -------------------------------------------------------------------------- --
 -- Decoding Base64
