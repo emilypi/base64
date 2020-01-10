@@ -12,10 +12,11 @@ For the companion `Prism`s and pattern synonyms, see [base64-lens](https://hacka
 
 What does this library provide? Here is the summary:
 
-- Better performance over existing Base64 libraries (see [PERFORMANCE.md](benchmarks/PERFORMANCE.md))
-- Support for unpadded Base64 and Base64-url
+- Good performance compared to existing Base64 libraries (see [PERFORMANCE.md](benchmarks/PERFORMANCE.md))
+- Support for padded and unpadded Base64 and Base64url
 - Support for `Text` encodings and decodings
 - Optics for handling more complex structures with Base64 representations via the `base64-lens` package
+- Checks for both valid Base64 and correct Base64 and Base64url encodings
 
 There are no dependencies aside from those bundled with GHC:
 
