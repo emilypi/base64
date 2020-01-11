@@ -45,7 +45,7 @@ encodeBase64 = T.decodeUtf8 . encodeBase64'
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
 --
 encodeBase64' :: ByteString -> ByteString
-encodeBase64' = encodeBase64_ base64UrlTable
+encodeBase64' = encodeBase64_ Padded base64UrlTable
 {-# INLINE encodeBase64' #-}
 
 -- | Decode a padded Base64url encoded 'ByteString' value. If its length is not a multiple
@@ -57,7 +57,7 @@ encodeBase64' = encodeBase64_ base64UrlTable
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 = decodeBase64_ True decodeB64UrlTable
+decodeBase64 = decodeBase64_ Padded decodeB64UrlTable
 {-# INLINE decodeBase64 #-}
 
 -- | Encode a 'ByteString' value as Base64url 'Text' without padding. Note that for Base64url,
@@ -77,7 +77,7 @@ encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 encodeBase64Unpadded' :: ByteString -> ByteString
-encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
+encodeBase64Unpadded' = encodeBase64_ Unpadded base64UrlTable
 {-# INLINE encodeBase64Unpadded' #-}
 
 -- | Decode a padded Base64url-encoded 'ByteString' value. If its length is not a multiple
@@ -90,7 +90,7 @@ encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
-decodeBase64Unpadded = decodeBase64_ False decodeB64UrlTable
+decodeBase64Unpadded = decodeBase64_ Unpadded decodeB64UrlTable
 {-# INLINE decodeBase64Unpadded #-}
 
 -- | Leniently decode an unpadded Base64url-encoded 'ByteString'. This function

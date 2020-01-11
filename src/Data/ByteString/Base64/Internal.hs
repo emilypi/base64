@@ -18,7 +18,6 @@
 module Data.ByteString.Base64.Internal
 ( -- * Base64 encoding
   encodeBase64_
-, encodeBase64Nopad_
 
   -- * Base64 decoding
 , decodeBase64_
@@ -39,6 +38,8 @@ module Data.ByteString.Base64.Internal
 
   -- * Validating Base64
 , validateBase64
+  -- * Misc. Data
+, Padding(..)
 ) where
 
 
@@ -66,6 +67,8 @@ import System.IO.Unsafe
 data EncodingTable = EncodingTable
   {-# UNPACK #-} !(Ptr Word8)
   {-# UNPACK #-} !(ForeignPtr Word16)
+
+data Padding = Padded | Unpadded deriving Eq
 
 -- | Allocate and fill @n@ bytes with some data
 --
@@ -109,6 +112,9 @@ base64Table = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012
 -- -------------------------------------------------------------------------- --
 -- Validating Base64
 
+-- | note that the use of accursed here is sound - we do not allocate; only reads and
+-- comparisons.
+--
 validateBase64 :: ByteString -> ByteString -> Bool
 validateBase64 !alphabet (PS fp off l) =
     accursedUnutterablePerformIO $ withForeignPtr fp $ \p ->
@@ -131,6 +137,16 @@ validateBase64 !alphabet (PS fp off l) =
 -- -------------------------------------------------------------------------- --
 -- Encode Base64
 
+
+type LoopHead
+    = Padding -> EncodingTable -> ByteString -> ByteString
+
+type InnerLoop
+    = Ptr Word16 -> Ptr Word8 -> Ptr Word16 -> Ptr Word8 -> LoopTail -> IO ByteString
+
+type LoopTail
+    = Ptr Word8 -> Ptr Word8 -> Ptr Word8 -> Int -> IO ByteString
+
 -- | Read 'Word8' index off alphabet addr
 --
 aix :: Word8 -> Addr# -> Word8
@@ -141,52 +157,15 @@ w32 :: Word8 -> Word32
 w32 = fromIntegral
 {-# INLINE w32 #-}
 
--- | Encoding inner loop. Packs 3 bytes from src pointer into
--- the first 6 bytes of 4 'Word8''s (using the encoding table,
--- as 2 'Word12''s ), writing these to the dst pointer.
---
-innerLoop
-    :: Ptr Word16
-    -> Ptr Word8
-    -> Ptr Word16
-    -> Ptr Word8
-    -> (Ptr Word8 -> Ptr Word8 -> IO ())
-    -> IO ()
-innerLoop etable sptr dptr end finalize = go sptr dptr
-  where
-    go !src !dst
-      | plusPtr src 2 >= end = finalize src (castPtr dst)
-      | otherwise = do
-
-        !i <- w32 <$> peek src
-        !j <- w32 <$> peek (plusPtr src 1)
-        !k <- w32 <$> peek (plusPtr src 2)
-
-        let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
-
-        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
-        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
-
-        poke dst x
-        poke (plusPtr dst 2) y
-
-        go (plusPtr src 3) (plusPtr dst 4)
-{-# INLINE innerLoop #-}
-
 -- | Unpadded encoding loop, finalized as a bytestring using the
 -- resultant length count.
 --
-innerLoopNopad
-    :: Ptr Word16
-    -> Ptr Word8
-    -> Ptr Word16
-    -> Ptr Word8
-    -> (Ptr Word8 -> Ptr Word8 -> Int -> IO ByteString)
-    -> IO ByteString
-innerLoopNopad etable sptr dptr end finalize = go sptr dptr 0
+innerLoop :: InnerLoop
+innerLoop !etable !sptr !dptr !end !loopTail = go sptr dptr 0
   where
     go !src !dst !n
-      | plusPtr src 2 >= end = finalize src (castPtr dst) n
+      | plusPtr src 2 >= end =
+        loopTail src (castPtr dst) end n
       | otherwise = do
         !i <- w32 <$> peek src
         !j <- w32 <$> peek (plusPtr src 1)
@@ -200,114 +179,66 @@ innerLoopNopad etable sptr dptr end finalize = go sptr dptr 0
         poke (plusPtr dst 2) y
 
         go (plusPtr src 3) (plusPtr dst 4) (n + 4)
-{-# INLINE innerLoopNopad #-}
+{-# INLINE innerLoop #-}
 
-encodeBase64_ :: EncodingTable -> ByteString -> ByteString
-encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
-    unsafeCreate dlen $ \dptr ->
-    withForeignPtr sfp $ \sptr ->
-    withForeignPtr efp $ \eptr ->
-      encodeBase64_'
-        aptr
-        eptr
-        (plusPtr sptr soff)
-        (castPtr dptr)
-        (plusPtr sptr (soff + slen))
+encodeBase64_ :: LoopHead
+encodeBase64_ !pad (EncodingTable (Ptr !alpha) !efp) (PS !sfp !soff !slen) =
+    unsafeDupablePerformIO $ do
+      dfp <- mallocPlainForeignPtrBytes dlen
+      withForeignPtr dfp $ \dptr ->
+        withForeignPtr sfp $ \sptr ->
+        withForeignPtr efp $ \eptr ->
+          innerLoop
+          eptr
+          (plusPtr sptr soff)
+          (castPtr dptr)
+          (plusPtr sptr (soff + slen))
+          (encodeLoopTail pad alpha dfp)
+
   where
     !dlen = 4 * ((slen + 2) `div` 3)
 {-# INLINE encodeBase64_ #-}
 
-encodeBase64_'
-    :: Ptr Word8
-    -> Ptr Word16
-    -> Ptr Word8
-    -> Ptr Word16
-    -> Ptr Word8
-    -> IO ()
-encodeBase64_' (Ptr !alpha) !etable !sptr !dptr !end =
-    innerLoop etable sptr dptr end finalize
-  where
-    finalize !src !dst
-      | src == end = return ()
-      | otherwise = do
-        !k <- peekByteOff src 0
-
-        let !a = shiftR (k .&. 0xfc) 2
-            !b = shiftL (k .&. 0x03) 4
-
-        pokeByteOff dst 0 (aix a alpha)
-
-        if plusPtr src 2 /= end
-        then do
-          pokeByteOff dst 1 (aix b alpha)
-          pokeByteOff @Word8 dst 2 0x3d
-          pokeByteOff @Word8 dst 3 0x3d
-        else do
-          !k' <- peekByteOff src 1
-
-          let !b' = shiftR (k' .&. 0xf0) 4 .|. b
-              !c' = shiftL (k' .&. 0x0f) 2
-
-          pokeByteOff dst 1 (aix b' alpha)
-          pokeByteOff dst 2 (aix c' alpha)
-          pokeByteOff @Word8 dst 3 0x3d
-{-# INLINE encodeBase64_' #-}
-
-
-encodeBase64Nopad_ :: EncodingTable -> ByteString -> ByteString
-encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
-    unsafeDupablePerformIO $ do
-      dfp <- mallocPlainForeignPtrBytes dlen
-      withForeignPtr dfp $ \dptr ->
-        withForeignPtr efp $ \etable ->
-        withForeignPtr sfp $ \sptr ->
-          encodeBase64Nopad_'
-            aptr
-            etable
-            (plusPtr sptr soff)
-            (castPtr dptr)
-            (plusPtr sptr (soff + slen))
-            dfp
-  where
-    !dlen = 4 * ((slen + 2) `div` 3)
-
-encodeBase64Nopad_'
-    :: Ptr Word8
-    -> Ptr Word16
-    -> Ptr Word8
-    -> Ptr Word16
-    -> Ptr Word8
+encodeLoopTail
+    :: Padding
+    -> Addr#
     -> ForeignPtr Word8
-    -> IO ByteString
-encodeBase64Nopad_' (Ptr !alpha) !etable !sptr !dptr !end !dfp =
-    innerLoopNopad etable sptr dptr end finalize
-  where
-    finalize !src !dst !n
-      | src == end = return (PS dfp 0 n)
-      | otherwise = do
-        !k <- peekByteOff src 0
+    -> LoopTail
+encodeLoopTail !padding !alpha !dfp !src !dst !end !n
+    | src == end = return (PS dfp 0 n)
+    | otherwise = do
+      !k <- peekByteOff src 0
 
-        let !a = shiftR (k .&. 0xfc) 2
-            !b = shiftL (k .&. 0x03) 4
+      let !a = shiftR (k .&. 0xfc) 2
+          !b = shiftL (k .&. 0x03) 4
+          !pad = padding == Padded
 
-        pokeByteOff dst 0 (aix a alpha)
+      pokeByteOff dst 0 (aix a alpha)
 
-        if plusPtr src 2 /= end
-        then do
+      if
+        | plusPtr src 2 /= end -> do
           pokeByteOff dst 1 (aix b alpha)
-          return (PS dfp 0 (n + 2))
-        else do
+          if pad
+          then do
+            pokeByteOff @Word8 dst 2 0x3d
+            pokeByteOff @Word8 dst 3 0x3d
+            return (PS dfp 0 (n + 4))
+          else return (PS dfp 0 (n + 2))
+        | otherwise -> do
           !k' <- peekByteOff src 1
 
           let !b' = shiftR (k' .&. 0xf0) 4 .|. b
               !c' = shiftL (k' .&. 0x0f) 2
 
-          -- ideally, we'd want to pack these is in a single write
-          --
           pokeByteOff dst 1 (aix b' alpha)
           pokeByteOff dst 2 (aix c' alpha)
-          return (PS dfp 0 (n + 3))
 
+          if pad
+          then do
+            pokeByteOff @Word8 dst 3 0x3d
+            return (PS dfp 0 (n + 4))
+          else return (PS dfp 0 (n + 3))
+{-# INLINE encodeLoopTail #-}
 
 -- -------------------------------------------------------------------------- --
 -- Decoding Base64
@@ -356,10 +287,10 @@ decodeB64UrlTable = writeNPlainForeignPtrBytes @Word8 256
       ]
 {-# NOINLINE decodeB64UrlTable #-}
 
-decodeBase64_ :: Bool -> ForeignPtr Word8 -> ByteString -> Either Text ByteString
+decodeBase64_ :: Padding -> ForeignPtr Word8 -> ByteString -> Either Text ByteString
 decodeBase64_ !padding !dtfp bs@(PS _ _ !slen)
-    | padding = go (BS.append bs (BS.replicate r 0x3d))
-    | r /= 0 && (not padding) = Left "invalid padding"
+    | padding == Padded = go (BS.append bs (BS.replicate r 0x3d))
+    | r /= 0 && (padding == Unpadded) = Left "invalid padding"
     | otherwise = go bs
   where
     (!q, !r) = divMod slen 4
