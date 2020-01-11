@@ -237,8 +237,12 @@ encodeBase64_' (Ptr !alpha) !etable !sptr !dptr !end =
 
         pokeByteOff dst 0 (aix a alpha)
 
-        if plusPtr src 2 == end
+        if plusPtr src 2 /= end
         then do
+          pokeByteOff dst 1 (aix b alpha)
+          pokeByteOff @Word8 dst 2 0x3d
+          pokeByteOff @Word8 dst 3 0x3d
+        else do
           !k' <- peekByteOff src 1
 
           let !b' = shiftR (k' .&. 0xf0) 4 .|. b
@@ -246,11 +250,6 @@ encodeBase64_' (Ptr !alpha) !etable !sptr !dptr !end =
 
           pokeByteOff dst 1 (aix b' alpha)
           pokeByteOff dst 2 (aix c' alpha)
-          pokeByteOff @Word8 dst 3 0x3d
-
-        else do
-          pokeByteOff dst 1 (aix b alpha)
-          pokeByteOff @Word8 dst 2 0x3d
           pokeByteOff @Word8 dst 3 0x3d
 {-# INLINE encodeBase64_' #-}
 
@@ -359,7 +358,7 @@ decodeB64UrlTable = writeNPlainForeignPtrBytes @Word8 256
 
 decodeBase64_ :: Bool -> ForeignPtr Word8 -> ByteString -> Either Text ByteString
 decodeBase64_ !padding !dtfp bs@(PS _ _ !slen)
-    | padding =  go (BS.append bs (BS.replicate r 0x3d))
+    | padding = go (BS.append bs (BS.replicate r 0x3d))
     | r /= 0 && (not padding) = Left "invalid padding"
     | otherwise = go bs
   where
@@ -437,6 +436,7 @@ decodeBase64_' !dtable !sptr !dptr !end !dfp = go dptr sptr 0
                 go (plusPtr dst 3) (plusPtr src 4) (n + 3)
 {-# INLINE decodeBase64_' #-}
 
+
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
 decodeBase64Lenient_ !dtfp (PS !sfp !soff !slen) = unsafeDupablePerformIO $
     withForeignPtr dtfp $ \dtable ->
@@ -471,15 +471,10 @@ decodeBase64Lenient_' !dtable !sptr !dptr !end !dfp = go dptr sptr 0
     finalize !n = return (PS dfp 0 n)
     {-# INLINE finalize #-}
 
-    look
-        :: Bool
-        -> Ptr Word8
-        -> (Ptr Word8 -> Word32 -> IO ByteString)
-        -> IO ByteString
     look skip !p_ f = k p_
       where
         k !p
-          | p >= end = f (plusPtr end (-1)) 0x63
+          | p >= end = f (plusPtr end (-1)) (0x63 :: Word32)
           | otherwise = do
             !i <- peekByteOff @Word8 p 0
             !v <- peekByteOff @Word8 dtable (fromIntegral i)
