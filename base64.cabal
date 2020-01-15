@@ -68,7 +68,7 @@ benchmark bench
                      , base64-bytestring
                      , bytestring
                      , deepseq
-                     , criterion
+                     , gauge
                      , memory
                      , random-bytestring
                      , text
