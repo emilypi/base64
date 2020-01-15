@@ -1,5 +1,9 @@
 # Revision history for base64
 
+## 0.3.1.1 -- 2020-01-15
+
+* Make sure benchmark code builds
+
 ## 0.3.1.0 -- 2020-01-08
 
 * Bug fix for `isBase64` and `isBase64Url` - wrong alphabet was used
