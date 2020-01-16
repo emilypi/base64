@@ -171,7 +171,6 @@ innerLoop etable sptr dptr end finalize = go sptr dptr
         poke (plusPtr dst 2) y
 
         go (plusPtr src 3) (plusPtr dst 4)
-{-# INLINE innerLoop #-}
 
 -- | Unpadded encoding loop, finalized as a bytestring using the
 -- resultant length count.
@@ -200,7 +199,6 @@ innerLoopNopad etable sptr dptr end finalize = go sptr dptr 0
         poke (plusPtr dst 2) y
 
         go (plusPtr src 3) (plusPtr dst 4) (n + 4)
-{-# INLINE innerLoopNopad #-}
 
 encodeBase64_ :: EncodingTable -> ByteString -> ByteString
 encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
@@ -215,7 +213,6 @@ encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
         (plusPtr sptr (soff + slen))
   where
     !dlen = 4 * ((slen + 2) `div` 3)
-{-# INLINE encodeBase64_ #-}
 
 encodeBase64_'
     :: Ptr Word8
@@ -251,7 +248,6 @@ encodeBase64_' (Ptr !alpha) !etable !sptr !dptr !end =
           pokeByteOff dst 1 (aix b' alpha)
           pokeByteOff dst 2 (aix c' alpha)
           pokeByteOff @Word8 dst 3 0x3d
-{-# INLINE encodeBase64_' #-}
 
 
 encodeBase64Nopad_ :: EncodingTable -> ByteString -> ByteString

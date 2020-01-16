@@ -47,7 +47,6 @@ encodeBase64 = T.decodeUtf8 . encodeBase64'
 --
 encodeBase64' :: ByteString -> ByteString
 encodeBase64' = encodeBase64_ base64Table
-{-# INLINE encodeBase64' #-}
 
 -- | Decode a padded Base64-encoded 'ByteString' value.
 --
@@ -89,7 +88,6 @@ encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
 --
 encodeBase64Unpadded' :: ByteString -> ByteString
 encodeBase64Unpadded' = encodeBase64Nopad_ base64Table
-{-# INLINE encodeBase64Unpadded' #-}
 
 -- | Decode an unpadded Base64-encoded 'ByteString'.
 --
