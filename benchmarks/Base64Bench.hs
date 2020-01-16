@@ -27,15 +27,10 @@ import Data.ByteString.Random (random)
 
 
 main :: IO ()
-main = do
-  bs25 <- random 25
-  bs100 <- random 100
-  bs1k <- random 1000
-  bs10k <- random 10000
-  bs100k <- random 100000
-
+main =
   defaultMain
-    [ bgroup "encode"
+    [ env bs $ \ ~(bs25,bs100,bs1k,bs10k,bs100k) ->
+      bgroup "encode"
       [ bgroup "memory"
         [ bench "25" $ whnf ctob bs25
         , bench "100" $ whnf ctob bs100
@@ -43,7 +38,8 @@ main = do
         , bench "10000" $ whnf ctob bs10k
         , bench "100000" $ whnf ctob bs100k
         ]
-      , bgroup "base64-bytestring"
+      ,
+        bgroup "base64-bytestring"
         [ bench "25" $ whnf Bos.encode bs25
         , bench "100" $ whnf Bos.encode bs100
         , bench "1000" $ whnf Bos.encode bs1k
@@ -62,3 +58,11 @@ main = do
   where
     ctob :: ByteString -> ByteString
     ctob = Mem.convertToBase Mem.Base64
+
+    bs = do
+      a <- random 25
+      b <- random 100
+      c <- random 1000
+      d <- random 10000
+      e <- random 100000
+      return (a,b,c,d,e)
