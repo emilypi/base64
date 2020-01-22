@@ -47,13 +47,18 @@ encodeBase64 = T.decodeUtf8 . encodeBase64'
 --
 encodeBase64' :: ByteString -> ByteString
 encodeBase64' = encodeBase64_ base64Table
+{-# INLINE encodeBase64' #-}
 
 -- | Decode a padded Base64-encoded 'ByteString' value.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- /Note:/ This function is not RFC compliant, and __will__ add padding to an
+-- unpadded Base64-encoded value for decoding. For strictly RFC-compliant decoding,
+-- use 'decodeBase64Unpadded'.
+--
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 = decodeBase64_ False decodeB64Table
+decodeBase64 = decodeBase64_ True decodeB64Table
 {-# INLINE decodeBase64 #-}
 
 -- | Encode a 'ByteString' value as Base64 'Text' without padding.
@@ -61,8 +66,7 @@ decodeBase64 = decodeBase64_ False decodeB64Table
 -- __Note:__ in some circumstances, the use of padding ("=") in base-encoded data
 -- is not required or used. This is not one of them. If you are absolutely sure
 -- the length of your bytestring is divisible by 3, this function will be the same
--- as 'encodeBase64' with padding, however, if not, you may see garbage appended to
--- your bytestring.
+-- as 'encodeBase64' with padding.
 --
 -- Only call unpadded variants when you can make assumptions about the length of
 -- your input data.
