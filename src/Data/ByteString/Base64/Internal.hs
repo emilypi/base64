@@ -21,6 +21,7 @@ module Data.ByteString.Base64.Internal
 , encodeBase64Nopad_
 
   -- * Base64 decoding
+, Padding(..)
 , decodeBase64_
 , decodeBase64Lenient_
 
@@ -66,6 +67,16 @@ import System.IO.Unsafe
 data EncodingTable = EncodingTable
   {-# UNPACK #-} !(Ptr Word8)
   {-# UNPACK #-} !(ForeignPtr Word16)
+
+-- | A type isomorphic to 'Bool' marking support for padding out bytestrings (@Pad),
+-- or not (@Nopad@).
+--
+data Padding
+    = Pad
+      -- ^ Do we pad out the bytestring?
+    | NoPad
+      -- ^ Do we not pad out the bytestring?
+    deriving Eq
 
 -- | Allocate and fill @n@ bytes with some data
 --
@@ -331,6 +342,8 @@ decodeB64Table = writeNPlainForeignPtrBytes @Word8 256
       ]
 {-# NOINLINE decodeB64Table #-}
 
+-- | URLsafe b64 decoding table (naive)
+--
 decodeB64UrlTable :: ForeignPtr Word8
 decodeB64UrlTable = writeNPlainForeignPtrBytes @Word8 256
       [ 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
@@ -352,12 +365,21 @@ decodeB64UrlTable = writeNPlainForeignPtrBytes @Word8 256
       ]
 {-# NOINLINE decodeB64UrlTable #-}
 
-decodeBase64_ :: Bool -> ForeignPtr Word8 -> ByteString -> Either Text ByteString
+-- | The main decode function. Takes a padding flag, a decoding table, and
+-- the input value, producing either an error string on the left, or a
+-- decoded value.
+--
+-- Note: If 'Padding' ~ Pad, then we pad out the input to a multiple of 4.
+-- If 'Padding' ~ NoPad, then we do not, and fail if the input is not
+-- a multiple of 4 in length.
+--
+decodeBase64_ :: Padding -> ForeignPtr Word8 -> ByteString -> Either Text ByteString
 decodeBase64_ !padding !dtfp bs@(PS _ _ !slen)
-    | padding = go (BS.append bs (BS.replicate r 0x3d))
-    | r /= 0 && (not padding) = Left "invalid padding"
+    | pad = go (BS.append bs (BS.replicate r 0x3d))
+    | r /= 0 = Left "invalid padding"
     | otherwise = go bs
   where
+    !pad = padding == Pad
     (!q, !r) = divMod slen 4
     !dlen = q * 3
 

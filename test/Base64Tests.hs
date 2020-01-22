@@ -39,14 +39,14 @@ testVectors = testGroup "RFC 4648 Test Vectors"
       , testCaseB64 "fooba" "Zm9vYmE="
       , testCaseB64 "foobar" "Zm9vYmFy"
       ]
-    , testGroup "encode/decode nopad"
+    , testGroup "encode/decode url-safe"
       [ testCaseB64' "" ""
-      , testCaseB64' "f" "Zg=="
-      , testCaseB64' "fo" "Zm8="
-      , testCaseB64' "foo" "Zm9v"
-      , testCaseB64' "foob" "Zm9vYg=="
-      , testCaseB64' "fooba" "Zm9vYmE="
-      , testCaseB64' "foobar" "Zm9vYmFy"
+      , testCaseB64' "<" "PA=="
+      , testCaseB64' "<<" "PDw="
+      , testCaseB64' "<<?" "PDw_"
+      , testCaseB64' "<<??" "PDw_Pw=="
+      , testCaseB64' "<<??>" "PDw_Pz4="
+      , testCaseB64' "<<??>>" "PDw_Pz4-"
       ]
     ]
   where
@@ -63,14 +63,22 @@ testVectors = testGroup "RFC 4648 Test Vectors"
 
     testCaseB64' s t =
       testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
-        let t' = B64.encodeBase64Unpadded' s
-            s' = B64.decodeBase64 t'
+        let t' = B64U.encodeBase64' s
+            s' = B64U.decodeBase64 t'
+            u = B64U.encodeBase64Unpadded' s
+            v = B64U.decodeBase64 u
 
-        step "compare encoding w/o padding"
-        BS.filter (/= 0x3d) t @=? t'
+        step "compare url-safe encoding w/ padding"
+        t @=? t'
 
-        step "compare decoding w/ padding"
+        step "compare url-safe decoding w/ padding"
         Right s @=? s'
+
+        step "compare url-safe encoding w/o padding"
+        t @=? t'
+
+        step "compare url-safe decoding w/o padding"
+        Right s @=? v
 
 sanityTests :: TestTree
 sanityTests = testGroup "Sanity tests"
