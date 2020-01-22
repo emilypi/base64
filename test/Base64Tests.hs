@@ -6,6 +6,7 @@ module Main
 ) where
 
 
+import qualified Data.ByteString as BS
 import "base64" Data.ByteString.Base64 as B64
 import "base64" Data.ByteString.Base64.URL as B64U
 import "base64-bytestring" Data.ByteString.Base64 as Bos
@@ -29,18 +30,47 @@ tests = testGroup "Base64 Tests"
 
 testVectors :: TestTree
 testVectors = testGroup "RFC 4648 Test Vectors"
-    [ testCaseB64 "" ""
-    , testCaseB64 "f" "Zg=="
-    , testCaseB64 "fo" "Zm8="
-    , testCaseB64 "foo" "Zm9v"
-    , testCaseB64 "foob" "Zm9vYg=="
-    , testCaseB64 "fooba" "Zm9vYmE="
-    , testCaseB64 "foobar" "Zm9vYmFy"
+    [ testGroup "encode/decode"
+      [ testCaseB64 "" ""
+      , testCaseB64 "f" "Zg=="
+      , testCaseB64 "fo" "Zm8="
+      , testCaseB64 "foo" "Zm9v"
+      , testCaseB64 "foob" "Zm9vYg=="
+      , testCaseB64 "fooba" "Zm9vYmE="
+      , testCaseB64 "foobar" "Zm9vYmFy"
+      ]
+    , testGroup "encode/decode nopad"
+      [ testCaseB64' "" ""
+      , testCaseB64' "f" "Zg=="
+      , testCaseB64' "fo" "Zm8="
+      , testCaseB64' "foo" "Zm9v"
+      , testCaseB64' "foob" "Zm9vYg=="
+      , testCaseB64' "fooba" "Zm9vYmE="
+      , testCaseB64' "foobar" "Zm9vYmFy"
+      ]
     ]
   where
     testCaseB64 s t =
-      testCase (show $ if s == "" then "empty" else s) $
-        t @=?  B64.encodeBase64' s
+      testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
+        let t' = B64.encodeBase64' s
+            s' = B64.decodeBase64 t'
+
+        step "compare encoding w/ padding"
+        t @=? t'
+
+        step "compare decoding w/ padding"
+        Right s @=? s'
+
+    testCaseB64' s t =
+      testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
+        let t' = B64.encodeBase64Unpadded' s
+            s' = B64.decodeBase64 t'
+
+        step "compare encoding w/o padding"
+        BS.filter (/= 0x3d) t @=? t'
+
+        step "compare decoding w/ padding"
+        Right s @=? s'
 
 sanityTests :: TestTree
 sanityTests = testGroup "Sanity tests"
