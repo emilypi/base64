@@ -17,9 +17,6 @@ module Data.ByteString.Base64
 ( encodeBase64
 , encodeBase64'
 , decodeBase64
-, encodeBase64Unpadded
-, encodeBase64Unpadded'
-, decodeBase64Unpadded
 , decodeBase64Lenient
 , isBase64
 , isValidBase64
@@ -58,51 +55,9 @@ encodeBase64' = encodeBase64_ base64Table
 -- use 'decodeBase64Unpadded'.
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 = decodeBase64_ True decodeB64Table
+decodeBase64 = decodeBase64_ NoPad decodeB64Table
 {-# INLINE decodeBase64 #-}
 
--- | Encode a 'ByteString' value as Base64 'Text' without padding.
---
--- __Note:__ in some circumstances, the use of padding ("=") in base-encoded data
--- is not required or used. This is not one of them. If you are absolutely sure
--- the length of your bytestring is divisible by 3, this function will be the same
--- as 'encodeBase64' with padding.
---
--- Only call unpadded variants when you can make assumptions about the length of
--- your input data.
---
--- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
---
-encodeBase64Unpadded :: ByteString -> Text
-encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
-{-# INLINE encodeBase64Unpadded #-}
-
--- | Encode a 'ByteString' value as Base64 without padding.
---
--- __Note:__ in some circumstances, the use of padding ("=") in base-encoded data
--- is not required or used. This is not one of them. If you are absolutely sure
--- the length of your bytestring is divisible by 3, this function will be the same
--- as 'encodeBase64' with padding, however, if not, you may see garbage appended to
--- your bytestring.
---
--- Only call unpadded variants when you can make assumptions about the length of
--- your input data.
---
--- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
---
-encodeBase64Unpadded' :: ByteString -> ByteString
-encodeBase64Unpadded' = encodeBase64Nopad_ base64Table
-
--- | Decode an unpadded Base64-encoded 'ByteString'.
---
--- __Note:__ Only call unpadded variants when you can make assumptions
--- about the length of your input data.
---
--- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
---
-decodeBase64Unpadded :: ByteString -> Either Text ByteString
-decodeBase64Unpadded = decodeBase64_ False decodeB64Table
-{-# INLINE decodeBase64Unpadded #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ByteString' value. This function
 -- will not generate parse errors. If input data contains padding chars,
