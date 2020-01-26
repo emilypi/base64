@@ -58,7 +58,6 @@ decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 = decodeBase64_ NoPad decodeB64Table
 {-# INLINE decodeBase64 #-}
 
-
 -- | Leniently decode an unpadded Base64-encoded 'ByteString' value. This function
 -- will not generate parse errors. If input data contains padding chars,
 -- then the input will be parsed up until the first pad character.
