@@ -374,12 +374,12 @@ decodeB64UrlTable = writeNPlainForeignPtrBytes @Word8 256
 -- a multiple of 4 in length.
 --
 decodeBase64_ :: Padding -> ForeignPtr Word8 -> ByteString -> Either Text ByteString
-decodeBase64_ !padding !dtfp bs@(PS _ _ !slen)
-    | pad = go (BS.append bs (BS.replicate r 0x3d))
-    | r /= 0 = Left "invalid padding"
-    | otherwise = go bs
+decodeBase64_ pad !dtfp bs@(PS _ _ !slen) = case pad of
+    Pad -> go (BS.append bs (BS.replicate r 0x3d))
+    NoPad
+      | r /= 0 -> Left "invalid padding"
+      | otherwise -> go bs
   where
-    !pad = padding == Pad
     (!q, !r) = divMod slen 4
     !dlen = q * 3
 

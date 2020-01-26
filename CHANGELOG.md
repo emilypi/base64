@@ -1,5 +1,13 @@
 # Revision history for base64
 
+## 0.4.0 -- 2020-01-26
+
+* With this major version release, we remove the redundant `encodeBase64Unpadded` and `decodeBase64Unpadded` functions from `Base64.hs`. This is for two reasons:
+  1. There is no reason for them to exist, since all std base64 is expected to be padded (in contrast to base64url)
+  2. it was literally redundant with `decodeBase64`.
+
+* Use a specialized `Bool` type to give better visual cues regarding which functions add padding
+
 ## 0.3.1.1 -- 2020-01-15
 
 * Make sure benchmark code builds

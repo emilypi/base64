@@ -1,7 +1,7 @@
 cabal-version:       2.0
 
 name:                base64
-version:             0.3.1.1
+version:             0.4.0
 synopsis:            RFC 4648-compliant padded and unpadded base64 and base64url encodings
 description:
   RFC 4648-compliant padded and unpadded base64 and base64url encoding and decoding.
@@ -75,6 +75,4 @@ benchmark bench
 
   ghc-options:
     -Wall
-    -threaded
     -rtsopts
-    -with-rtsopts=-N
