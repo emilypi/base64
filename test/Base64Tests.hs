@@ -6,7 +6,6 @@ module Main
 ) where
 
 
-import qualified Data.ByteString as BS
 import "base64" Data.ByteString.Base64 as B64
 import "base64" Data.ByteString.Base64.URL as B64U
 import "base64-bytestring" Data.ByteString.Base64 as Bos

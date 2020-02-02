@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -95,6 +96,8 @@ writeNPlainForeignPtrBytes !n as = unsafeDupablePerformIO $ do
     go !_ [] = return ()
     go !p (x:xs) = poke p x >> go (plusPtr p 1) xs
 
+-- | Pack an 'Addr#' into an encoding table of 'Word16's
+--
 packTable :: Addr# -> EncodingTable
 packTable alphabet = etable
   where
@@ -108,18 +111,23 @@ packTable alphabet = etable
             ]
       in EncodingTable (Ptr alphabet) (writeNPlainForeignPtrBytes 8192 bs)
 
+-- | Base64url encoding table
+--
 base64UrlTable :: EncodingTable
 base64UrlTable = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"#
 {-# NOINLINE base64UrlTable #-}
 
+-- | Base64 std encoding table
+--
 base64Table :: EncodingTable
 base64Table = packTable "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"#
 {-# NOINLINE base64Table #-}
 
-
 -- -------------------------------------------------------------------------- --
 -- Validating Base64
 
+-- | Given a bytestring, check to see that it conforms to a given alphabet
+--
 validateBase64 :: ByteString -> ByteString -> Bool
 validateBase64 !alphabet (PS fp off l) =
     accursedUnutterablePerformIO $ withForeignPtr fp $ \p ->
@@ -148,10 +156,6 @@ aix :: Word8 -> Addr# -> Word8
 aix (W8# i) alpha = W8# (indexWord8OffAddr# alpha (word2Int# i))
 {-# INLINE aix #-}
 
-w32 :: Word8 -> Word32
-w32 = fromIntegral
-{-# INLINE w32 #-}
-
 -- | Encoding inner loop. Packs 3 bytes from src pointer into
 -- the first 6 bytes of 4 'Word8''s (using the encoding table,
 -- as 2 'Word12''s ), writing these to the dst pointer.
@@ -163,20 +167,19 @@ innerLoop
     -> Ptr Word8
     -> (Ptr Word8 -> Ptr Word8 -> IO ())
     -> IO ()
-innerLoop etable sptr dptr end finalize = go sptr dptr
+innerLoop etable sptr dptr end finalize = go (castPtr sptr) dptr
   where
     go !src !dst
-      | plusPtr src 2 >= end = finalize src (castPtr dst)
+      | plusPtr src 2 >= end = finalize (castPtr src) (castPtr dst)
       | otherwise = do
+#ifdef WORDS_BIGENDIAN
+        w <- peek @Word32 src
+#else
+        w <- byteSwap32 <$> peek @Word32 src
+#endif
 
-        !i <- w32 <$> peek src
-        !j <- w32 <$> peek (plusPtr src 1)
-        !k <- w32 <$> peek (plusPtr src 2)
-
-        let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
-
-        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
-        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
+        !x <- peekElemOff etable (fromIntegral (unsafeShiftR w 20))
+        !y <- peekElemOff etable (fromIntegral ((unsafeShiftR w 8) .&. 0xfff))
 
         poke dst x
         poke (plusPtr dst 2) y
@@ -193,18 +196,18 @@ innerLoopNopad
     -> Ptr Word8
     -> (Ptr Word8 -> Ptr Word8 -> Int -> IO ByteString)
     -> IO ByteString
-innerLoopNopad etable sptr dptr end finalize = go sptr dptr 0
+innerLoopNopad etable sptr dptr end finalize = go (castPtr sptr) dptr 0
   where
     go !src !dst !n
-      | plusPtr src 2 >= end = finalize src (castPtr dst) n
+      | plusPtr src 2 >= end = finalize (castPtr src) (castPtr dst) n
       | otherwise = do
-        !i <- w32 <$> peek src
-        !j <- w32 <$> peek (plusPtr src 1)
-        !k <- w32 <$> peek (plusPtr src 2)
-
-        let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
-        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
-        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
+#ifdef WORDS_BIGENDIAN
+        w <- peek @Word32 src
+#else
+        w <- byteSwap32 <$> peek @Word32 src
+#endif
+        !x <- peekElemOff etable (fromIntegral (unsafeShiftR w 20))
+        !y <- peekElemOff etable (fromIntegral ((unsafeShiftR w 8) .&. 0xfff))
 
         poke dst x
         poke (plusPtr dst 2) y
