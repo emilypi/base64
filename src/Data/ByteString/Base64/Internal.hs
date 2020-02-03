@@ -44,14 +44,19 @@ module Data.ByteString.Base64.Internal
 ) where
 
 
+#include "MachDeps.h"
+
 import Data.Bits
 import qualified Data.ByteString as BS
 import Data.ByteString.Base64.Internal.Tail
 import Data.ByteString.Base64.Internal.Utils
 #if WORD_SIZE_IN_BITS == 32
 import Data.ByteString.Base64.Internal.W32.Loop
-#else
+#elif WORD_SIZE_IN_BITS == 64
 import Data.ByteString.Base64.Internal.W64.Loop
+#else
+-- fallback to w8 generic loop
+import Data.ByteString.Base64.Internal.W8.Loop
 #endif
 
 import Data.ByteString.Internal
