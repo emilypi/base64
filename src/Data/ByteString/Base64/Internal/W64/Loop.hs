@@ -54,7 +54,7 @@ innerLoop !etable !sptr !dptr !end finish = go (castPtr sptr) dptr
         poke dst x
         poke (plusPtr dst 2) y
 
-        tailRound (plusPtr src 3) (plusPtr dst 4)
+        finish (plusPtr src 3) (castPtr (plusPtr dst 4))
 
     go !src !dst
       | plusPtr src 5 >= end = tailRound (castPtr src) dst
