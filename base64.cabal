@@ -32,6 +32,9 @@ library
                      , Data.Text.Encoding.Base64.URL
 
   other-modules:       Data.ByteString.Base64.Internal
+                       Data.ByteString.Base64.Internal.Utils
+                       Data.ByteString.Base64.Internal.W32.Loop
+                       Data.ByteString.Base64.Internal.W64.Loop
 
   build-depends:       base        >=4.10 && <5
                      , bytestring ^>=0.10
