@@ -48,8 +48,11 @@ innerLoop !etable !sptr !dptr !end finish = go (castPtr sptr) dptr
 #else
         !w <- byteSwap32 <$> peek @Word32 (castPtr src)
 #endif
-        !x <- peekElemOff etable (fromIntegral (unsafeShiftR w 20))
-        !y <- peekElemOff etable (fromIntegral ((unsafeShiftR w 8) .&. 0xfff))
+        let !a = (unsafeShiftR w 20) .&. 0xfff
+            !b = (unsafeShiftR w 8) .&. 0xfff
+
+        !x <- peekElemOff etable (fromIntegral a)
+        !y <- peekElemOff etable (fromIntegral b)
 
         poke dst x
         poke (plusPtr dst 2) y
@@ -102,8 +105,11 @@ innerLoopNopad !etable !sptr !dptr !end finish = go (castPtr sptr) dptr 0
 #else
         !w <- byteSwap32 <$> peek @Word32 (castPtr src)
 #endif
-        !x <- peekElemOff etable (fromIntegral (unsafeShiftR w 20))
-        !y <- peekElemOff etable (fromIntegral ((unsafeShiftR w 8) .&. 0xfff))
+        let !a = (unsafeShiftR w 20) .&. 0xfff
+            !b = (unsafeShiftR w 8) .&. 0xfff
+
+        !x <- peekElemOff etable (fromIntegral a)
+        !y <- peekElemOff etable (fromIntegral b)
 
         poke dst x
         poke (plusPtr dst 2) y
