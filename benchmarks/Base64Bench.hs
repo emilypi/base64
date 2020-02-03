@@ -29,7 +29,7 @@ import Data.ByteString.Random (random)
 main :: IO ()
 main =
   defaultMain
-    [ env bs $ \ ~(bs25,bs100,bs1k,bs10k,bs100k) ->
+    [ env bs $ \ ~(bs25,bs100,bs1k,bs10k,bs100k,bs1mm) ->
       bgroup "encode"
       [ bgroup "memory"
         [ bench "25" $ whnf ctob bs25
@@ -45,6 +45,7 @@ main =
         , bench "1000" $ whnf Bos.encode bs1k
         , bench "10000" $ whnf Bos.encode bs10k
         , bench "100000" $ whnf Bos.encode bs100k
+        , bench "1000000" $ whnf Bos.encode bs1mm
         ]
       , bgroup "base64"
         [ bench "25" $ whnf B64.encodeBase64' bs25
@@ -52,6 +53,7 @@ main =
         , bench "1000" $ whnf B64.encodeBase64' bs1k
         , bench "10000" $ whnf B64.encodeBase64' bs10k
         , bench "100000" $ whnf B64.encodeBase64' bs100k
+        , bench "1000000" $ whnf B64.encodeBase64' bs1mm
         ]
       ]
     ]
@@ -65,4 +67,5 @@ main =
       c <- random 1000
       d <- random 10000
       e <- random 100000
-      return (a,b,c,d,e)
+      f <- random 1000000
+      return (a,b,c,d,e,f)

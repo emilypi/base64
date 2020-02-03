@@ -44,8 +44,20 @@ module Data.ByteString.Base64.Internal
 ) where
 
 
+#include "MachDeps.h"
+
 import Data.Bits
 import qualified Data.ByteString as BS
+import Data.ByteString.Base64.Internal.Tail
+import Data.ByteString.Base64.Internal.Utils
+#if WORD_SIZE_IN_BITS == 32
+import Data.ByteString.Base64.Internal.W32.Loop
+#elif WORD_SIZE_IN_BITS == 64
+import Data.ByteString.Base64.Internal.W64.Loop
+#else
+import Data.ByteString.Base64.Internal.W8.Loop
+#endif
+
 import Data.ByteString.Internal
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -78,23 +90,6 @@ data Padding
     | NoPad
       -- ^ Do we not pad out the bytestring?
     deriving Eq
-
--- | Allocate and fill @n@ bytes with some data
---
-writeNPlainForeignPtrBytes
-    :: ( Storable a
-       , Storable b
-       )
-    => Int
-    -> [a]
-    -> ForeignPtr b
-writeNPlainForeignPtrBytes !n as = unsafeDupablePerformIO $ do
-    fp <- mallocPlainForeignPtrBytes n
-    withForeignPtr fp $ \p -> go p as
-    return (castForeignPtr fp)
-  where
-    go !_ [] = return ()
-    go !p (x:xs) = poke p x >> go (plusPtr p 1) xs
 
 -- | Pack an 'Addr#' into an encoding table of 'Word16's
 --
@@ -150,119 +145,20 @@ validateBase64 !alphabet (PS fp off l) =
 -- -------------------------------------------------------------------------- --
 -- Encode Base64
 
--- | Read 'Word8' index off alphabet addr
---
-aix :: Word8 -> Addr# -> Word8
-aix (W8# i) alpha = W8# (indexWord8OffAddr# alpha (word2Int# i))
-{-# INLINE aix #-}
-
--- | Encoding inner loop. Packs 3 bytes from src pointer into
--- the first 6 bytes of 4 'Word8''s (using the encoding table,
--- as 2 'Word12''s ), writing these to the dst pointer.
---
-innerLoop
-    :: Ptr Word16
-    -> Ptr Word8
-    -> Ptr Word16
-    -> Ptr Word8
-    -> (Ptr Word8 -> Ptr Word8 -> IO ())
-    -> IO ()
-innerLoop etable sptr dptr end finalize = go (castPtr sptr) dptr
-  where
-    go !src !dst
-      | plusPtr src 2 >= end = finalize (castPtr src) (castPtr dst)
-      | otherwise = do
-#ifdef WORDS_BIGENDIAN
-        w <- peek @Word32 src
-#else
-        w <- byteSwap32 <$> peek @Word32 src
-#endif
-
-        !x <- peekElemOff etable (fromIntegral (unsafeShiftR w 20))
-        !y <- peekElemOff etable (fromIntegral ((unsafeShiftR w 8) .&. 0xfff))
-
-        poke dst x
-        poke (plusPtr dst 2) y
-
-        go (plusPtr src 3) (plusPtr dst 4)
-
--- | Unpadded encoding loop, finalized as a bytestring using the
--- resultant length count.
---
-innerLoopNopad
-    :: Ptr Word16
-    -> Ptr Word8
-    -> Ptr Word16
-    -> Ptr Word8
-    -> (Ptr Word8 -> Ptr Word8 -> Int -> IO ByteString)
-    -> IO ByteString
-innerLoopNopad etable sptr dptr end finalize = go (castPtr sptr) dptr 0
-  where
-    go !src !dst !n
-      | plusPtr src 2 >= end = finalize (castPtr src) (castPtr dst) n
-      | otherwise = do
-#ifdef WORDS_BIGENDIAN
-        w <- peek @Word32 src
-#else
-        w <- byteSwap32 <$> peek @Word32 src
-#endif
-        !x <- peekElemOff etable (fromIntegral (unsafeShiftR w 20))
-        !y <- peekElemOff etable (fromIntegral ((unsafeShiftR w 8) .&. 0xfff))
-
-        poke dst x
-        poke (plusPtr dst 2) y
-
-        go (plusPtr src 3) (plusPtr dst 4) (n + 4)
-
 encodeBase64_ :: EncodingTable -> ByteString -> ByteString
 encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
     unsafeCreate dlen $ \dptr ->
     withForeignPtr sfp $ \sptr ->
-    withForeignPtr efp $ \eptr ->
-      encodeBase64_'
-        aptr
+    withForeignPtr efp $ \eptr -> do
+      let !end = plusPtr sptr (soff + slen)
+      innerLoop
         eptr
         (plusPtr sptr soff)
         (castPtr dptr)
-        (plusPtr sptr (soff + slen))
+        end
+        (loopTail aptr end)
   where
     !dlen = 4 * ((slen + 2) `div` 3)
-
-encodeBase64_'
-    :: Ptr Word8
-    -> Ptr Word16
-    -> Ptr Word8
-    -> Ptr Word16
-    -> Ptr Word8
-    -> IO ()
-encodeBase64_' (Ptr !alpha) !etable !sptr !dptr !end =
-    innerLoop etable sptr dptr end finalize
-  where
-    finalize !src !dst
-      | src == end = return ()
-      | otherwise = do
-        !k <- peekByteOff src 0
-
-        let !a = shiftR (k .&. 0xfc) 2
-            !b = shiftL (k .&. 0x03) 4
-
-        pokeByteOff dst 0 (aix a alpha)
-
-        if plusPtr src 2 /= end
-        then do
-          pokeByteOff dst 1 (aix b alpha)
-          pokeByteOff @Word8 dst 2 0x3d
-          pokeByteOff @Word8 dst 3 0x3d
-        else do
-          !k' <- peekByteOff src 1
-
-          let !b' = shiftR (k' .&. 0xf0) 4 .|. b
-              !c' = shiftL (k' .&. 0x0f) 2
-
-          pokeByteOff dst 1 (aix b' alpha)
-          pokeByteOff dst 2 (aix c' alpha)
-          pokeByteOff @Word8 dst 3 0x3d
-
 
 encodeBase64Nopad_ :: EncodingTable -> ByteString -> ByteString
 encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
@@ -270,53 +166,16 @@ encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
       dfp <- mallocPlainForeignPtrBytes dlen
       withForeignPtr dfp $ \dptr ->
         withForeignPtr efp $ \etable ->
-        withForeignPtr sfp $ \sptr ->
-          encodeBase64Nopad_'
-            aptr
+        withForeignPtr sfp $ \sptr -> do
+          let !end = plusPtr sptr (soff + slen)
+          innerLoopNopad
             etable
             (plusPtr sptr soff)
             (castPtr dptr)
-            (plusPtr sptr (soff + slen))
-            dfp
+            end
+            (loopTailNoPad dfp aptr end)
   where
     !dlen = 4 * ((slen + 2) `div` 3)
-
-encodeBase64Nopad_'
-    :: Ptr Word8
-    -> Ptr Word16
-    -> Ptr Word8
-    -> Ptr Word16
-    -> Ptr Word8
-    -> ForeignPtr Word8
-    -> IO ByteString
-encodeBase64Nopad_' (Ptr !alpha) !etable !sptr !dptr !end !dfp =
-    innerLoopNopad etable sptr dptr end finalize
-  where
-    finalize !src !dst !n
-      | src == end = return (PS dfp 0 n)
-      | otherwise = do
-        !k <- peekByteOff src 0
-
-        let !a = shiftR (k .&. 0xfc) 2
-            !b = shiftL (k .&. 0x03) 4
-
-        pokeByteOff dst 0 (aix a alpha)
-
-        if plusPtr src 2 /= end
-        then do
-          pokeByteOff dst 1 (aix b alpha)
-          return (PS dfp 0 (n + 2))
-        else do
-          !k' <- peekByteOff src 1
-
-          let !b' = shiftR (k' .&. 0xf0) 4 .|. b
-              !c' = shiftL (k' .&. 0x0f) 2
-
-          -- ideally, we'd want to pack these is in a single write
-          --
-          pokeByteOff dst 1 (aix b' alpha)
-          pokeByteOff dst 2 (aix c' alpha)
-          return (PS dfp 0 (n + 3))
 
 
 -- -------------------------------------------------------------------------- --
