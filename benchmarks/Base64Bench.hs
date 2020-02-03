@@ -31,15 +31,7 @@ main =
   defaultMain
     [ env bs $ \ ~(bs25,bs100,bs1k,bs10k,bs100k,bs1mm) ->
       bgroup "encode"
-      [ bgroup "memory"
-        [ bench "25" $ whnf ctob bs25
-        , bench "100" $ whnf ctob bs100
-        , bench "1000" $ whnf ctob bs1k
-        , bench "10000" $ whnf ctob bs10k
-        , bench "100000" $ whnf ctob bs100k
-        ]
-      ,
-        bgroup "base64-bytestring"
+      [ bgroup "base64-bytestring"
         [ bench "25" $ whnf Bos.encode bs25
         , bench "100" $ whnf Bos.encode bs100
         , bench "1000" $ whnf Bos.encode bs1k
@@ -56,11 +48,28 @@ main =
         , bench "1000000" $ whnf B64.encodeBase64' bs1mm
         ]
       ]
+
+    , env b64s $ \ ~(bs25,bs100,bs1k,bs10k,bs100k,bs1mm) ->
+      bgroup "decode"
+      [ bgroup "base64-bytestring"
+        [ bench "25" $ whnf Bos.decode bs25
+        , bench "100" $ whnf Bos.decode bs100
+        , bench "1000" $ whnf Bos.decode bs1k
+        , bench "10000" $ whnf Bos.decode bs10k
+        , bench "100000" $ whnf Bos.decode bs100k
+        , bench "1000000" $ whnf Bos.decode bs1mm
+        ]
+      , bgroup "base64"
+        [ bench "25" $ whnf B64.decodeBase64 bs25
+        , bench "100" $ whnf B64.decodeBase64 bs100
+        , bench "1000" $ whnf B64.decodeBase64 bs1k
+        , bench "10000" $ whnf B64.decodeBase64 bs10k
+        , bench "100000" $ whnf B64.decodeBase64 bs100k
+        , bench "1000000" $ whnf B64.decodeBase64 bs1mm
+        ]
+      ]
     ]
   where
-    ctob :: ByteString -> ByteString
-    ctob = Mem.convertToBase Mem.Base64
-
     bs = do
       a <- random 25
       b <- random 100
@@ -69,3 +78,15 @@ main =
       e <- random 100000
       f <- random 1000000
       return (a,b,c,d,e,f)
+
+    b64s = do
+      bs' <- bs
+      return $ case bs' of
+        (a,b,c,d,e,f) ->
+          ( B64.encodeBase64' a
+          , B64.encodeBase64' b
+          , B64.encodeBase64' c
+          , B64.encodeBase64' d
+          , B64.encodeBase64' e
+          , B64.encodeBase64' f
+          )

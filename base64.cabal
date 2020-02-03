@@ -34,9 +34,10 @@ library
   other-modules:       Data.ByteString.Base64.Internal
                        Data.ByteString.Base64.Internal.Tail
                        Data.ByteString.Base64.Internal.Utils
-                       Data.ByteString.Base64.Internal.W32.Loop
-                       Data.ByteString.Base64.Internal.W64.Loop
-                       Data.ByteString.Base64.Internal.W8.Loop
+                       Data.ByteString.Base64.Internal.W32.Decode
+                       Data.ByteString.Base64.Internal.W32.Encode
+                       Data.ByteString.Base64.Internal.W64.Encode
+                       Data.ByteString.Base64.Internal.W8.Encode
 
   build-depends:       base        >=4.10 && <5
                      , bytestring ^>=0.10

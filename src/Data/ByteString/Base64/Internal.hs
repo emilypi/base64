@@ -51,11 +51,11 @@ import qualified Data.ByteString as BS
 import Data.ByteString.Base64.Internal.Tail
 import Data.ByteString.Base64.Internal.Utils
 #if WORD_SIZE_IN_BITS == 32
-import Data.ByteString.Base64.Internal.W32.Loop
+import Data.ByteString.Base64.Internal.W32.Encode
 #elif WORD_SIZE_IN_BITS == 64
-import Data.ByteString.Base64.Internal.W64.Loop
+import Data.ByteString.Base64.Internal.W64.Encode
 #else
-import Data.ByteString.Base64.Internal.W8.Loop
+import Data.ByteString.Base64.Internal.W8.Encode
 #endif
 
 import Data.ByteString.Internal

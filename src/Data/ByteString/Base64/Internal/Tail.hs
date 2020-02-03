@@ -93,3 +93,11 @@ loopTailNoPad !dfp (Ptr !alpha) !end !src !dst !n
           pokeByteOff dst 2 (aix c' alpha)
           return (PS dfp 0 (n + 3))
 {-# INLINE loopTailNoPad #-}
+
+decodeTail
+    :: ForeignPtr Word8
+    -> Ptr Word8
+    -> Ptr Word32
+    -> Int
+    -> IO (Either Text ByteString)
+decodeTail !dfp !sptr !dptr !n = undefined

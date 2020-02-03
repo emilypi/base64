@@ -2,7 +2,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
--- Module       : Data.ByteString.Base64.Internal.W64.Loop
+-- Module       : Data.ByteString.Base64.Internal.W64.Encode
 -- Copyright 	: (c) 2019-2020 Emily Pillmore
 -- License	: BSD-style
 --
@@ -12,7 +12,7 @@
 --
 -- 'Word64'-optimized inner loops
 --
-module Data.ByteString.Base64.Internal.W64.Loop
+module Data.ByteString.Base64.Internal.W64.Encode
 ( innerLoop
 , innerLoopNopad
 ) where

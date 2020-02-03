@@ -2,7 +2,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
--- Module       : Data.ByteString.Base64.Internal.W32.Loop
+-- Module       : Data.ByteString.Base64.Internal.W32.Encode
 -- Copyright 	: (c) 2019-2020 Emily Pillmore
 -- License	: BSD-style
 --
@@ -10,9 +10,9 @@
 -- Stability	: Experimental
 -- Portability	: portable
 --
--- 'Word8' fallback loop
+-- 'Word32'-optimized inner loop
 --
-module Data.ByteString.Base64.Internal.W8.Loop
+module Data.ByteString.Base64.Internal.W32.Encode
 ( innerLoop
 , innerLoopNopad
 ) where
@@ -20,7 +20,6 @@ module Data.ByteString.Base64.Internal.W8.Loop
 
 import Data.Bits
 import Data.ByteString.Internal
-import Data.ByteString.Base64.Internal.Utils
 
 import Foreign.Ptr
 import Foreign.Storable
@@ -39,25 +38,27 @@ innerLoop
     -> Ptr Word8
     -> (Ptr Word8 -> Ptr Word8 -> IO ())
     -> IO ()
-innerLoop etable sptr dptr end finish = go sptr dptr
+innerLoop !etable !sptr !dptr !end finish = go (castPtr sptr) dptr
   where
     go !src !dst
-      | plusPtr src 2 >= end = finish src (castPtr dst)
+      | plusPtr src 2 >= end = finish (castPtr src) (castPtr dst)
       | otherwise = do
+#ifdef WORDS_BIGENDIAN
+        !w <- peek @Word32 src
+#else
+        !w <- byteSwap32 <$> peek @Word32 src
+#endif
+        let !a = (unsafeShiftR w 20) .&. 0xfff
+            !b = (unsafeShiftR w 8) .&. 0xfff
 
-        !i <- w32 <$> peek src
-        !j <- w32 <$> peek (plusPtr src 1)
-        !k <- w32 <$> peek (plusPtr src 2)
-
-        let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
-
-        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
-        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
+        !x <- peekElemOff etable (fromIntegral a)
+        !y <- peekElemOff etable (fromIntegral b)
 
         poke dst x
         poke (plusPtr dst 2) y
 
         go (plusPtr src 3) (plusPtr dst 4)
+{-# INLINE innerLoop #-}
 
 -- | Unpadded encoding loop, finalized as a bytestring using the
 -- resultant length count.
@@ -69,20 +70,24 @@ innerLoopNopad
     -> Ptr Word8
     -> (Ptr Word8 -> Ptr Word8 -> Int -> IO ByteString)
     -> IO ByteString
-innerLoopNopad etable sptr dptr end finish = go sptr dptr 0
+innerLoopNopad !etable !sptr !dptr !end finish = go (castPtr sptr) dptr 0
   where
     go !src !dst !n
-      | plusPtr src 2 >= end = finish src (castPtr dst) n
+      | plusPtr src 2 >= end = finish (castPtr src) (castPtr dst) n
       | otherwise = do
-        !i <- w32 <$> peek src
-        !j <- w32 <$> peek (plusPtr src 1)
-        !k <- w32 <$> peek (plusPtr src 2)
+#ifdef WORDS_BIGENDIAN
+        w <- peek @Word32 src
+#else
+        w <- byteSwap32 <$> peek @Word32 src
+#endif
+        let !a = (unsafeShiftR w 20) .&. 0xfff
+            !b = (unsafeShiftR w 8) .&. 0xfff
 
-        let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
-        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
-        !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
+        !x <- peekElemOff etable (fromIntegral a)
+        !y <- peekElemOff etable (fromIntegral b)
 
         poke dst x
         poke (plusPtr dst 2) y
 
         go (plusPtr src 3) (plusPtr dst 4) (n + 4)
+{-# INLINE innerLoopNopad #-}
