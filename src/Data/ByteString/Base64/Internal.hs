@@ -55,7 +55,6 @@ import Data.ByteString.Base64.Internal.W32.Loop
 #elif WORD_SIZE_IN_BITS == 64
 import Data.ByteString.Base64.Internal.W64.Loop
 #else
--- fallback to w8 generic loop
 import Data.ByteString.Base64.Internal.W8.Loop
 #endif
 
