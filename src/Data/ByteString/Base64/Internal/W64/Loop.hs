@@ -20,6 +20,7 @@ module Data.ByteString.Base64.Internal.W64.Loop
 
 import Data.Bits
 import Data.ByteString.Internal
+import Data.ByteString.Base64.Internal.Utils
 
 import Foreign.Ptr
 import Foreign.Storable
@@ -40,12 +41,12 @@ innerLoop
 innerLoop !etable !sptr !dptr !end finish = go (castPtr sptr) dptr
   where
     tailRound !src !dst
-      | plusPtr src 2 >= end = finish (castPtr src) (castPtr dst)
+      | plusPtr src 2 >= end = finish src (castPtr dst)
       | otherwise = do
 #ifdef WORDS_BIGENDIAN
-        w <- peek @Word32 src
+        !w <- peek @Word32 (castPtr src)
 #else
-        w <- byteSwap32 <$> peek @Word32 src
+        !w <- byteSwap32 <$> peek @Word32 (castPtr src)
 #endif
         !x <- peekElemOff etable (fromIntegral (unsafeShiftR w 20))
         !y <- peekElemOff etable (fromIntegral ((unsafeShiftR w 8) .&. 0xfff))
@@ -56,17 +57,22 @@ innerLoop !etable !sptr !dptr !end finish = go (castPtr sptr) dptr
         tailRound (plusPtr src 3) (plusPtr dst 4)
 
     go !src !dst
-      | plusPtr src 5 >= end = tailRound (castPtr src) (castPtr dst)
+      | plusPtr src 5 >= end = tailRound (castPtr src) dst
       | otherwise = do
 #ifdef WORDS_BIGENDIAN
-        !a <- peek @Word64 src
+        !t <- peek @Word64 src
 #else
-        !a <- byteSwap64 <$> peek @Word64 src
+        !t <- byteSwap64 <$> peek @Word64 src
 #endif
-        !w <- peekElemOff etable (fromIntegral (unsafeShiftR a 44))
-        !x <- peekElemOff etable (fromIntegral (unsafeShiftR a 32))
-        !y <- peekElemOff etable (fromIntegral (unsafeShiftR a 20))
-        !z <- peekElemOff etable (fromIntegral ((unsafeShiftR a 8) .&. 0xfff))
+        let !a = (unsafeShiftR t 52) .&. 0xfff
+            !b = (unsafeShiftR t 40) .&. 0xfff
+            !c = (unsafeShiftR t 28) .&. 0xfff
+            !d = (unsafeShiftR t 16) .&. 0xfff
+
+        w <- peekElemOff etable (fromIntegral a)
+        x <- peekElemOff etable (fromIntegral b)
+        y <- peekElemOff etable (fromIntegral c)
+        z <- peekElemOff etable (fromIntegral d)
 
         poke dst w
         poke (plusPtr dst 2) x
@@ -96,8 +102,11 @@ innerLoopNopad !etable !sptr !dptr !end finish = go (castPtr sptr) dptr 0
 #else
         w <- byteSwap32 <$> peek @Word32 src
 #endif
-        !x <- peekElemOff etable (fromIntegral (unsafeShiftR w 20))
-        !y <- peekElemOff etable (fromIntegral ((unsafeShiftR w 8) .&. 0xfff))
+        let !a = (unsafeShiftR w 20) .&. 0xfff
+            !b = (unsafeShiftR w 8) .&. 0xfff
+
+        !x <- peekElemOff etable (fromIntegral a)
+        !y <- peekElemOff etable (fromIntegral b)
 
         poke dst x
         poke (plusPtr dst 2) y

@@ -13,6 +13,7 @@
 --
 module Data.ByteString.Base64.Internal.Utils
 ( aix
+, w32
 , writeNPlainForeignPtrBytes
 ) where
 
@@ -32,6 +33,12 @@ import GHC.Word
 aix :: Word8 -> Addr# -> Word8
 aix (W8# i) alpha = W8# (indexWord8OffAddr# alpha (word2Int# i))
 {-# INLINE aix #-}
+
+-- | Convert 'Word8''s into 'Word32''s
+--
+w32 :: Word8 -> Word32
+w32 = fromIntegral
+{-# INLINE w32 #-}
 
 -- | Allocate and fill @n@ bytes with some data
 --
