@@ -20,12 +20,12 @@ module Data.ByteString.Base64.Internal.W64.Loop
 
 import Data.Bits
 import Data.ByteString.Internal
-import Data.ByteString.Base64.Internal.Utils
 
 import Foreign.Ptr
 import Foreign.Storable
 
 import GHC.Word
+
 
 -- | Encoding inner loop. Packs 6 bytes from src pointer into
 -- the first 6 bits of 4 'Word12''s (using the encoding table,

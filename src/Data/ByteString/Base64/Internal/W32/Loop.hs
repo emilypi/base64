@@ -26,6 +26,7 @@ import Foreign.Storable
 
 import GHC.Word
 
+
 -- | Encoding inner loop. Packs 3 bytes from src pointer into
 -- the first 6 bytes of 4 'Word8''s (using the encoding table,
 -- as 2 'Word12''s ), writing these to the dst pointer.
