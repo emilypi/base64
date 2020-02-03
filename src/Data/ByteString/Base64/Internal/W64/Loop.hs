@@ -94,22 +94,44 @@ innerLoopNopad
     -> IO ByteString
 innerLoopNopad !etable !sptr !dptr !end finish = go (castPtr sptr) dptr 0
   where
-    go !src !dst !n
-      | plusPtr src 2 >= end = finish (castPtr src) (castPtr dst) n
+    tailRound !src !dst !n
+      | plusPtr src 2 >= end = finish src (castPtr dst) n
       | otherwise = do
 #ifdef WORDS_BIGENDIAN
-        w <- peek @Word32 src
+        !w <- peek @Word32 (castPtr src)
 #else
-        w <- byteSwap32 <$> peek @Word32 src
+        !w <- byteSwap32 <$> peek @Word32 (castPtr src)
 #endif
-        let !a = (unsafeShiftR w 20) .&. 0xfff
-            !b = (unsafeShiftR w 8) .&. 0xfff
-
-        !x <- peekElemOff etable (fromIntegral a)
-        !y <- peekElemOff etable (fromIntegral b)
+        !x <- peekElemOff etable (fromIntegral (unsafeShiftR w 20))
+        !y <- peekElemOff etable (fromIntegral ((unsafeShiftR w 8) .&. 0xfff))
 
         poke dst x
         poke (plusPtr dst 2) y
 
-        go (plusPtr src 3) (plusPtr dst 4) (n + 4)
+        finish (plusPtr src 3) (castPtr (plusPtr dst 4)) (n + 4)
+
+    go !src !dst !n
+      | plusPtr src 5 >= end = tailRound (castPtr src) dst n
+      | otherwise = do
+#ifdef WORDS_BIGENDIAN
+        !t <- peek @Word64 src
+#else
+        !t <- byteSwap64 <$> peek @Word64 src
+#endif
+        let !a = (unsafeShiftR t 52) .&. 0xfff
+            !b = (unsafeShiftR t 40) .&. 0xfff
+            !c = (unsafeShiftR t 28) .&. 0xfff
+            !d = (unsafeShiftR t 16) .&. 0xfff
+
+        w <- peekElemOff etable (fromIntegral a)
+        x <- peekElemOff etable (fromIntegral b)
+        y <- peekElemOff etable (fromIntegral c)
+        z <- peekElemOff etable (fromIntegral d)
+
+        poke dst w
+        poke (plusPtr dst 2) x
+        poke (plusPtr dst 4) y
+        poke (plusPtr dst 6) z
+
+        go (plusPtr src 6) (plusPtr dst 8) (n + 8)
 {-# INLINE innerLoopNopad #-}
