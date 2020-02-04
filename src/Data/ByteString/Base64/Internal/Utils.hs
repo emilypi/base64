@@ -13,12 +13,13 @@
 --
 module Data.ByteString.Base64.Internal.Utils
 ( aix
+, packTable
 , w32
 , writeNPlainForeignPtrBytes
 ) where
 
 
-import System.IO.Unsafe
+import Data.ByteString.Base64.Internal.Types
 
 import Foreign.ForeignPtr
 import Foreign.Ptr
@@ -27,6 +28,9 @@ import Foreign.Storable
 import GHC.Exts
 import GHC.ForeignPtr
 import GHC.Word
+
+import System.IO.Unsafe
+
 
 -- | Read 'Word8' index off alphabet addr
 --
@@ -56,3 +60,19 @@ writeNPlainForeignPtrBytes !n as = unsafeDupablePerformIO $ do
   where
     go !_ [] = return ()
     go !p (x:xs) = poke p x >> go (plusPtr p 1) xs
+
+
+-- | Pack an 'Addr#' into an encoding table of 'Word16's
+--
+packTable :: Addr# -> EncodingTable
+packTable alphabet = etable
+  where
+    ix (I# n) = W8# (indexWord8OffAddr# alphabet n)
+
+    !etable =
+      let bs = concat
+            [ [ ix i, ix j ]
+            | !i <- [0..63]
+            , !j <- [0..63]
+            ]
+      in EncodingTable (Ptr alphabet) (writeNPlainForeignPtrBytes 8192 bs)

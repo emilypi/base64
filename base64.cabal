@@ -32,7 +32,9 @@ library
                      , Data.Text.Encoding.Base64.URL
 
   other-modules:       Data.ByteString.Base64.Internal
+                       Data.ByteString.Base64.Internal.Tables
                        Data.ByteString.Base64.Internal.Tail
+                       Data.ByteString.Base64.Internal.Types
                        Data.ByteString.Base64.Internal.Utils
                        Data.ByteString.Base64.Internal.W32.Decode
                        Data.ByteString.Base64.Internal.W32.Encode

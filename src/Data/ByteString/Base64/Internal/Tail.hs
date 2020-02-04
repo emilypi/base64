@@ -19,6 +19,7 @@ module Data.ByteString.Base64.Internal.Tail
 import Data.Bits
 import Data.ByteString.Internal
 import Data.ByteString.Base64.Internal.Utils
+import Data.Text
 
 import Foreign.ForeignPtr
 import Foreign.Ptr

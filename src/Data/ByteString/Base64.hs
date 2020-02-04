@@ -25,6 +25,8 @@ module Data.ByteString.Base64
 
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64.Internal
+import Data.ByteString.Base64.Internal.Tables
+import Data.ByteString.Base64.Internal.Types
 import Data.Either (isRight)
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
