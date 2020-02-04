@@ -12,7 +12,7 @@
 --
 -- 'Word8' fallback loop
 --
-module Data.ByteString.Base64.Internal.W8.Encode
+module Data.ByteString.Base64.Internal.W8.Loop
 ( innerLoop
 , innerLoopNopad
 ) where

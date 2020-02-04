@@ -27,6 +27,7 @@ module Data.ByteString.Base64.URL
 
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64.Internal
+import Data.ByteString.Base64.Internal.Head
 import Data.ByteString.Base64.Internal.Tables
 import Data.ByteString.Base64.Internal.Types
 import Data.Either (isRight)
@@ -47,7 +48,7 @@ encodeBase64 = T.decodeUtf8 . encodeBase64'
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
 --
 encodeBase64' :: ByteString -> ByteString
-encodeBase64' = encodeBase64_ base64UrlTable
+encodeBase64' = encodeBase64Url_
 
 -- | Decode a padded Base64url encoded 'ByteString' value. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
@@ -78,7 +79,7 @@ encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 encodeBase64Unpadded' :: ByteString -> ByteString
-encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
+encodeBase64Unpadded' = encodeBase64UrlNopad_
 
 -- | Decode a padded Base64url-encoded 'ByteString' value. If its length is not a multiple
 -- of 4, then padding chars will /not/ be added to fill out the input to a multiple of

@@ -17,9 +17,7 @@
 -- processes and tables.
 --
 module Data.ByteString.Base64.Internal
-( encodeBase64_
-, encodeBase64Nopad_
-, decodeBase64_
+( decodeBase64_
 , decodeBase64Lenient_
 , validateBase64
 ) where
@@ -29,25 +27,15 @@ module Data.ByteString.Base64.Internal
 
 import Data.Bits
 import qualified Data.ByteString as BS
-import Data.ByteString.Base64.Internal.Tail
-import Data.ByteString.Base64.Internal.Types
-import Data.ByteString.Base64.Internal.Utils
-#if WORD_SIZE_IN_BITS == 32
-import Data.ByteString.Base64.Internal.W32.Encode
-#elif WORD_SIZE_IN_BITS == 64
-import Data.ByteString.Base64.Internal.W64.Encode
-#else
-import Data.ByteString.Base64.Internal.W8.Encode
-#endif
-
 import Data.ByteString.Internal
+import Data.ByteString.Base64.Internal.Types
+
 import Data.Text (Text)
 import qualified Data.Text as T
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
 
-import GHC.Exts
 import GHC.ForeignPtr
 import GHC.Word
 
@@ -77,42 +65,6 @@ validateBase64 !alphabet (PS fp off l) =
 
         if f w then go (plusPtr p 1) end else return False
 {-# INLINE validateBase64 #-}
-
--- -------------------------------------------------------------------------- --
--- Encode Base64
-
-encodeBase64_ :: EncodingTable -> ByteString -> ByteString
-encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
-    unsafeCreate dlen $ \dptr ->
-    withForeignPtr sfp $ \sptr ->
-    withForeignPtr efp $ \eptr -> do
-      let !end = plusPtr sptr (soff + slen)
-      innerLoop
-        eptr
-        (plusPtr sptr soff)
-        (castPtr dptr)
-        end
-        (loopTail aptr end)
-  where
-    !dlen = 4 * ((slen + 2) `div` 3)
-
-encodeBase64Nopad_ :: EncodingTable -> ByteString -> ByteString
-encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
-    unsafeDupablePerformIO $ do
-      dfp <- mallocPlainForeignPtrBytes dlen
-      withForeignPtr dfp $ \dptr ->
-        withForeignPtr efp $ \etable ->
-        withForeignPtr sfp $ \sptr -> do
-          let !end = plusPtr sptr (soff + slen)
-          innerLoopNopad
-            etable
-            (plusPtr sptr soff)
-            (castPtr dptr)
-            end
-            (loopTailNoPad dfp aptr end)
-  where
-    !dlen = 4 * ((slen + 2) `div` 3)
-
 
 -- -------------------------------------------------------------------------- --
 -- Decoding Base64

@@ -12,7 +12,7 @@
 --
 -- 'Word64'-optimized inner loops
 --
-module Data.ByteString.Base64.Internal.W64.Encode
+module Data.ByteString.Base64.Internal.W64.Loop
 ( innerLoop
 , innerLoopNopad
 ) where

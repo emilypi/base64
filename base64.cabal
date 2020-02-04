@@ -32,14 +32,14 @@ library
                      , Data.Text.Encoding.Base64.URL
 
   other-modules:       Data.ByteString.Base64.Internal
+                       Data.ByteString.Base64.Internal.Head
                        Data.ByteString.Base64.Internal.Tables
                        Data.ByteString.Base64.Internal.Tail
                        Data.ByteString.Base64.Internal.Types
                        Data.ByteString.Base64.Internal.Utils
-                       Data.ByteString.Base64.Internal.W32.Decode
-                       Data.ByteString.Base64.Internal.W32.Encode
-                       Data.ByteString.Base64.Internal.W64.Encode
-                       Data.ByteString.Base64.Internal.W8.Encode
+                       Data.ByteString.Base64.Internal.W32.Loop
+                       Data.ByteString.Base64.Internal.W64.Loop
+                       Data.ByteString.Base64.Internal.W8.Loop
 
   build-depends:       base        >=4.10 && <5
                      , bytestring ^>=0.10
@@ -48,9 +48,13 @@ library
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall
-  include-dirs:        cbits
   c-sources:           cbits/tables.c
-  install-includes:    cbits/tables.h
+  include-dirs:        cbits
+  includes:            tables.h
+                     , table_enc_12bit_std.h
+                     , table_enc_12bit_url.h
+  install-includes:    table_enc_12bit_std.h
+                     , table_enc_12bit_url.h
 
 
 test-suite tasty

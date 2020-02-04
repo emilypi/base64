@@ -1,10 +1,24 @@
+{-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE TypeApplications #-}
+-- |
+-- Module       : Data.ByteString.Base64.Internal.Tables
+-- Copyright 	: (c) 2019 Emily Pillmore
+-- License	: BSD-style
+--
+-- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
+-- Stability	: Experimental
+-- Portability	: portable
+--
+-- Shared lookup tables
+--
 module Data.ByteString.Base64.Internal.Tables
 ( base64Table
 , base64UrlTable
 , decodeB64Table
 , decodeB64UrlTable
+, c_base64_table_enc_12bit_url
+, c_base64_table_enc_12bit_std
 ) where
 
 
@@ -15,6 +29,17 @@ import Foreign.ForeignPtr
 import Foreign.Ptr
 
 import GHC.Word
+
+
+foreign import ccall unsafe
+    "table_enc_12bit_std.h base64_table_enc_12bit_std"
+    c_base64_table_enc_12bit_std
+    :: Ptr Word16
+
+foreign import ccall unsafe
+    "table_enc_12bit_url.h base64_table_enc_12bit_url"
+    c_base64_table_enc_12bit_url
+    :: Ptr Word16
 
 -- | Base64url encoding table
 --
