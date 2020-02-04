@@ -52,7 +52,7 @@ encodeBase64_ (PS !sfp !soff !slen) =
     EncodingTable !aptr !efp = base64Table
 #else
       innerLoop
-        c_base64_table_enc_12bit_std
+        c_enc_table_12bit_std
         (plusPtr sptr soff)
         (castPtr dptr)
         end
@@ -75,7 +75,7 @@ encodeBase64Url_ (PS !sfp !soff !slen) =
     EncodingTable !aptr !efp = base64UrlTable
 #else
       innerLoop
-        c_base64_table_enc_12bit_url
+        c_enc_table_12bit_url
         (plusPtr sptr soff)
         (castPtr dptr)
         end
@@ -99,7 +99,7 @@ encodeBase64UrlNopad_ (PS !sfp !soff !slen) = unsafeDupablePerformIO $ do
     EncodingTable !aptr !efp = base64UrlTable
 #else
       innerLoopNopad
-        c_base64_table_enc_12bit_url
+        c_enc_table_12bit_url
         (plusPtr sptr soff)
         (castPtr dptr)
         end

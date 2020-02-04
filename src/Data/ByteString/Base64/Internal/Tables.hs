@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE TypeApplications #-}
@@ -17,8 +18,8 @@ module Data.ByteString.Base64.Internal.Tables
 , base64UrlTable
 , decodeB64Table
 , decodeB64UrlTable
-, c_base64_table_enc_12bit_url
-, c_base64_table_enc_12bit_std
+, c_enc_table_12bit_url
+, c_enc_table_12bit_std
 ) where
 
 
@@ -31,15 +32,27 @@ import Foreign.Ptr
 import GHC.Word
 
 
+#ifdef WORDS_BIGENDIAN
+foreign import ccall
+    "base64_table_enc_12bit_be_std"
+    c_enc_table_12bit_std
+    :: Ptr Word16
+
+foreign import ccall
+    "base64_table_enc_12bit_be_url"
+    c_enc_table_12bit_url
+    :: Ptr Word16
+#else
 foreign import ccall unsafe
-    "table_enc_12bit_std.h base64_table_enc_12bit_std"
-    c_base64_table_enc_12bit_std
+    "base64_table_enc_12bit_le_std"
+    c_enc_table_12bit_std
     :: Ptr Word16
 
 foreign import ccall unsafe
-    "table_enc_12bit_url.h base64_table_enc_12bit_url"
-    c_base64_table_enc_12bit_url
+    "base64_table_enc_12bit_le_url"
+    c_enc_table_12bit_url
     :: Ptr Word16
+#endif
 
 -- | Base64url encoding table
 --

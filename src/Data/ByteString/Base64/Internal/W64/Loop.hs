@@ -38,7 +38,7 @@ innerLoop
     -> Ptr Word8
     -> (Ptr Word8 -> Ptr Word8 -> IO ())
     -> IO ()
-innerLoop !etable !sptr !dptr !end finish = go (castPtr sptr) dptr
+innerLoop etable !sptr !dptr !end finish = go (castPtr sptr) dptr
   where
     tailRound !src !dst
       | plusPtr src 2 >= end = finish src (castPtr dst)
@@ -48,9 +48,10 @@ innerLoop !etable !sptr !dptr !end finish = go (castPtr sptr) dptr
 #else
         !w <- byteSwap32 <$> peek @Word32 (castPtr src)
 #endif
-        let !a = (unsafeShiftR w 20) .&. 0xfff
-            !b = (unsafeShiftR w 8) .&. 0xfff
+        let !a = (shiftR w 20) .&. 0xfff
+            !b = (shiftR w 8) .&. 0xfff
 
+        print w
         !x <- peekElemOff etable (fromIntegral a)
         !y <- peekElemOff etable (fromIntegral b)
 
@@ -95,7 +96,7 @@ innerLoopNopad
     -> Ptr Word8
     -> (Ptr Word8 -> Ptr Word8 -> Int -> IO ByteString)
     -> IO ByteString
-innerLoopNopad !etable !sptr !dptr !end finish = go (castPtr sptr) dptr 0
+innerLoopNopad etable !sptr !dptr !end finish = go (castPtr sptr) dptr 0
   where
     tailRound !src !dst !n
       | plusPtr src 2 >= end = finish src (castPtr dst) n
