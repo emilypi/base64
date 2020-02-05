@@ -8,16 +8,21 @@ The story so far:
 - Good improvement in encoding/decoding performance for bytestrings ∊ ]10,000, 1,000,000] compared to `base64-bytestring`
 - Smaller heap footprint in general.
 
-Most of this performance increase for smaller bytestrings is due to optimization of the building of the encoding tables. Additionally, I've factored out several read/writes and unnecessary IO done in `bytestring-base64`. The inner loop is as optimized as it can be for `Word16`-based optimizations (3 8-Byte reads, 2 12-Byte writes), and the tail completion is optimized by elimating 4 unnecessary reads, and using one big `if-then-else` branch to eliminate 1 read and 1 write per case. Smaller improvements have been the elimination of unnecessary wrappers (i.e. not using `BS.pack` and simply `malloc`'ing and rolling my own pointers), as well as properly inlining auxiliary functions which failed to inline in Bos' version. Additionally, using unpacked `Addr#`'s for the alphabet means we don't have to use a `ForeignPtr` box or touch it unnecessarily. See the outputs in the benchmarks directory for more detail..
+### Implementation Notes
 
-### Improvements
+In general, I have been following Alfred Klomp's [base64](https://github.com/aklomp/base64) example, having previously exhausted the algorithms used by `memory` and `base64-bytestring` in terms of performance. Base64 encodings have been factored into a 3-part series of phases:
 
-My suspicion is that we can get away with 1 `Word32` read, discard the upper 8 bytes, do some bitshifting magic, and then do a single `Word32` (with only the lower 24 Bytes filled) write to the output pointer in the inner loop, eliminating 2 reads and 1 write to make it single read/write. Additionally, if we want to impose size constraints, we should be able to fill the bottom 48 Bytes of a `Word64` and still be on the right side of the cache line, eliminating 2x loops per iteration. Additionally, factoring out the encoding tables to a static `CString` sitting in `cbits` would eliminate the need to construct it each time - there are only 2 alphabets, and we can maintain two static tables. We can do the same with the alphabets, but this is dubious since unboxed strlit `Addr#` is cheap and if we can get away with not calling to the FFI, that would be preferable. In the end, why not just do the whole thing in C and call it a day though? (Thoughts?)
+- A loop _head_, which organizes the data and initial state
+- An _inner loop_, which does the meat of the encoding recursively
+- A loop _tail_, which encodes the final quantum of the encoding, adding any padding if requested. 
+
+The inner loops are where optimizations are most visibly seen. In the case of this library, different loops are chosen dependent on the system architecture: 32-bit and 64-bit machines have different native machine word sizes, and so, have different cache lines that we can exploit for performance. In general, we want to try and fit as many encoded words into each iteration of the encoding loop as possible. 64-bit machines, for instance, cram 48 bits into every word, where 32-bit machines cram 24 bits into every 32-bit word, which means 64-bit machines are doing 2x _fewer_ loops on average, and twice the work. This does not translate holistically into 2x performance, because recursion is so well-optimized, but it does result in a noticable speedup. All other architectures defer to the standard `Word16` loop, though, I think this can be amended to be "anything with a word size >= 64 should use the 64-bit version" etc. 
+
+Decoding follows a similar vein. 
 
 ### To come later
 
-Daniel Lemire has a great [blog post](https://lemire.me/blog/2018/01/17/ridiculously-fast-base64-encoding-and-decoding/) detailing how he and Wojciech Mula implemented fast AVX and SSE base64 vectorization with a nifty library to boot. This has all been incorporated into Alfred Klomp's [base64](https://github.com/aklomp/base64) library, which is very up to date. The speed up people see is *massive*, and is BSD-2. We can inline the useful portions of the library along with the copyright notice in `cbits` and be very happy.
+Daniel Lemire has a great [blog post](https://lemire.me/blog/2018/01/17/ridiculously-fast-base64-encoding-and-decoding/) detailing how he and Wojciech Mula implemented fast AVX and SSE base64 vectorization with a nifty library to boot. This has all been incorporated into Alfred Klomp's [base64](https://github.com/aklomp/base64) library, which is very up to date. The speed up people see is *massive*, and is BSD-2. We can inline the useful portions of the library along with the copyright notice in `cbits` and be very happy. Vectorization would be a huge win for the community. 
 
-### Update
+Future performance is tracked here in [this issue](https://github.com/emilypi/base64/issues/7)
 
-Using Wojciech Mula's implementation as Cbits, i'm happy to report that it may be a useful gain, but only for bytestrings greater than 1,000,000B in size, as the cost of an FFI call is too great for smaller bytestrings. The 12-bit lookup table for >=32-bit word architectures is still optimal. In the future, I'd like to implement Alfred Klomp's rounds in Haskell, optimizing for 64B words.
