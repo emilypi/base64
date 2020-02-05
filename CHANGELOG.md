@@ -4,6 +4,7 @@
 
 * Optimize loops for 32-bit and 64-bit architectures
 * Restructure project to be more amenable to swapping head/tail/loops
+* Fix module header alignment
 
 ## 0.4.0 -- 2020-01-26
 
