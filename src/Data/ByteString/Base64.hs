@@ -2,12 +2,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module       : Data.ByteString.Base64
--- Copyright 	: (c) 2019 Emily Pillmore
--- License	: BSD-style
+-- Copyright    : (c) 2019 Emily Pillmore
+-- License      : BSD-style
 --
--- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
--- Stability	: Experimental
--- Portability	: portable
+-- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
+-- Stability    : Experimental
+-- Portability  : portable
 --
 -- This module contains the combinators implementing the
 -- RFC 4648 specification for the Base64 encoding including
