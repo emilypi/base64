@@ -2,8 +2,7 @@
 
 ## Bug Reports
 
-Please [open an issue](https://github.com/emilypi/base64/issues/new)
-and use the provided template to include all necessary details.
+Please [open an issue](https://github.com/emilypi/base64/issues/new) if you have a bug to report.
 
 The more detailed your report, the faster it can be resolved and will ensure it
 is resolved in the right way. I personally appreciate it when people not only open
