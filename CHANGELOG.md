@@ -1,5 +1,10 @@
 # Revision history for base64
 
+## 0.4.1 -- 2020-02-04
+
+* Optimize loops for 32-bit and 64-bit architectures
+* Restructure project to be more amenable to swapping head/tail/loops
+
 ## 0.4.0 -- 2020-01-26
 
 * With this major version release, we remove the redundant `encodeBase64Unpadded` and `decodeBase64Unpadded` functions from `Base64.hs`. This is for two reasons:
