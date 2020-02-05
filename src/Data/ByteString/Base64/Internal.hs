@@ -52,10 +52,10 @@ import Data.ByteString.Base64.Internal.Tail
 import Data.ByteString.Base64.Internal.Utils
 #if WORD_SIZE_IN_BITS == 32
 import Data.ByteString.Base64.Internal.W32.Loop
-#elif WORD_SIZE_IN_BITS == 64
+#elif WORD_SIZE_IN_BITS >= 64
 import Data.ByteString.Base64.Internal.W64.Loop
 #else
-import Data.ByteString.Base64.Internal.W8.Loop
+import Data.ByteString.Base64.Internal.W16.Loop
 #endif
 
 import Data.ByteString.Internal

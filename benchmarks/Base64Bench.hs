@@ -67,5 +67,5 @@ main =
       c <- random 1000
       d <- random 10000
       e <- random 100000
-      f <- random 1000000
+      f <- random 3000000000
       return (a,b,c,d,e,f)
