@@ -2,12 +2,12 @@
 {-# LANGUAGE TypeApplications #-}
 -- |
 -- Module       : Data.ByteString.Base64.Internal.W32.Loop
--- Copyright 	: (c) 2019 Emily Pillmore
--- License	: BSD-style
+-- Copyright    : (c) 2019 Emily Pillmore
+-- License      : BSD-style
 --
--- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
--- Stability	: Experimental
--- Portability	: portable
+-- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
+-- Stability    : Experimental
+-- Portability  : portable
 --
 -- Finalizers for the encoding loop
 --

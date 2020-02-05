@@ -2,13 +2,13 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
--- Module       : Data.ByteString.Base64.Internal.W64.Encode
--- Copyright 	: (c) 2019-2020 Emily Pillmore
--- License	: BSD-style
+-- Module       : Data.ByteString.Base64.Internal.W64.Loop
+-- Copyright    : (c) 2019-2020 Emily Pillmore
+-- License      : BSD-style
 --
--- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
--- Stability	: Experimental
--- Portability	: portable
+-- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
+-- Stability    : Experimental
+-- Portability  : portable
 --
 -- 'Word64'-optimized inner loops
 --

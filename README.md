@@ -20,7 +20,7 @@ What does this library provide? Here is the summary:
 
 There are no dependencies aside from those bundled with GHC:
 
-![base64 dependencies](https://i.imgur.com/qynI5HM.png)
+![base64 dependencies](https://i.imgur.com/OWW7c5s.png)
 
 ### Motivation
 
