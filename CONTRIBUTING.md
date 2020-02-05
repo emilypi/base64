@@ -22,8 +22,8 @@ contribution counts.
 ## Code
 
 If you would like to contribute code to fix a bug, add a new feature, or
-otherwise improve `stack`, pull requests are most welcome. It's a good idea to
-[submit an issue](https://github.com/emilypi/bsae64/issues/new) to
+otherwise improve `base64`, pull requests are most welcome. It's a good idea to
+[submit an issue](https://github.com/emilypi/base64/issues/new) to
 discuss the change before plowing into writing code.
 
 Any and all claims of "performance" should be backed up with benchmarks. You can
