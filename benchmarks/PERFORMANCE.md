@@ -8,7 +8,7 @@ The story so far:
 - Good improvement in encoding/decoding performance for bytestrings ∊ ]10,000, 1,000,000] compared to `base64-bytestring`
 - Smaller heap footprint in general.
 
-In general, we're seeing this on a MBP, i7 8 core, 16GB ram, GHC 8.6.5:
+In general, we're seeing this on a MBP, i7 8 core, 16GB ram, GHC 8.6.5 (sizes are in bytes):
 
 ```
 benchmarked encode/base64-bytestring/25
