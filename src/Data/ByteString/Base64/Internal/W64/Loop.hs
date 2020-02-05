@@ -20,6 +20,7 @@ module Data.ByteString.Base64.Internal.W64.Loop
 
 import Data.Bits
 import Data.ByteString.Internal
+import Data.ByteString.Base64.Internal.Utils
 
 import Foreign.Ptr
 import Foreign.Storable
@@ -34,7 +35,7 @@ import GHC.Word
 innerLoop
     :: Ptr Word16
     -> Ptr Word8
-    -> Ptr Word16
+    -> Ptr Word64
     -> Ptr Word8
     -> (Ptr Word8 -> Ptr Word8 -> IO ())
     -> IO ()
@@ -51,16 +52,17 @@ innerLoop !etable !sptr !dptr !end finish = go (castPtr sptr) dptr
         let !a = (unsafeShiftR w 20) .&. 0xfff
             !b = (unsafeShiftR w 8) .&. 0xfff
 
-        !x <- peekElemOff etable (fromIntegral a)
-        !y <- peekElemOff etable (fromIntegral b)
+        !x <- w32_16 <$> peekElemOff etable (fromIntegral a)
+        !y <- w32_16 <$> peekElemOff etable (fromIntegral b)
 
-        poke dst x
-        poke (plusPtr dst 2) y
+        let !z = x .|. (unsafeShiftL y 16)
+
+        poke @Word32 dst z
 
         finish (plusPtr src 3) (castPtr (plusPtr dst 4))
 
     go !src !dst
-      | plusPtr src 5 >= end = tailRound (castPtr src) dst
+      | plusPtr src 5 >= end = tailRound (castPtr src) (castPtr dst)
       | otherwise = do
 #ifdef WORDS_BIGENDIAN
         !t <- peek @Word64 src
@@ -72,15 +74,17 @@ innerLoop !etable !sptr !dptr !end finish = go (castPtr sptr) dptr
             !c = (unsafeShiftR t 28) .&. 0xfff
             !d = (unsafeShiftR t 16) .&. 0xfff
 
-        w <- peekElemOff etable (fromIntegral a)
-        x <- peekElemOff etable (fromIntegral b)
-        y <- peekElemOff etable (fromIntegral c)
-        z <- peekElemOff etable (fromIntegral d)
+        w <- w64 <$> peekElemOff etable (fromIntegral a)
+        x <- w64 <$> peekElemOff etable (fromIntegral b)
+        y <- w64 <$> peekElemOff etable (fromIntegral c)
+        z <- w64 <$> peekElemOff etable (fromIntegral d)
 
-        poke dst w
-        poke (plusPtr dst 2) x
-        poke (plusPtr dst 4) y
-        poke (plusPtr dst 6) z
+        let !xx = w
+               .|. (unsafeShiftL x 16)
+               .|. (unsafeShiftL y 32)
+               .|. (unsafeShiftL z 48)
+
+        poke dst (fromIntegral xx)
 
         go (plusPtr src 6) (plusPtr dst 8)
 {-# INLINE innerLoop #-}
@@ -108,16 +112,17 @@ innerLoopNopad !etable !sptr !dptr !end finish = go (castPtr sptr) dptr 0
         let !a = (unsafeShiftR w 20) .&. 0xfff
             !b = (unsafeShiftR w 8) .&. 0xfff
 
-        !x <- peekElemOff etable (fromIntegral a)
-        !y <- peekElemOff etable (fromIntegral b)
+        !x <- w32_16 <$> peekElemOff etable (fromIntegral a)
+        !y <- w32_16 <$> peekElemOff etable (fromIntegral b)
 
-        poke dst x
-        poke (plusPtr dst 2) y
+        let !z = x .|. (unsafeShiftL y 16)
+
+        poke @Word32 dst z
 
         finish (plusPtr src 3) (castPtr (plusPtr dst 4)) (n + 4)
 
     go !src !dst !n
-      | plusPtr src 5 >= end = tailRound (castPtr src) dst n
+      | plusPtr src 5 >= end = tailRound (castPtr src) (castPtr dst) n
       | otherwise = do
 #ifdef WORDS_BIGENDIAN
         !t <- peek @Word64 src
@@ -133,6 +138,7 @@ innerLoopNopad !etable !sptr !dptr !end finish = go (castPtr sptr) dptr 0
         x <- peekElemOff etable (fromIntegral b)
         y <- peekElemOff etable (fromIntegral c)
         z <- peekElemOff etable (fromIntegral d)
+
 
         poke dst w
         poke (plusPtr dst 2) x

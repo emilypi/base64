@@ -14,6 +14,8 @@
 module Data.ByteString.Base64.Internal.Utils
 ( aix
 , w32
+, w64
+, w32_16
 , writeNPlainForeignPtrBytes
 ) where
 
@@ -39,6 +41,16 @@ aix (W8# i) alpha = W8# (indexWord8OffAddr# alpha (word2Int# i))
 w32 :: Word8 -> Word32
 w32 = fromIntegral
 {-# INLINE w32 #-}
+
+-- | Convert 'Word8''s into 'Word32''s
+--
+w64 :: Word16 -> Word64
+w64 = fromIntegral
+{-# INLINE w64 #-}
+
+w32_16 :: Word16 -> Word32
+w32_16 = fromIntegral
+{-# INLINE w32_16 #-}
 
 -- | Allocate and fill @n@ bytes with some data
 --

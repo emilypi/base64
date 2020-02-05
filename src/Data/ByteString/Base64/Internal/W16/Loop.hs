@@ -2,7 +2,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
--- Module       : Data.ByteString.Base64.Internal.W32.Loop
+-- Module       : Data.ByteString.Base64.Internal.W16.Loop
 -- Copyright    : (c) 2019-2020 Emily Pillmore
 -- License      : BSD-style
 --
@@ -12,7 +12,7 @@
 --
 -- 'Word8' fallback loop
 --
-module Data.ByteString.Base64.Internal.W8.Loop
+module Data.ByteString.Base64.Internal.W16.Loop
 ( innerLoop
 , innerLoopNopad
 ) where
