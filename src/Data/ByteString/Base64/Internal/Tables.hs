@@ -34,22 +34,22 @@ import GHC.Word
 
 #ifdef WORDS_BIGENDIAN
 foreign import ccall
-    "base64_table_enc_12bit_be_std"
+    "&base64_table_enc_12bit_be_std"
     c_enc_table_12bit_std
     :: Ptr Word16
 
 foreign import ccall
-    "base64_table_enc_12bit_be_url"
+    "&base64_table_enc_12bit_be_url"
     c_enc_table_12bit_url
     :: Ptr Word16
 #else
 foreign import ccall unsafe
-    "base64_table_enc_12bit_le_std"
+    "&base64_table_enc_12bit_le_std"
     c_enc_table_12bit_std
     :: Ptr Word16
 
 foreign import ccall unsafe
-    "base64_table_enc_12bit_le_url"
+    "&base64_table_enc_12bit_le_url"
     c_enc_table_12bit_url
     :: Ptr Word16
 #endif
