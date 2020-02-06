@@ -17,7 +17,8 @@ module Main
 ) where
 
 
-import Gauge.Main
+import Criterion
+import Criterion.Main
 
 import "memory" Data.ByteArray.Encoding as Mem
 import Data.ByteString
@@ -31,21 +32,35 @@ main =
   defaultMain
     [ env bs $ \ ~(bs25,bs100,bs1k,bs10k,bs100k,bs1mm) ->
       bgroup "encode"
-      [ bgroup "base64-bytestring"
-        [ bench "25" $ whnf Bos.encode bs25
-        , bench "100" $ whnf Bos.encode bs100
-        , bench "1000" $ whnf Bos.encode bs1k
-        , bench "10000" $ whnf Bos.encode bs10k
-        , bench "100000" $ whnf Bos.encode bs100k
-        , bench "1000000" $ whnf Bos.encode bs1mm
+      [ bgroup "25"
+        [ bench "memory" $ whnf ctob bs25
+        , bench "base64-bytestring" $ whnf Bos.encode bs25
+        , bench "base64" $ whnf B64.encodeBase64' bs25
         ]
-      , bgroup "base64"
-        [ bench "25" $ whnf B64.encodeBase64' bs25
-        , bench "100" $ whnf B64.encodeBase64' bs100
-        , bench "1000" $ whnf B64.encodeBase64' bs1k
-        , bench "10000" $ whnf B64.encodeBase64' bs10k
-        , bench "100000" $ whnf B64.encodeBase64' bs100k
-        , bench "1000000" $ whnf B64.encodeBase64' bs1mm
+      , bgroup "100"
+        [ bench "memory" $ whnf ctob bs100
+        , bench "base64-bytestring" $ whnf Bos.encode bs100
+        , bench "base64" $ whnf B64.encodeBase64' bs100
+        ]
+      , bgroup "1k"
+        [ bench "memory" $ whnf ctob bs1k
+        , bench "base64-bytestring" $ whnf Bos.encode bs1k
+        , bench "base64" $ whnf B64.encodeBase64' bs1k
+        ]
+      , bgroup "10k"
+        [ bench "memory" $ whnf ctob bs10k
+        , bench "base64-bytestring" $ whnf Bos.encode bs10k
+        , bench "base64" $ whnf B64.encodeBase64' bs10k
+        ]
+      , bgroup "100k"
+        [ bench "memory" $ whnf ctob bs100k
+        , bench "base64-bytestring" $ whnf Bos.encode bs100k
+        , bench "base64" $ whnf B64.encodeBase64' bs100k
+        ]
+      , bgroup "1mm"
+        [ bench "memory" $ whnf ctob bs1mm
+        , bench "base64-bytestring" $ whnf Bos.encode bs1mm
+        , bench "base64" $ whnf B64.encodeBase64' bs1mm
         ]
       ]
 

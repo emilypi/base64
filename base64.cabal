@@ -38,9 +38,9 @@ library
                        Data.ByteString.Base64.Internal.Tail
                        Data.ByteString.Base64.Internal.Types
                        Data.ByteString.Base64.Internal.Utils
+                       Data.ByteString.Base64.Internal.W16.Loop
                        Data.ByteString.Base64.Internal.W32.Loop
                        Data.ByteString.Base64.Internal.W64.Loop
-                       Data.ByteString.Base64.Internal.W8.Loop
 
   build-depends:       base        >=4.10 && <5
                      , bytestring ^>=0.10
@@ -79,7 +79,7 @@ benchmark bench
                      , base64-bytestring
                      , bytestring
                      , deepseq
-                     , gauge
+                     , criterion
                      , memory
                      , random-bytestring
                      , text

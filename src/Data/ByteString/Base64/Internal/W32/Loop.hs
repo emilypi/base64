@@ -20,6 +20,7 @@ module Data.ByteString.Base64.Internal.W32.Loop
 
 import Data.Bits
 import Data.ByteString.Internal
+import Data.ByteString.Base64.Internal.Utils
 
 import Foreign.Ptr
 import Foreign.Storable
@@ -34,7 +35,7 @@ import GHC.Word
 innerLoop
     :: Ptr Word16
     -> Ptr Word8
-    -> Ptr Word16
+    -> Ptr Word32
     -> Ptr Word8
     -> (Ptr Word8 -> Ptr Word8 -> IO ())
     -> IO ()
@@ -51,11 +52,11 @@ innerLoop !etable !sptr !dptr !end finish = go (castPtr sptr) dptr
         let !a = (unsafeShiftR w 20) .&. 0xfff
             !b = (unsafeShiftR w 8) .&. 0xfff
 
-        !x <- peekElemOff etable (fromIntegral a)
-        !y <- peekElemOff etable (fromIntegral b)
+        !x <- w32_16 <$> peekElemOff etable (fromIntegral a)
+        !y <- w32_16 <$> peekElemOff etable (fromIntegral b)
 
-        poke dst x
-        poke (plusPtr dst 2) y
+        let !z = x .|. (unsafeShiftL y 16)
+        poke dst (fromIntegral z)
 
         go (plusPtr src 3) (plusPtr dst 4)
 {-# INLINE innerLoop #-}
