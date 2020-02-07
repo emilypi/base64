@@ -23,8 +23,9 @@ module Data.ByteString.Base64.Internal.Head
 import Data.ByteString.Internal
 import Data.ByteString.Base64.Internal.Tables
 import Data.ByteString.Base64.Internal.Tail
+#if WORD_SIZE_IN_BITS < 32
 import Data.ByteString.Base64.Internal.Types
-#if WORD_SIZE_IN_BITS == 32
+#elif WORD_SIZE_IN_BITS == 32
 import Data.ByteString.Base64.Internal.W32.Loop
 #elif WORD_SIZE_IN_BITS >= 64
 import Data.ByteString.Base64.Internal.W64.Loop
@@ -35,7 +36,9 @@ import Data.ByteString.Base64.Internal.W8.Loop
 import Foreign.ForeignPtr
 import Foreign.Ptr
 
+#if WORD_SIZE_IN_BITS >= 32
 import GHC.Exts
+#endif
 import GHC.ForeignPtr
 
 import System.IO.Unsafe

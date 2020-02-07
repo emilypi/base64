@@ -79,6 +79,7 @@ innerLoopNopad etable sptr dptr end finish = go sptr dptr 0
         !k <- w32 <$> peek (plusPtr src 2)
 
         let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
+
         !x <- peekElemOff etable (fromIntegral (shiftR w 12))
         !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
 

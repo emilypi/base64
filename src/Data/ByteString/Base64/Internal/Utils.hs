@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MagicHash #-}
 -- |
--- Module       : Data.ByteString.Base64.Internal
+-- Module       : Data.ByteString.Base64.Internal.Utils
 -- Copyright    : (c) 2019 Emily Pillmore
 -- License      : BSD-style
 --

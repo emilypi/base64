@@ -49,8 +49,8 @@ innerLoop etable !sptr !dptr !end finish = go (castPtr sptr) dptr
 #else
         !w <- byteSwap32 <$> peek @Word32 (castPtr src)
 #endif
-        let !a = (shiftR w 20) .&. 0xfff
-            !b = (shiftR w 8) .&. 0xfff
+        let !a = (unsafeShiftR w 20) .&. 0xfff
+            !b = (unsafeShiftR w 8) .&. 0xfff
 
         !x <- w32_16 <$> peekElemOff etable (fromIntegral a)
         !y <- w32_16 <$> peekElemOff etable (fromIntegral b)
@@ -75,10 +75,10 @@ innerLoop etable !sptr !dptr !end finish = go (castPtr sptr) dptr
             !c = (unsafeShiftR t 28) .&. 0xfff
             !d = (unsafeShiftR t 16) .&. 0xfff
 
-        w <- w64 <$> peekElemOff etable (fromIntegral a)
-        x <- w64 <$> peekElemOff etable (fromIntegral b)
-        y <- w64 <$> peekElemOff etable (fromIntegral c)
-        z <- w64 <$> peekElemOff etable (fromIntegral d)
+        !w <- w64 <$> peekElemOff etable (fromIntegral a)
+        !x <- w64 <$> peekElemOff etable (fromIntegral b)
+        !y <- w64 <$> peekElemOff etable (fromIntegral c)
+        !z <- w64 <$> peekElemOff etable (fromIntegral d)
 
         let !xx = w
                .|. (unsafeShiftL x 16)
@@ -100,7 +100,7 @@ innerLoopNopad
     -> Ptr Word8
     -> (Ptr Word8 -> Ptr Word8 -> Int -> IO ByteString)
     -> IO ByteString
-innerLoopNopad etable !sptr !dptr !end finish = go (castPtr sptr) dptr 0
+innerLoopNopad !etable !sptr !dptr !end finish = go (castPtr sptr) dptr 0
   where
     tailRound !src !dst !n
       | plusPtr src 2 >= end = finish src (castPtr dst) n

@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 -- |
--- Module       : Data.ByteString.Base64.Internal
+-- Module       : Data.ByteString.Base64.Internal.Types
 -- Copyright 	: (c) 2019 Emily Pillmore
 -- License	: BSD-style
 --

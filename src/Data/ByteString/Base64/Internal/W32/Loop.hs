@@ -56,6 +56,7 @@ innerLoop !etable !sptr !dptr !end finish = go (castPtr sptr) dptr
         !y <- w32_16 <$> peekElemOff etable (fromIntegral b)
 
         let !z = x .|. (unsafeShiftL y 16)
+
         poke dst (fromIntegral z)
 
         go (plusPtr src 3) (plusPtr dst 4)
@@ -77,9 +78,9 @@ innerLoopNopad !etable !sptr !dptr !end finish = go (castPtr sptr) dptr 0
       | plusPtr src 2 >= end = finish (castPtr src) (castPtr dst) n
       | otherwise = do
 #ifdef WORDS_BIGENDIAN
-        w <- peek @Word32 src
+        !w <- peek @Word32 src
 #else
-        w <- byteSwap32 <$> peek @Word32 src
+        !w <- byteSwap32 <$> peek @Word32 src
 #endif
         let !a = (unsafeShiftR w 20) .&. 0xfff
             !b = (unsafeShiftR w 8) .&. 0xfff
