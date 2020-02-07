@@ -60,6 +60,7 @@ innerLoop etable !sptr !dptr !end finish = go (castPtr sptr) dptr
         poke @Word32 dst z
 
         finish (plusPtr src 3) (castPtr (plusPtr dst 4))
+    {-# INLINE tailRound #-}
 
     go !src !dst
       | plusPtr src 5 >= end = tailRound (castPtr src) (castPtr dst)

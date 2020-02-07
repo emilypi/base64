@@ -8,7 +8,7 @@
 --
 -- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
 -- Stability	: Experimental
--- Portability	: portable
+-- Portability	: non-portable
 --
 -- Encoding header which initiates the encoding loop
 --
@@ -23,6 +23,7 @@ module Data.ByteString.Base64.Internal.Head
 import Data.ByteString.Internal
 import Data.ByteString.Base64.Internal.Tables
 import Data.ByteString.Base64.Internal.Tail
+import Data.ByteString.Base64.Internal.Types
 #if WORD_SIZE_IN_BITS == 32
 import Data.ByteString.Base64.Internal.W32.Loop
 #elif WORD_SIZE_IN_BITS >= 64
@@ -39,6 +40,11 @@ import GHC.ForeignPtr
 
 import System.IO.Unsafe
 
+-- | Head of the encoding loop for std alphabet base64 w/ padding.
+-- If native word size is <32, then the static encoding table for
+-- the std alphabet is used. Otherwise, we use a static `uint16_t` array
+-- from cbits.
+--
 encodeBase64_ :: ByteString -> ByteString
 encodeBase64_ (PS !sfp !soff !slen) =
     unsafeCreate dlen $ \dptr ->
@@ -62,6 +68,11 @@ encodeBase64_ (PS !sfp !soff !slen) =
     !dlen = 4 * ((slen + 2) `div` 3)
 #endif
 
+-- | Head of the encoding loop for url alphabet base64 w/ padding.
+-- If native word size is <32, then the static encoding table for
+-- the url alphabet is used. Otherwise, we use a static `uint16_t` array
+-- from cbits.
+--
 encodeBase64Url_ :: ByteString -> ByteString
 encodeBase64Url_ (PS !sfp !soff !slen) =
     unsafeCreate dlen $ \dptr ->
@@ -80,11 +91,16 @@ encodeBase64Url_ (PS !sfp !soff !slen) =
         (castPtr dptr)
         end
         (loopTail aptr end)
-#endif
   where
     !aptr = Ptr "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"#
     !dlen = 4 * ((slen + 2) `div` 3)
+#endif
 
+-- | Head of the encoding loop for url alphabet base64 w/o padding.
+-- If native word size is <32, then the static encoding table for
+-- the url alphabet is used. Otherwise, we use a static `uint16_t` array
+-- from cbits.
+--
 encodeBase64UrlNopad_ :: ByteString -> ByteString
 encodeBase64UrlNopad_ (PS !sfp !soff !slen) = unsafeDupablePerformIO $ do
     dfp <- mallocPlainForeignPtrBytes dlen
@@ -93,7 +109,12 @@ encodeBase64UrlNopad_ (PS !sfp !soff !slen) = unsafeDupablePerformIO $ do
       let !end = plusPtr sptr (soff + slen)
 #if WORD_SIZE_IN_BITS < 32
       withForeignPtr efp $ \eptr -> do
-        innerLoop eptr (plusPtr sptr soff) (castPtr dptr) end (loopTail dfp aptr end)
+        innerLoopNopad
+          eptr
+          (plusPtr sptr soff)
+          (castPtr dptr)
+          end
+          (loopTailNoPad dfp aptr end)
   where
     !dlen = 4 * ((slen + 2) `div` 3)
     EncodingTable !aptr !efp = base64UrlTable
@@ -104,7 +125,7 @@ encodeBase64UrlNopad_ (PS !sfp !soff !slen) = unsafeDupablePerformIO $ do
         (castPtr dptr)
         end
         (loopTailNoPad dfp aptr end)
-#endif
   where
     !aptr = Ptr "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"#
     !dlen = 4 * ((slen + 2) `div` 3)
+#endif
