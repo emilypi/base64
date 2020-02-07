@@ -39,7 +39,7 @@ innerLoop
     -> Ptr Word8
     -> (Ptr Word8 -> Ptr Word8 -> IO ())
     -> IO ()
-innerLoop etable !sptr !dptr !end finish = go (castPtr sptr) dptr
+innerLoop !etable !sptr !dptr !end finish = go (castPtr sptr) dptr
   where
     tailRound !src !dst
       | plusPtr src 2 >= end = finish src (castPtr dst)
