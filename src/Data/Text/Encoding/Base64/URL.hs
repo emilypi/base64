@@ -44,7 +44,7 @@ encodeBase64 = B64U.encodeBase64 . T.encodeUtf8
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: Text -> Either Text Text
-decodeBase64 = fmap T.decodeUtf8 . B64U.decodeBase64 . T.encodeUtf8
+decodeBase64 = fmap T.decodeLatin1 . B64U.decodeBase64 . T.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
 -- | Encode a 'Text' value in Base64url without padding. Note that for Base64url,
