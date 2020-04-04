@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
 -- Module       : Data.ByteString.Base64.Internal.W64.Loop
@@ -15,13 +16,20 @@
 module Data.ByteString.Base64.Internal.W64.Loop
 ( innerLoop
 , innerLoopNopad
+, decodeLoop
+, lenientLoop
 ) where
 
 
 import Data.Bits
 import Data.ByteString.Internal
 import Data.ByteString.Base64.Internal.Utils
+import qualified Data.ByteString.Base64.Internal.W16.Loop as W16
+import qualified Data.ByteString.Base64.Internal.W32.Loop as W32
+import Data.Text (Text)
+import qualified Data.Text as T
 
+import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
 
@@ -147,3 +155,77 @@ innerLoopNopad !etable !sptr !dptr !end finish = go (castPtr sptr) dptr 0
 
         go (plusPtr src 6) (plusPtr dst 8) (n + 8)
 {-# INLINE innerLoopNopad #-}
+
+
+decodeLoop
+    :: Ptr Word8
+        -- ^ decode lookup table
+    -> Ptr Word8
+        -- ^ src pointer
+    -> Ptr Word8
+        -- ^ dst pointer
+    -> Ptr Word8
+        -- ^ end of src ptr
+    -> ForeignPtr Word8
+        -- ^ dst foreign ptr (for consing bs)
+    -> Int
+    -> IO (Either Text ByteString)
+decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
+  where
+    err p = return . Left . T.pack
+      $ "invalid character at offset: "
+      ++ show (p `minusPtr` sptr)
+
+    padErr p =  return . Left . T.pack
+      $ "invalid padding at offset: "
+      ++ show (p `minusPtr` sptr)
+
+    look :: Ptr Word8 -> IO Word32
+    look p = do
+      !i <- peekByteOff @Word8 p 0
+      !v <- peekByteOff @Word8 dtable (fromIntegral i)
+      return (fromIntegral v)
+
+    go !dst !src !n
+      | src >= end = return (Right (PS dfp 0 n))
+      | otherwise = do
+        a <- look src
+        b <- look (src `plusPtr` 1)
+        c <- look (src `plusPtr` 2)
+        d <- look (src `plusPtr` 3)
+
+        if
+          | a == 0x63 -> padErr src
+          | b == 0x63 -> padErr (plusPtr src 1)
+          | a == 0xff -> err src
+          | b == 0xff -> err (plusPtr src 1)
+          | c == 0xff -> err (plusPtr src 2)
+          | d == 0xff -> err (plusPtr src 3)
+          | otherwise -> do
+            let !w = (shiftL a 18) .|. (shiftL b 12) .|. (shiftL c 6) .|. d
+            poke @Word8 dst (fromIntegral (shiftR w 16))
+
+            if
+              | c == 0x63 -> return $ Right (PS dfp 0 (n + 1))
+              | d == 0x63 -> do
+                poke @Word8 (plusPtr dst 1) (fromIntegral (shiftR w 8))
+                return $ Right (PS dfp 0 (n + 2))
+              | otherwise -> do
+                poke @Word8 (plusPtr dst 1) (fromIntegral (shiftR w 8))
+                poke @Word8 (plusPtr dst 2) (fromIntegral w)
+                go (plusPtr dst 3) (plusPtr src 4) (n + 3)
+{-# INLINE decodeLoop #-}
+
+lenientLoop
+    :: Ptr Word8
+        -- ^ decode lookup table
+    -> Ptr Word8
+        -- ^ src pointer
+    -> Ptr Word8
+        -- ^ dst pointer
+    -> Ptr Word8
+        -- ^ end of src ptr
+    -> ForeignPtr Word8
+        -- ^ dst foreign ptr (for consing bs)
+    -> IO ByteString
+lenientLoop = W16.lenientLoop

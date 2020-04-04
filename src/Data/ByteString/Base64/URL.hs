@@ -27,6 +27,9 @@ module Data.ByteString.Base64.URL
 
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64.Internal
+import Data.ByteString.Base64.Internal.Head
+import Data.ByteString.Base64.Internal.Tables
+import Data.ByteString.Base64.Internal.Utils
 import Data.Either (isRight)
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
@@ -56,7 +59,7 @@ encodeBase64' = encodeBase64_ base64UrlTable
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 = decodeBase64_ Pad decodeB64UrlTable
+decodeBase64 = decodeBase64_ Don'tCare decodeB64UrlTable
 {-# INLINE decodeBase64 #-}
 
 -- | Encode a 'ByteString' value as Base64url 'Text' without padding. Note that for Base64url,
@@ -88,7 +91,7 @@ encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
-decodeBase64Unpadded = decodeBase64_ NoPad decodeB64UrlTable
+decodeBase64Unpadded = decodeBase64_ Unpadded decodeB64UrlTable
 {-# INLINE decodeBase64Unpadded #-}
 
 -- | Leniently decode an unpadded Base64url-encoded 'ByteString'. This function

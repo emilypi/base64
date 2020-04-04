@@ -25,6 +25,9 @@ module Data.ByteString.Base64
 
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64.Internal
+import Data.ByteString.Base64.Internal.Head
+import Data.ByteString.Base64.Internal.Tables
+import Data.ByteString.Base64.Internal.Utils
 import Data.Either (isRight)
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
@@ -55,7 +58,7 @@ encodeBase64' = encodeBase64_ base64Table
 -- use 'decodeBase64Unpadded'.
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 = decodeBase64_ NoPad decodeB64Table
+decodeBase64 = decodeBase64_ Padded decodeB64Table
 {-# INLINE decodeBase64 #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ByteString' value. This function
