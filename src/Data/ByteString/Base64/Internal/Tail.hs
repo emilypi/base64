@@ -41,7 +41,19 @@ loopTail
     -> IO ByteString
 loopTail !dfp (Ptr !alpha) !end !src !dst !n
     | src == end = return (PS dfp 0 n)
-    | plusPtr src 2 == end = do
+    | plusPtr src 1 == end = do
+      !x <- peek @Word8  src
+
+      let !a = shiftR (x .&. 0xfc) 2
+          !b = shiftL (x .&. 0x03) 4
+
+      poke @Word8 dst (aix a alpha)
+      poke @Word8 (plusPtr dst 1) (aix b alpha)
+      poke @Word8 (plusPtr dst 2) 0x3d
+      poke @Word8 (plusPtr dst 3) 0x3d
+      return (PS dfp 0 (n + 4))
+
+    | otherwise = do
       !x <- peek @Word8  src
       !y <- peek @Word8 (plusPtr src 1)
 
@@ -54,17 +66,6 @@ loopTail !dfp (Ptr !alpha) !end !src !dst !n
       poke @Word8 dst (aix a alpha)
       poke @Word8 (plusPtr dst 1) (aix c alpha)
       poke @Word8 (plusPtr dst 2) (aix d alpha)
-      poke @Word8 (plusPtr dst 3) 0x3d
-      return (PS dfp 0 (n + 4))
-    | otherwise = do
-      !x <- peek @Word8  src
-
-      let !a = shiftR (x .&. 0xfc) 2
-          !b = shiftL (x .&. 0x03) 4
-
-      poke @Word8 dst (aix a alpha)
-      poke @Word8 (plusPtr dst 1) (aix b alpha)
-      poke @Word8 (plusPtr dst 2) 0x3d
       poke @Word8 (plusPtr dst 3) 0x3d
       return (PS dfp 0 (n + 4))
 
@@ -89,25 +90,27 @@ loopTailNoPad
     -> IO ByteString
 loopTailNoPad !dfp (Ptr !alpha) !end !src !dst !n
       | src == end = return (PS dfp 0 n)
+      | plusPtr src 1 == end = do
+        !x <- peek @Word8 src
+
+        let !a = shiftR (x .&. 0xfc) 2
+            !b = shiftL (x .&. 0x03) 4
+
+        poke @Word8 dst (aix a alpha)
+        poke @Word8 (plusPtr dst 1) (aix b alpha)
+        return (PS dfp 0 (n + 2))
       | otherwise = do
-        !k <- peekByteOff src 0
+        !x <- peek @Word8 src
+        !y <- peek @Word8 (plusPtr src 1)
 
-        let !a = shiftR (k .&. 0xfc) 2
-            !b = shiftL (k .&. 0x03) 4
+        let !a = shiftR (x .&. 0xfc) 2
+            !b = shiftL (x .&. 0x03) 4
 
-        pokeByteOff dst 0 (aix a alpha)
+        let !c = shiftR (y .&. 0xf0) 4 .|. b
+            !d = shiftL (y .&. 0x0f) 2
 
-        if plusPtr src 2 /= end
-        then do
-          pokeByteOff dst 1 (aix b alpha)
-          return (PS dfp 0 (n + 2))
-        else do
-          !k' <- peekByteOff src 1
-
-          let !b' = shiftR (k' .&. 0xf0) 4 .|. b
-              !c' = shiftL (k' .&. 0x0f) 2
-
-          pokeByteOff dst 1 (aix b' alpha)
-          pokeByteOff dst 2 (aix c' alpha)
-          return (PS dfp 0 (n + 3))
+        poke @Word8 dst (aix a alpha)
+        poke @Word8 (plusPtr dst 1) (aix c alpha)
+        poke @Word8 (plusPtr dst 2) (aix d alpha)
+        return (PS dfp 0 (n + 3))
 {-# INLINE loopTailNoPad #-}
