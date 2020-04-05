@@ -84,5 +84,5 @@ isBase64 bs = isValidBase64 bs && isRight (decodeBase64 bs)
 -- Base64 encoded 'ByteString' value, use 'isBase64'.
 --
 isValidBase64 :: ByteString -> Bool
-isValidBase64 = validateBase64 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+isValidBase64 = validateBase64 0x3d "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 {-# INLINE isValidBase64 #-}
