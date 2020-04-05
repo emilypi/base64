@@ -14,18 +14,25 @@
 module Data.Text.Encoding.Base64.URL
 ( encodeBase64
 , decodeBase64
+, decodeBase64With
 , encodeBase64Unpadded
 , decodeBase64Unpadded
+, decodeBase64UnpaddedWith
+, decodeBase64Padded
+, decodeBase64PaddedWith
 , decodeBase64Lenient
 , isBase64Url
 , isValidBase64Url
 ) where
 
 
+import Data.Bifunctor (first)
+import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
+import Data.Text.Encoding.Base64.Error
 
 -- | Encode a 'Text' value in Base64url with padding.
 --
@@ -47,6 +54,30 @@ decodeBase64 :: Text -> Either Text Text
 decodeBase64 = fmap T.decodeLatin1 . B64U.decodeBase64 . T.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
+-- | Attempt to decode a lazy 'Text' value as Base64url, converting from
+-- 'ByteString' to 'Text' according to some encoding function. In practice,
+-- This is something like 'decodeUtf8'', which may produce an error.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-8 RFC-4648 section 4>
+--
+-- Example:
+--
+-- @
+-- 'decodeBase16With' 'T.decodeUtf8''
+--   :: 'Text' -> 'Either' ('Base64Error' 'UnicodeException') 'Text'
+-- @
+--
+decodeBase64With
+    :: (ByteString -> Either err Text)
+      -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
+    -> Text
+      -- ^ Input text to decode
+    -> Either (Base64Error err) Text
+decodeBase64With f t = case B64U.decodeBase64 $ T.encodeUtf8 t of
+  Left de -> Left $ DecodeError de
+  Right a -> first ConversionError (f a)
+{-# INLINE decodeBase64With #-}
+
 -- | Encode a 'Text' value in Base64url without padding. Note that for Base64url,
 -- padding is optional. If you call this function, you will simply be encoding
 -- as Base64url and stripping padding chars from the output.
@@ -57,15 +88,73 @@ encodeBase64Unpadded :: Text -> Text
 encodeBase64Unpadded = B64U.encodeBase64Unpadded . T.encodeUtf8
 {-# INLINE encodeBase64Unpadded #-}
 
--- | Decode an unpadded Base64url encoded 'Text' value
+-- | Decode an unpadded Base64url encoded 'Text' value.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Unpadded :: Text -> Either Text Text
-decodeBase64Unpadded = fmap T.decodeUtf8
+decodeBase64Unpadded = fmap T.decodeLatin1
     . B64U.decodeBase64Unpadded
     . T.encodeUtf8
 {-# INLINE decodeBase64Unpadded #-}
+
+-- | Attempt to decode an unpadded lazy 'Text' value as Base64url, converting from
+-- 'ByteString' to 'Text' according to some encoding function. In practice,
+-- This is something like 'decodeUtf8'', which may produce an error.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-8 RFC-4648 section 4>
+--
+-- Example:
+--
+-- @
+-- 'decodeBase16With' 'T.decodeUtf8''
+--   :: 'Text' -> 'Either' ('Base64Error' 'UnicodeException') 'Text'
+-- @
+--
+decodeBase64UnpaddedWith
+    :: (ByteString -> Either err Text)
+      -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
+    -> Text
+      -- ^ Input text to decode
+    -> Either (Base64Error err) Text
+decodeBase64UnpaddedWith f t = case B64U.decodeBase64Unpadded $ T.encodeUtf8 t of
+  Left de -> Left $ DecodeError de
+  Right a -> first ConversionError (f a)
+{-# INLINE decodeBase64UnpaddedWith #-}
+
+-- | Decode an padded Base64url encoded 'Text' value
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+decodeBase64Padded :: Text -> Either Text Text
+decodeBase64Padded = fmap T.decodeLatin1
+    . B64U.decodeBase64Padded
+    . T.encodeUtf8
+{-# INLINE decodeBase64Padded #-}
+
+-- | Attempt to decode a padded lazy 'Text' value as Base64url, converting from
+-- 'ByteString' to 'Text' according to some encoding function. In practice,
+-- This is something like 'decodeUtf8'', which may produce an error.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-8 RFC-4648 section 4>
+--
+-- Example:
+--
+-- @
+-- 'decodeBase16With' 'T.decodeUtf8''
+--   :: 'Text' -> 'Either' ('Base64Error' 'UnicodeException') 'Text'
+-- @
+--
+decodeBase64PaddedWith
+    :: (ByteString -> Either err Text)
+      -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
+    -> Text
+      -- ^ Input text to decode
+    -> Either (Base64Error err) Text
+decodeBase64PaddedWith f t = case B64U.decodeBase64Padded $ T.encodeUtf8 t of
+  Left de -> Left $ DecodeError de
+  Right a -> first ConversionError (f a)
+{-# INLINE decodeBase64PaddedWith #-}
 
 -- | Leniently decode an unpadded Base64url-encoded 'Text'. This function
 -- will not generate parse errors. If input data contains padding chars,

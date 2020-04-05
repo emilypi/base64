@@ -15,16 +15,20 @@
 module Data.Text.Encoding.Base64
 ( encodeBase64
 , decodeBase64
+, decodeBase64With
 , decodeBase64Lenient
 , isBase64
 , isValidBase64
 ) where
 
 
+import Data.Bifunctor (first)
+import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
 
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
+import Data.Text.Encoding.Base64.Error
 
 -- | Encode a 'Text' value in Base64 with padding.
 --
@@ -39,8 +43,32 @@ encodeBase64 = B64.encodeBase64 . T.encodeUtf8
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: Text -> Either Text Text
-decodeBase64 = fmap T.decodeUtf8 . B64.decodeBase64 . T.encodeUtf8
+decodeBase64 = fmap T.decodeLatin1 . B64.decodeBase64 . T.encodeUtf8
 {-# INLINE decodeBase64 #-}
+
+-- | Attempt to decode a lazy 'Text' value as Base64, converting from
+-- 'ByteString' to 'Text' according to some encoding function. In practice,
+-- This is something like 'decodeUtf8'', which may produce an error.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-8 RFC-4648 section 8>
+--
+-- Example:
+--
+-- @
+-- 'decodeBase16With' 'T.decodeUtf8''
+--   :: 'Text' -> 'Either' ('Base64Error' 'UnicodeException') 'Text'
+-- @
+--
+decodeBase64With
+    :: (ByteString -> Either err Text)
+      -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
+    -> Text
+      -- ^ Input text to decode
+    -> Either (Base64Error err) Text
+decodeBase64With f t = case B64.decodeBase64 $ T.encodeUtf8 t of
+  Left de -> Left $ DecodeError de
+  Right a -> first ConversionError (f a)
+{-# INLINE decodeBase64With #-}
 
 -- | Leniently decode a Base64-encoded 'Text' value. This function
 -- will not generate parse errors. If input data contains padding chars,
@@ -53,7 +81,6 @@ decodeBase64Lenient = T.decodeUtf8
     . B64.decodeBase64Lenient
     . T.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
-
 
 -- | Tell whether a 'Text' value is Base64-encoded.
 --
