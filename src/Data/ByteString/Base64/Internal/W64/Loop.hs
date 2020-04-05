@@ -26,7 +26,6 @@ import Data.ByteString.Base64.Internal.Utils
 import qualified Data.ByteString.Base64.Internal.W16.Loop as W16
 import qualified Data.ByteString.Base64.Internal.W32.Loop as W32
 import Data.Text (Text)
-import qualified Data.Text as T
 
 import Foreign.ForeignPtr
 import Foreign.Ptr
