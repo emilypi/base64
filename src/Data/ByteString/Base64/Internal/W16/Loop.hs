@@ -44,8 +44,9 @@ innerLoop
     -> Ptr Word16
     -> Ptr Word8
     -> (Ptr Word8 -> Ptr Word8 -> Int -> IO ByteString)
+    -> Int
     -> IO ByteString
-innerLoop etable sptr dptr end finish = go sptr dptr 0
+innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
   where
     go !src !dst !n
       | plusPtr src 2 >= end = finish src (castPtr dst) n
@@ -111,16 +112,21 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
           | c == 0xff -> err (plusPtr src 2)
           | d == 0xff -> err (plusPtr src 3)
           | otherwise -> do
-            let !w = (shiftL a 18) .|. (shiftL b 12) .|. (shiftL c 6) .|. d
-            poke @Word8 dst (fromIntegral (shiftR w 16))
+
+            let !w = (unsafeShiftL a 18)
+                  .|. (unsafeShiftL b 12)
+                  .|. (unsafeShiftL c 6)
+                  .|. d
+
+            poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
 
             if
               | c == 0x63 -> return $ Right (PS dfp 0 (n + 1))
               | d == 0x63 -> do
-                poke @Word8 (plusPtr dst 1) (fromIntegral (shiftR w 8))
+                poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
                 return $ Right (PS dfp 0 (n + 2))
               | otherwise -> do
-                poke @Word8 (plusPtr dst 1) (fromIntegral (shiftR w 8))
+                poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
                 poke @Word8 (plusPtr dst 2) (fromIntegral w)
                 go (plusPtr dst 3) (plusPtr src 4) (n + 3)
 {-# INLINE decodeLoop #-}

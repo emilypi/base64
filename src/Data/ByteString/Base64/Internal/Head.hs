@@ -24,12 +24,12 @@ module Data.ByteString.Base64.Internal.Head
 import qualified Data.ByteString as BS
 import Data.ByteString.Base64.Internal.Tail
 import Data.ByteString.Base64.Internal.Utils
--- #if WORD_SIZE_IN_BITS == 32
--- import Data.ByteString.Base64.Internal.W32.Loop
+-- #if WORD_SIZE_IN_BITS >= 32
+import Data.ByteString.Base64.Internal.W32.Loop
 -- #elif WORD_SIZE_IN_BITS >= 64
 -- import Data.ByteString.Base64.Internal.W64.Loop
 -- #else
-import Data.ByteString.Base64.Internal.W16.Loop
+-- import Data.ByteString.Base64.Internal.W16.Loop
 -- #endif
 import Data.ByteString.Internal
 import Data.Text (Text)
@@ -53,10 +53,11 @@ encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
           let !end = plusPtr sptr (soff + slen)
           innerLoop
             eptr
-            (plusPtr sptr soff)
+            (castPtr (plusPtr sptr soff))
             (castPtr dptr)
             end
             (loopTail dfp aptr end)
+            0
   where
     !dlen = 4 * ((slen + 2) `div` 3)
 
@@ -70,10 +71,11 @@ encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
           let !end = plusPtr sptr (soff + slen)
           innerLoop
             etable
-            (plusPtr sptr soff)
+            (castPtr (plusPtr sptr soff))
             (castPtr dptr)
             end
             (loopTailNoPad dfp aptr end)
+            0
   where
     !dlen = 4 * ((slen + 2) `div` 3)
 
@@ -86,12 +88,21 @@ encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
 -- a multiple of 4 in length.
 --
 decodeBase64_ :: Padding -> ForeignPtr Word8 -> ByteString -> Either Text ByteString
+decodeBase64_ _ _ (PS _ _ 0) = Right mempty
 decodeBase64_ pad !dtfp bs@(PS _ _ !slen) = case pad of
-    Don'tCare -> go (BS.append bs (BS.replicate r 0x3d))
+    Don'tCare
+      | r == 0 -> go bs
+      | r == 2 -> go (BS.append bs (BS.replicate 2 0x3d))
+      | r == 3 -> go (BS.append bs (BS.replicate 1 0x3d))
+      | otherwise -> Left "Base64-encoded bytestring has invalid size"
     Padded
-      | r /= 0 -> Left "bytestring has invalid padding"
+      | r /= 0 -> Left "Base64-encoded bytestring has invalid padding"
       | otherwise -> go bs
-    Unpadded -> go' bs
+    Unpadded
+      | r == 0 -> go' bs
+      | r == 2 -> go' (BS.append bs (BS.replicate 2 0x3d))
+      | r == 3 -> go' (BS.append bs (BS.replicate 1 0x3d))
+      | otherwise -> Left "Base64-encoded bytestring has invalid size"
   where
     (!q, !r) = divMod slen 4
     !dlen = q * 3
@@ -103,9 +114,9 @@ decodeBase64_ pad !dtfp bs@(PS _ _ !slen) = case pad of
         withForeignPtr dfp $ \dptr ->
           decodeLoop
             dtable
-            (plusPtr sptr soff)
-            dptr
-            (plusPtr sptr (soff + slen'))
+            (castPtr (plusPtr sptr soff))
+            (castPtr dptr)
+            (castPtr (plusPtr sptr (soff + slen')))
             dfp
             0
 
@@ -116,10 +127,11 @@ decodeBase64_ pad !dtfp bs@(PS _ _ !slen) = case pad of
         withForeignPtr dfp $ \dptr ->
           decodeLoopNopad
             dtable
-            (plusPtr sptr soff)
-            dptr
-            (plusPtr sptr (soff + slen'))
+            (castPtr (plusPtr sptr soff))
+            (castPtr dptr)
+            (castPtr (plusPtr sptr (soff + slen')))
             dfp
+            0
 {-# INLINE decodeBase64_ #-}
 
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
