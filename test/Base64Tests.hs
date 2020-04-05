@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
 module Main
@@ -6,6 +7,7 @@ module Main
 ) where
 
 
+import qualified Data.ByteString as BS
 import "base64" Data.ByteString.Base64 as B64
 import "base64" Data.ByteString.Base64.URL as B64U
 import "base64-bytestring" Data.ByteString.Base64 as Bos
@@ -25,6 +27,7 @@ tests = testGroup "Base64 Tests"
     [ testVectors
     , sanityTests
     , alphabetTests
+    , paddingTests
     ]
 
 testVectors :: TestTree
@@ -140,3 +143,59 @@ alphabetTests = testGroup "Alphabet tests"
       let b = B64U.encodeBase64' bs
       assertBool ("failed validity: " ++ show b) $ B64U.isValidBase64Url b
       assertBool ("failed correctness: " ++ show b) $ B64U.isBase64Url b
+
+paddingTests :: TestTree
+paddingTests = testGroup "Padding tests"
+    [ testGroup "decode padding coherence"
+      [ ptest "<" "PA=="
+      , ptest "<<" "PDw="
+      , ptest "<<?" "PDw_"
+      , ptest "<<??" "PDw_Pw=="
+      , ptest "<<??>" "PDw_Pz4="
+      , ptest "<<??>>" "PDw_Pz4-"
+      ]
+    , testGroup "decode unpadding coherence"
+      [ utest "<" "PA"
+      , utest "<<" "PDw"
+      , utest "<<?" "PDw_"
+      , utest "<<??" "PDw_Pw"
+      , utest "<<??>" "PDw_Pz4"
+      , utest "<<??>>" "PDw_Pz4-"
+      ]
+    ]
+  where
+    ptest s t =
+      testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
+        let u = B64U.decodeBase64Unpadded t
+            v = B64U.decodeBase64Padded t
+
+        if
+          | BS.last t == 0x3d -> do
+            step "Padding required: no padding fails"
+            u @=? Left "Base64-encoded bytestring required to be unpadded"
+
+            step "Padding required: padding succeeds"
+            v @=? Right s
+          | otherwise -> do
+            step "String has no padding: decodes should coincide"
+            u @=? Right s
+            v @=? Right s
+            v @=? u
+
+    utest s t =
+      testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
+        let u = B64U.decodeBase64Padded t
+            v = B64U.decodeBase64Unpadded t
+
+        if
+          | BS.length t `mod` 4 == 0 -> do
+            step "String has no padding: decodes should coincide"
+            u @=? Right s
+            v @=? Right s
+            v @=? u
+          | otherwise -> do
+            step "Unpadded required: padding fails"
+            u @=? Left "Base64-encoded bytestring required to be padded"
+
+            step "Unpadded required: unpadding succeeds"
+            v @=? Right s

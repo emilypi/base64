@@ -105,7 +105,7 @@ decodeBase64_ !pad !dtfp !bs@(PS !fp !o !l) = unsafeDupablePerformIO $
         | r == 3 -> go (BS.append bs (BS.replicate 1 0x3d))
         | otherwise -> err "Base64-encoded bytestring has invalid size"
       Padded
-        | r /= 0 -> err "Base64-encoded bytestring has invalid padding"
+        | r /= 0 -> err "Base64-encoded bytestring required to be padded"
         | otherwise -> go bs
       Unpadded
         | r == 0 -> validateUnpadded (go bs)
