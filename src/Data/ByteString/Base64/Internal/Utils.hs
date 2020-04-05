@@ -49,7 +49,7 @@ data EncodingTable = EncodingTable
 data Padding
     = Padded
       -- ^ Do we require padding?
-    | Unpadded Word8
+    | Unpadded
       -- ^ Do we not require padding? If so, check against padding char
     | Don'tCare
       -- ^ Do we not care? (should we pad if it needs it?)
