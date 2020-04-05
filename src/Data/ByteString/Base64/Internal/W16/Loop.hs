@@ -16,7 +16,6 @@
 module Data.ByteString.Base64.Internal.W16.Loop
 ( innerLoop
 , decodeLoop
-, decodeLoopNopad
 , lenientLoop
 ) where
 
@@ -65,7 +64,6 @@ innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
         poke (plusPtr dst 2) y
 
         go (plusPtr src 3) (plusPtr dst 4) (n + 4)
-
 
 decodeLoop
     :: Ptr Word8
@@ -130,8 +128,6 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
                 poke @Word8 (plusPtr dst 2) (fromIntegral w)
                 go (plusPtr dst 3) (plusPtr src 4) (n + 3)
 {-# INLINE decodeLoop #-}
-
-decodeLoopNopad = undefined
 
 lenientLoop
     :: Ptr Word8
