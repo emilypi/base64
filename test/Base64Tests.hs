@@ -146,7 +146,7 @@ alphabetTests = testGroup "Alphabet tests"
 
 paddingTests :: TestTree
 paddingTests = testGroup "Padding tests"
-    [ testGroup "decode padding coherence"
+    [ testGroup "URL decodePadding coherence"
       [ ptest "<" "PA=="
       , ptest "<<" "PDw="
       , ptest "<<?" "PDw_"
@@ -154,7 +154,7 @@ paddingTests = testGroup "Padding tests"
       , ptest "<<??>" "PDw_Pz4="
       , ptest "<<??>>" "PDw_Pz4-"
       ]
-    , testGroup "decode unpadding coherence"
+    , testGroup "URL decodeUnpadded coherence"
       [ utest "<" "PA"
       , utest "<<" "PDw"
       , utest "<<?" "PDw_"
@@ -165,7 +165,7 @@ paddingTests = testGroup "Padding tests"
     ]
   where
     ptest s t =
-      testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
+      testCaseSteps (show $ if t == "" then "empty" else t) $ \step -> do
         let u = B64U.decodeBase64Unpadded t
             v = B64U.decodeBase64Padded t
 
@@ -183,7 +183,7 @@ paddingTests = testGroup "Padding tests"
             v @=? u
 
     utest s t =
-      testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
+      testCaseSteps (show $ if t == "" then "empty" else t) $ \step -> do
         let u = B64U.decodeBase64Padded t
             v = B64U.decodeBase64Unpadded t
 
