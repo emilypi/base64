@@ -87,7 +87,11 @@ encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
 -- If 'Padding' ~ NoPad, then we do not, and fail if the input is not
 -- a multiple of 4 in length.
 --
-decodeBase64_ :: Padding -> ForeignPtr Word8 -> ByteString -> Either Text ByteString
+decodeBase64_
+    :: Padding
+    -> ForeignPtr Word8
+    -> ByteString
+    -> Either Text ByteString
 decodeBase64_ _ _ (PS _ _ 0) = Right mempty
 decodeBase64_ pad !dtfp bs@(PS _ _ !slen) = case pad of
     Don'tCare
@@ -98,11 +102,14 @@ decodeBase64_ pad !dtfp bs@(PS _ _ !slen) = case pad of
     Padded
       | r /= 0 -> Left "Base64-encoded bytestring has invalid padding"
       | otherwise -> go bs
-    Unpadded
-      | r == 0 -> go' bs
-      | r == 2 -> go' (BS.append bs (BS.replicate 2 0x3d))
-      | r == 3 -> go' (BS.append bs (BS.replicate 1 0x3d))
-      | otherwise -> Left "Base64-encoded bytestring has invalid size"
+    Unpadded padChar
+      | r == 0 -> go bs
+      | r == 1 -> Left "Base64-encoded bytestring has invalid size"
+      | r == 2, BS.last bs /= padChar -> go (BS.append bs (BS.replicate 2 padChar))
+      | r == 3
+      , BS.last bs /= padChar
+      , BS.last (BS.tail bs) /= padChar -> go bs
+      | otherwise -> Left "Base64-encoded bytestring required to be unpadded"
   where
     (!q, !r) = divMod slen 4
     !dlen = q * 3
@@ -113,19 +120,6 @@ decodeBase64_ pad !dtfp bs@(PS _ _ !slen) = case pad of
         dfp <- mallocPlainForeignPtrBytes dlen
         withForeignPtr dfp $ \dptr ->
           decodeLoop
-            dtable
-            (castPtr (plusPtr sptr soff))
-            (castPtr dptr)
-            (castPtr (plusPtr sptr (soff + slen')))
-            dfp
-            0
-
-    go' (PS !sfp !soff !slen') = unsafeDupablePerformIO $
-      withForeignPtr dtfp $ \dtable ->
-        withForeignPtr sfp $ \sptr -> do
-        dfp <- mallocPlainForeignPtrBytes dlen
-        withForeignPtr dfp $ \dptr ->
-          decodeLoopNopad
             dtable
             (castPtr (plusPtr sptr soff))
             (castPtr dptr)

@@ -20,6 +20,7 @@ module Data.ByteString.Base64.URL
 , encodeBase64Unpadded
 , encodeBase64Unpadded'
 , decodeBase64Unpadded
+, decodeBase64Padded
 , decodeBase64Lenient
 , isBase64Url
 , isValidBase64Url
@@ -91,8 +92,20 @@ encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
-decodeBase64Unpadded = decodeBase64_ Unpadded decodeB64UrlTable
+decodeBase64Unpadded = decodeBase64_ (Unpadded 0x2d) decodeB64UrlTable
 {-# INLINE decodeBase64Unpadded #-}
+
+-- | Decode a padded Base64url-encoded 'ByteString' value. If its length is not a multiple
+-- of 4, then the decoding will fail, since correct padding is required.
+--
+-- In general, unless padded Base64url is explicitly required, it is
+-- safer to call 'decodeBase64'.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+decodeBase64Padded :: ByteString -> Either Text ByteString
+decodeBase64Padded = decodeBase64_ Padded decodeB64UrlTable
+{-# INLINE decodeBase64Padded #-}
 
 -- | Leniently decode an unpadded Base64url-encoded 'ByteString'. This function
 -- will not generate parse errors. If input data contains padding chars,
@@ -117,5 +130,5 @@ isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 bs)
 -- Base64 encoded 'ByteString' value, use 'isBase64Url'.
 --
 isValidBase64Url :: ByteString -> Bool
-isValidBase64Url = validateBase64 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+isValidBase64Url = validateBase64 0x2d "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 {-# INLINE isValidBase64Url #-}

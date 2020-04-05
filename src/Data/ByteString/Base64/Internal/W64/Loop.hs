@@ -15,9 +15,7 @@
 --
 module Data.ByteString.Base64.Internal.W64.Loop
 ( innerLoop
-, innerLoopNopad
 , decodeLoop
-, decodeLoopNopad
 , lenientLoop
 ) where
 
@@ -79,51 +77,6 @@ innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
 
         go (plusPtr src 6) (plusPtr dst 8) (n + 8)
 {-# INLINE innerLoop #-}
-
--- | Unpadded encoding loop, finalized as a bytestring using the
--- resultant length count.
---
-innerLoopNopad
-    :: Ptr Word16
-    -> Ptr Word64
-    -> Ptr Word64
-    -> Ptr Word64
-    -> (Ptr Word8 -> Ptr Word8 -> Int -> IO ByteString)
-    -> Int
-    -> IO ByteString
-innerLoopNopad !etable !sptr !dptr !end finish !nn = go sptr dptr nn
-  where
-    go !src !dst !n
-      | plusPtr src 7 >= end =
-        W32.innerLoop etable (castPtr src) (castPtr dst) (castPtr end) finish n
-      | otherwise = do
-#ifdef WORDS_BIGENDIAN
-        !t <- peek @Word64 src
-#else
-        !t <- byteSwap64 <$> peek @Word64 src
-#endif
-        let !a = (unsafeShiftR t 52) .&. 0xfff
-            !b = (unsafeShiftR t 40) .&. 0xfff
-            !c = (unsafeShiftR t 28) .&. 0xfff
-            !d = (unsafeShiftR t 16) .&. 0xfff
-
-        !w <- w64_16 <$> peekElemOff etable (fromIntegral a)
-        !x <- w64_16 <$> peekElemOff etable (fromIntegral b)
-        !y <- w64_16 <$> peekElemOff etable (fromIntegral c)
-        !z <- w64_16 <$> peekElemOff etable (fromIntegral d)
-
-        let !xx = w
-               .|. (unsafeShiftL x 16)
-               .|. (unsafeShiftL y 32)
-               .|. (unsafeShiftL z 48)
-
-        poke dst (fromIntegral xx)
-
-        go (plusPtr src 6) (plusPtr dst 8) (n + 8)
-{-# INLINE innerLoopNopad #-}
-
-
-decodeLoopNopad = undefined
 
 decodeLoop
     :: Ptr Word8
