@@ -1,6 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 -- |
 -- Module       : Data.ByteString.Base64.Internal.Head
 -- Copyright    : (c) 2019 Emily Pillmore
@@ -36,6 +37,7 @@ import Data.Text (Text)
 
 import Foreign.ForeignPtr
 import Foreign.Ptr
+import Foreign.Storable
 
 import GHC.ForeignPtr
 import GHC.Word
@@ -83,9 +85,11 @@ encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
 -- the input value, producing either an error string on the left, or a
 -- decoded value.
 --
--- Note: If 'Padding' ~ Pad, then we pad out the input to a multiple of 4.
--- If 'Padding' ~ NoPad, then we do not, and fail if the input is not
--- a multiple of 4 in length.
+-- Note: If 'Padding' ~ 'Don\'tCare', then we pad out the input to a multiple of 4.
+-- If 'Padding' ~ 'Padded', then we do not, and fail if the input is not
+-- a multiple of 4 in length. If 'Padding' ~ 'Unpadded', then we validate
+-- correctness of length and the absence of padding and then treat as a std
+-- padded string.
 --
 decodeBase64_
     :: Padding
@@ -93,30 +97,40 @@ decodeBase64_
     -> ByteString
     -> Either Text ByteString
 decodeBase64_ _ _ (PS _ _ 0) = Right mempty
-decodeBase64_ !pad !dtfp !bs@(PS _ _ !slen) = case pad of
-    Don'tCare
-      | r == 0 -> go bs
-      | r == 2 -> go (BS.append bs (BS.replicate 2 0x3d))
-      | r == 3 -> go (BS.append bs (BS.replicate 1 0x3d))
-      | otherwise -> Left "Base64-encoded bytestring has invalid size"
-    Padded
-      | r /= 0 -> Left "Base64-encoded bytestring has invalid padding"
-      | otherwise -> go bs
-    Unpadded
-      | r == 0 -> go bs
-      | r == 1 -> Left "Base64-encoded bytestring has invalid size"
-      | r == 2, BS.last bs /= 0x3d -> go (BS.append bs (BS.replicate 2 0x3d))
-      | r == 3
-      , BS.last bs /= 0x3d
-      , BS.last (BS.tail bs) /= 0x3d -> go bs
-      | otherwise -> Left "Base64-encoded bytestring required to be unpadded"
-  where
-    (!q, !r) = divMod slen 4
+decodeBase64_ !pad !dtfp !bs@(PS !fp !o !l) = unsafeDupablePerformIO $
+    case pad of
+      Don'tCare
+        | r == 0 -> go bs
+        | r == 2 -> go (BS.append bs (BS.replicate 2 0x3d))
+        | r == 3 -> go (BS.append bs (BS.replicate 1 0x3d))
+        | otherwise -> err "Base64-encoded bytestring has invalid size"
+      Padded
+        | r /= 0 -> err "Base64-encoded bytestring has invalid padding"
+        | otherwise -> go bs
+      Unpadded
+        | r == 0 -> validateUnpadded (go bs)
+        | r == 1 -> err "Base64-encoded bytestring has invalid size"
+        | r == 2 -> validateUnpadded (go (BS.append bs (BS.replicate 2 0x3d)))
+        | r == 3 -> validateUnpadded (go (BS.append bs (BS.replicate 1 0x3d)))
+        | otherwise -> err "Base64-encoded bytestring required to be unpadded"
+    where
+    (!q, !r) = divMod l 4
     !dlen = q * 3
 
-    go (PS !sfp !soff !slen') = unsafeDupablePerformIO $
+    err = return . Left
+
+    validateUnpadded io = withForeignPtr fp $ \p -> do
+      let !end = l + o
+      a <- peek @Word8 (plusPtr p (end - 1))
+      b <- peek @Word8 (plusPtr p (end - 2))
+
+      if a == 0x3d || b == 0x3d
+      then err "Base64-encoded bytestring required to be unpadded"
+      else io
+
+    go (PS !sfp !soff !slen') =
       withForeignPtr dtfp $ \dtable ->
-        withForeignPtr sfp $ \sptr -> do
+      withForeignPtr sfp $ \sptr -> do
         dfp <- mallocPlainForeignPtrBytes dlen
         withForeignPtr dfp $ \dptr ->
           decodeLoop
