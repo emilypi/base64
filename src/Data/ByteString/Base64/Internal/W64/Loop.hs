@@ -91,80 +91,81 @@ decodeLoop
         -- ^ dst foreign ptr (for consing bs)
     -> Int
     -> IO (Either Text ByteString)
-decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
-  where
-    err p = return . Left . T.pack
-      $ "invalid character at offset: "
-      ++ show (p `minusPtr` sptr)
+decodeLoop !dtable !sptr !dptr !end !dfp !nn =
+  W16.decodeLoop dtable (castPtr sptr) (castPtr dptr) (castPtr end) dfp nn --  go dptr sptr nn
+--   where
+--     err p = return . Left . T.pack
+--       $ "invalid character at offset: "
+--       ++ show (p `minusPtr` sptr)
 
-    padErr p =  return . Left . T.pack
-      $ "invalid padding at offset: "
-      ++ show (p `minusPtr` sptr)
+--     padErr p =  return . Left . T.pack
+--       $ "invalid padding at offset: "
+--       ++ show (p `minusPtr` sptr)
 
-    go !dst !src !n
-      | plusPtr src 8 >= end =
-        W32.decodeLoop dtable (castPtr src) dst (castPtr end) dfp n
-      | otherwise = do
-#ifdef WORDS_BIGENDIAN
-        !tt <- peek @Word64 src
-#else
-        !tt <- byteSwap64 <$> peek @Word64 src
-#endif
-        let !s = fromIntegral ((unsafeShiftR tt 56) .&. 0xff)
-            !t = fromIntegral ((unsafeShiftR tt 48) .&. 0xff)
-            !u = fromIntegral ((unsafeShiftR tt 40) .&. 0xff)
-            !v = fromIntegral ((unsafeShiftR tt 32) .&. 0xff)
-            !w = fromIntegral ((unsafeShiftR tt 24) .&. 0xff)
-            !x = fromIntegral ((unsafeShiftR tt 16) .&. 0xff)
-            !y = fromIntegral ((unsafeShiftR tt 8) .&. 0xff)
-            !z = fromIntegral (tt .&. 0xff)
+--     go !dst !src !n
+--       | plusPtr src 8 >= end =
+--         W32.decodeLoop dtable (castPtr src) dst (castPtr end) dfp n
+--       | otherwise = do
+-- #ifdef WORDS_BIGENDIAN
+--         !tt <- peek @Word64 src
+-- #else
+--         !tt <- byteSwap64 <$> peek @Word64 src
+-- #endif
+--         let !s = fromIntegral ((unsafeShiftR tt 56) .&. 0xff)
+--             !t = fromIntegral ((unsafeShiftR tt 48) .&. 0xff)
+--             !u = fromIntegral ((unsafeShiftR tt 40) .&. 0xff)
+--             !v = fromIntegral ((unsafeShiftR tt 32) .&. 0xff)
+--             !w = fromIntegral ((unsafeShiftR tt 24) .&. 0xff)
+--             !x = fromIntegral ((unsafeShiftR tt 16) .&. 0xff)
+--             !y = fromIntegral ((unsafeShiftR tt 8) .&. 0xff)
+--             !z = fromIntegral (tt .&. 0xff)
 
-        !a <- w64 <$> peekByteOff dtable s
-        !b <- w64 <$> peekByteOff dtable t
-        !c <- w64 <$> peekByteOff dtable u
-        !d <- w64 <$> peekByteOff dtable v
-        !e <- w64 <$> peekByteOff dtable w
-        !f <- w64 <$> peekByteOff dtable x
-        !g <- w64 <$> peekByteOff dtable y
-        !h <- w64 <$> peekByteOff dtable z
+--         !a <- w64 <$> peekByteOff dtable s
+--         !b <- w64 <$> peekByteOff dtable t
+--         !c <- w64 <$> peekByteOff dtable u
+--         !d <- w64 <$> peekByteOff dtable v
+--         !e <- w64 <$> peekByteOff dtable w
+--         !f <- w64 <$> peekByteOff dtable x
+--         !g <- w64 <$> peekByteOff dtable y
+--         !h <- w64 <$> peekByteOff dtable z
 
-        if
-          | a == 0x63 -> padErr src
-          | b == 0x63 -> padErr (plusPtr src 1)
-          | c == 0x63 -> padErr (plusPtr src 2)
-          | d == 0x63 -> padErr (plusPtr src 3)
-          | e == 0x63 -> padErr (plusPtr src 4)
-          | f == 0x63 -> padErr (plusPtr src 5)
-          | g == 0x63 -> padErr (plusPtr src 6)
-          | h == 0x63 -> padErr (plusPtr src 7)
-          | a == 0xff -> err src
-          | b == 0xff -> err (plusPtr src 1)
-          | c == 0xff -> err (plusPtr src 2)
-          | d == 0xff -> err (plusPtr src 3)
-          | e == 0xff -> err (plusPtr src 4)
-          | f == 0xff -> err (plusPtr src 5)
-          | g == 0xff -> err (plusPtr src 6)
-          | h == 0xff -> err (plusPtr src 7)
-          | otherwise -> do
+--         if
+--           | a == 0x63 -> padErr src
+--           | b == 0x63 -> padErr (plusPtr src 1)
+--           | c == 0x63 -> padErr (plusPtr src 2)
+--           | d == 0x63 -> padErr (plusPtr src 3)
+--           | e == 0x63 -> padErr (plusPtr src 4)
+--           | f == 0x63 -> padErr (plusPtr src 5)
+--           | g == 0x63 -> padErr (plusPtr src 6)
+--           | h == 0x63 -> padErr (plusPtr src 7)
+--           | a == 0xff -> err src
+--           | b == 0xff -> err (plusPtr src 1)
+--           | c == 0xff -> err (plusPtr src 2)
+--           | d == 0xff -> err (plusPtr src 3)
+--           | e == 0xff -> err (plusPtr src 4)
+--           | f == 0xff -> err (plusPtr src 5)
+--           | g == 0xff -> err (plusPtr src 6)
+--           | h == 0xff -> err (plusPtr src 7)
+--           | otherwise -> do
 
-            let !xx = (unsafeShiftL a 18)
-                  .|. (unsafeShiftL b 12)
-                  .|. (unsafeShiftL c 6)
-                  .|. d
+--             let !xx = (unsafeShiftL a 18)
+--                   .|. (unsafeShiftL b 12)
+--                   .|. (unsafeShiftL c 6)
+--                   .|. d
 
-                !yy = (unsafeShiftL e 18)
-                  .|. (unsafeShiftL f 12)
-                  .|. (unsafeShiftL g 6)
-                  .|. h
+--                 !yy = (unsafeShiftL e 18)
+--                   .|. (unsafeShiftL f 12)
+--                   .|. (unsafeShiftL g 6)
+--                   .|. h
 
-            poke @Word8 dst (fromIntegral (unsafeShiftR xx 16))
-            poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR xx 8))
-            poke @Word8 (plusPtr dst 2) (fromIntegral xx)
-            poke @Word8 (plusPtr dst 3) (fromIntegral (unsafeShiftR yy 16))
-            poke @Word8 (plusPtr dst 4) (fromIntegral (unsafeShiftR yy 8))
-            poke @Word8 (plusPtr dst 5) (fromIntegral yy)
+--             poke @Word8 dst (fromIntegral (unsafeShiftR xx 16))
+--             poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR xx 8))
+--             poke @Word8 (plusPtr dst 2) (fromIntegral xx)
+--             poke @Word8 (plusPtr dst 3) (fromIntegral (unsafeShiftR yy 16))
+--             poke @Word8 (plusPtr dst 4) (fromIntegral (unsafeShiftR yy 8))
+--             poke @Word8 (plusPtr dst 5) (fromIntegral yy)
 
-            go (plusPtr dst 6) (plusPtr src 8) (n + 6)
+--             go (plusPtr dst 6) (plusPtr src 8) (n + 6)
 {-# INLINE decodeLoop #-}
 
 lenientLoop

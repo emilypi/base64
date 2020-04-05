@@ -93,7 +93,7 @@ decodeBase64_
     -> ByteString
     -> Either Text ByteString
 decodeBase64_ _ _ (PS _ _ 0) = Right mempty
-decodeBase64_ pad !dtfp bs@(PS _ _ !slen) = case pad of
+decodeBase64_ !pad !dtfp !bs@(PS _ _ !slen) = case pad of
     Don'tCare
       | r == 0 -> go bs
       | r == 2 -> go (BS.append bs (BS.replicate 2 0x3d))
@@ -102,13 +102,13 @@ decodeBase64_ pad !dtfp bs@(PS _ _ !slen) = case pad of
     Padded
       | r /= 0 -> Left "Base64-encoded bytestring has invalid padding"
       | otherwise -> go bs
-    Unpadded padChar
+    Unpadded
       | r == 0 -> go bs
       | r == 1 -> Left "Base64-encoded bytestring has invalid size"
-      | r == 2, BS.last bs /= padChar -> go (BS.append bs (BS.replicate 2 padChar))
+      | r == 2, BS.last bs /= 0x3d -> go (BS.append bs (BS.replicate 2 0x3d))
       | r == 3
-      , BS.last bs /= padChar
-      , BS.last (BS.tail bs) /= padChar -> go bs
+      , BS.last bs /= 0x3d
+      , BS.last (BS.tail bs) /= 0x3d -> go bs
       | otherwise -> Left "Base64-encoded bytestring required to be unpadded"
   where
     (!q, !r) = divMod slen 4
@@ -126,7 +126,6 @@ decodeBase64_ pad !dtfp bs@(PS _ _ !slen) = case pad of
             (castPtr (plusPtr sptr (soff + slen')))
             dfp
             0
-{-# INLINE decodeBase64_ #-}
 
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
 decodeBase64Lenient_ !dtfp (PS !sfp !soff !slen) = unsafeDupablePerformIO $
@@ -142,4 +141,3 @@ decodeBase64Lenient_ !dtfp (PS !sfp !soff !slen) = unsafeDupablePerformIO $
           dfp
   where
     !dlen = ((slen + 3) `div` 4) * 3
-{-# INLINE decodeBase64Lenient_ #-}
