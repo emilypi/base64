@@ -82,9 +82,9 @@ encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
 encodeBase64Unpadded' :: ByteString -> ByteString
 encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
 
--- | Decode a padded Base64url-encoded 'ByteString' value. If its length is not a multiple
--- of 4, then padding chars will /not/ be added to fill out the input to a multiple of
--- 4.
+-- | Decode an unpadded Base64url-encoded 'ByteString' value. Input strings are
+-- required to be unpadded, and will undergo validation prior to decoding to
+-- confirm.
 --
 -- In general, unless unpadded Base64url is explicitly required, it is
 -- safer to call 'decodeBase64'.
@@ -95,8 +95,9 @@ decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded = decodeBase64_ Unpadded decodeB64UrlTable
 {-# INLINE decodeBase64Unpadded #-}
 
--- | Decode a padded Base64url-encoded 'ByteString' value. If its length is not a multiple
--- of 4, then the decoding will fail, since correct padding is required.
+-- | Decode a padded Base64url-encoded 'ByteString' value. Input strings are
+-- required to be correctly padded, and will be validated prior to decoding
+-- to confirm.
 --
 -- In general, unless padded Base64url is explicitly required, it is
 -- safer to call 'decodeBase64'.
