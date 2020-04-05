@@ -73,12 +73,11 @@ decodeLoopNopad = undefined
 
 decodeLoop
     :: Ptr Word8
-        -- ^ decode lookup table
-    -> Ptr Word8
+    -> Ptr Word32
         -- ^ src pointer
     -> Ptr Word8
         -- ^ dst pointer
-    -> Ptr Word8
+    -> Ptr Word32
         -- ^ end of src ptr
     -> ForeignPtr Word8
         -- ^ dst foreign ptr (for consing bs)
@@ -94,40 +93,45 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
       $ "invalid padding at offset: "
       ++ show (p `minusPtr` sptr)
 
-    look :: Ptr Word8 -> IO Word32
-    look p = do
-      !i <- peekByteOff @Word8 p 0
-      !v <- peekByteOff @Word8 dtable (fromIntegral i)
-      return (fromIntegral v)
-
     go !dst !src !n
-      | src >= end = return (Right (PS dfp 0 n))
+      | plusPtr src 4 >= end =
+        W16.decodeLoop dtable (castPtr src) (castPtr dst) (castPtr end) dfp n
       | otherwise = do
-        a <- look src
-        b <- look (src `plusPtr` 1)
-        c <- look (src `plusPtr` 2)
-        d <- look (src `plusPtr` 3)
+#ifdef WORDS_BIGENDIAN
+        !t <- peek @Word32 src
+#else
+        !t <- byteSwap32 <$> peek @Word32 src
+#endif
+        let !w = fromIntegral ((unsafeShiftR t 24) .&. 0xff)
+            !x = fromIntegral ((unsafeShiftR t 16) .&. 0xff)
+            !y = fromIntegral ((unsafeShiftR t 8) .&. 0xff)
+            !z = fromIntegral (t .&. 0xff)
+
+        !a <- w32 <$> peekByteOff dtable w
+        !b <- w32 <$> peekByteOff dtable x
+        !c <- w32 <$> peekByteOff dtable y
+        !d <- w32 <$> peekByteOff dtable z
 
         if
           | a == 0x63 -> padErr src
           | b == 0x63 -> padErr (plusPtr src 1)
+          | c == 0x63 -> padErr (plusPtr src 2)
+          | d == 0x63 -> padErr (plusPtr src 3)
           | a == 0xff -> err src
           | b == 0xff -> err (plusPtr src 1)
           | c == 0xff -> err (plusPtr src 2)
           | d == 0xff -> err (plusPtr src 3)
           | otherwise -> do
-            let !w = (shiftL a 18) .|. (shiftL b 12) .|. (shiftL c 6) .|. d
-            poke @Word8 dst (fromIntegral (shiftR w 16))
 
-            if
-              | c == 0x63 -> return $ Right (PS dfp 0 (n + 1))
-              | d == 0x63 -> do
-                poke @Word8 (plusPtr dst 1) (fromIntegral (shiftR w 8))
-                return $ Right (PS dfp 0 (n + 2))
-              | otherwise -> do
-                poke @Word8 (plusPtr dst 1) (fromIntegral (shiftR w 8))
-                poke @Word8 (plusPtr dst 2) (fromIntegral w)
-                go (plusPtr dst 3) (plusPtr src 4) (n + 3)
+            let !xx = (unsafeShiftL a 18)
+                  .|. (unsafeShiftL b 12)
+                  .|. (unsafeShiftL c 6)
+                  .|. d
+
+            poke @Word8 dst (fromIntegral (unsafeShiftR xx 16))
+            poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR xx 8))
+            poke @Word8 (plusPtr dst 2) (fromIntegral xx)
+            go (plusPtr dst 3) (plusPtr src 4) (n + 3)
 {-# INLINE decodeLoop #-}
 
 lenientLoop
