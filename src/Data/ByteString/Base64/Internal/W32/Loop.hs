@@ -41,16 +41,17 @@ import GHC.Word
 --
 innerLoop
     :: Ptr Word16
-    -> Ptr Word8
     -> Ptr Word32
-    -> Ptr Word8
+    -> Ptr Word32
+    -> Ptr Word32
     -> (Ptr Word8 -> Ptr Word8 -> Int -> IO ByteString)
     -> Int
     -> IO ByteString
-innerLoop !etable !sptr !dptr !end finish !nn = go (castPtr sptr) dptr nn
+innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
   where
     go !src !dst !n
-      | plusPtr src 2 >= end = finish (castPtr src) (castPtr dst) n
+      | plusPtr src 3 >= end =
+        W16.innerLoop etable (castPtr src) (castPtr dst) (castPtr end) finish n
       | otherwise = do
 #ifdef WORDS_BIGENDIAN
         !w <- peek @Word32 src

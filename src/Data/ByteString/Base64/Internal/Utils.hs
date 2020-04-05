@@ -19,6 +19,7 @@ module Data.ByteString.Base64.Internal.Utils
 , w32
 , w64
 , w32_16
+, w64_16
 , writeNPlainForeignPtrBytes
 ) where
 
@@ -68,9 +69,15 @@ w32 = fromIntegral
 
 -- | Convert 'Word8''s into 'Word32''s
 --
-w64 :: Word16 -> Word64
+w64 :: Word8 -> Word64
 w64 = fromIntegral
 {-# INLINE w64 #-}
+
+-- | Convert 'Word8''s into 'Word32''s
+--
+w64_16 :: Word16 -> Word64
+w64_16 = fromIntegral
+{-# INLINE w64_16 #-}
 
 w32_16 :: Word16 -> Word32
 w32_16 = fromIntegral
