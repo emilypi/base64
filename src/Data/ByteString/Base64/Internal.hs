@@ -28,7 +28,6 @@ import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
 
-import GHC.Word
 
 -- | Given a bytestring, check to see that it conforms to a given alphabet
 --

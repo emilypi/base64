@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 -- |
 -- Module       : Data.ByteString.Base64.URL
 -- Copyright    : (c) 2019 Emily Pillmore
@@ -26,14 +27,23 @@ module Data.ByteString.Base64.URL
 , isValidBase64Url
 ) where
 
-import Data.ByteString (ByteString)
+
+import qualified Data.ByteString as BS
+import Data.ByteString.Internal (ByteString(..))
 import Data.ByteString.Base64.Internal
 import Data.ByteString.Base64.Internal.Head
 import Data.ByteString.Base64.Internal.Tables
-import Data.ByteString.Base64.Internal.Utils
 import Data.Either (isRight)
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
+
+import Foreign.ForeignPtr
+import Foreign.Ptr
+import Foreign.Storable
+
+import GHC.Word
+
+import System.IO.Unsafe
 
 
 -- | Encode a 'ByteString' value as a Base64url 'Text' value with padding.
@@ -60,7 +70,17 @@ encodeBase64' = encodeBase64_ base64UrlTable
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 = decodeBase64_ Don'tCare decodeB64UrlTable
+decodeBase64 bs@(PS _ _ !l)
+    | r == 0 = unsafeDupablePerformIO $
+      decodeBase64_ dlen decodeB64UrlTable bs
+    | r == 2 = unsafeDupablePerformIO $
+      decodeBase64_ dlen decodeB64UrlTable (BS.append bs (BS.replicate 2 0x3d))
+    | r == 3 = unsafeDupablePerformIO $
+      decodeBase64_ dlen decodeB64UrlTable (BS.append bs (BS.replicate 1 0x3d))
+    | otherwise = Left "Base64-encoded bytestring has invalid size"
+  where
+    (!q, !r) = divMod l 4
+    !dlen = q * 3
 {-# INLINE decodeBase64 #-}
 
 -- | Encode a 'ByteString' value as Base64url 'Text' without padding. Note that for Base64url,
@@ -92,7 +112,28 @@ encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
-decodeBase64Unpadded = decodeBase64_ Unpadded decodeB64UrlTable
+decodeBase64Unpadded bs@(PS !fp !o !l)
+    | r == 0 = validateUnpadded $
+      decodeBase64_ dlen decodeB64UrlTable bs
+    | r == 2 = validateUnpadded $
+      decodeBase64_ dlen decodeB64UrlTable (BS.append bs (BS.replicate 2 0x3d))
+    | r == 3 = validateUnpadded $
+      decodeBase64_ dlen decodeB64UrlTable (BS.append bs (BS.replicate 1 0x3d))
+    | otherwise = Left "Base64-encoded bytestring required to be unpadded"
+  where
+    (!q, !r) = divMod l 4
+    !dlen = q * 3
+
+    validateUnpadded io = unsafeDupablePerformIO $
+      withForeignPtr fp $ \p -> do
+        let !end = l + o
+        a <- peek @Word8 (plusPtr p (end - 1))
+        b <- peek @Word8 (plusPtr p (end - 2))
+
+        if a == 0x3d || b == 0x3d
+        then return $ Left "Base64-encoded bytestring required to be unpadded"
+        else io
+
 {-# INLINE decodeBase64Unpadded #-}
 
 -- | Decode a padded Base64url-encoded 'ByteString' value. Input strings are
@@ -105,7 +146,13 @@ decodeBase64Unpadded = decodeBase64_ Unpadded decodeB64UrlTable
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Padded :: ByteString -> Either Text ByteString
-decodeBase64Padded = decodeBase64_ Padded decodeB64UrlTable
+decodeBase64Padded bs@(PS _ _ !l)
+    | r /= 0 = Left "Base64-encoded bytestring requires padding"
+    | otherwise = unsafeDupablePerformIO $
+      decodeBase64_ dlen decodeB64UrlTable bs
+  where
+    (!q, !r) = divMod l 4
+    !dlen = q * 3
 {-# INLINE decodeBase64Padded #-}
 
 -- | Leniently decode an unpadded Base64url-encoded 'ByteString'. This function
