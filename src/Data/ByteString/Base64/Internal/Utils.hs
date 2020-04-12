@@ -13,7 +13,6 @@
 --
 module Data.ByteString.Base64.Internal.Utils
 ( EncodingTable(..)
-, Padding(..)
 , aix
 , packTable
 , w32
@@ -41,19 +40,6 @@ import GHC.Word
 data EncodingTable = EncodingTable
   {-# UNPACK #-} !(Ptr Word8)
   {-# UNPACK #-} !(ForeignPtr Word16)
-
-
--- | A type isomorphic to 'Bool' marking support for padding out bytestrings (@Pad),
--- or not (@Nopad@).
---
-data Padding
-    = Padded
-      -- ^ Do we require padding?
-    | Unpadded
-      -- ^ Do we not require padding? If so, check against padding char
-    | Don'tCare
-      -- ^ Do we not care? (should we pad if it needs it?)
-    deriving Eq
 
 -- | Read 'Word8' index off alphabet addr
 --
