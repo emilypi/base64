@@ -195,7 +195,7 @@ paddingTests = testGroup "Padding tests"
             v @=? u
           | otherwise -> do
             step "Unpadded required: padding fails"
-            u @=? Left "Base64-encoded bytestring required to be padded"
+            u @=? Left "Base64-encoded bytestring requires padding"
 
             step "Unpadded required: unpadding succeeds"
             v @=? Right s

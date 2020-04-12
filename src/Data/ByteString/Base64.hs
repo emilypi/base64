@@ -23,14 +23,15 @@ module Data.ByteString.Base64
 ) where
 
 
-import Data.ByteString (ByteString)
+import Data.ByteString.Internal (ByteString(..))
 import Data.ByteString.Base64.Internal
 import Data.ByteString.Base64.Internal.Head
 import Data.ByteString.Base64.Internal.Tables
-import Data.ByteString.Base64.Internal.Utils
 import Data.Either (isRight)
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
+
+import System.IO.Unsafe
 
 
 -- | Encode a 'ByteString' value as Base64 'Text' with padding.
@@ -58,7 +59,13 @@ encodeBase64' = encodeBase64_ base64Table
 -- use 'decodeBase64Unpadded'.
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 = decodeBase64_ Padded decodeB64Table
+decodeBase64 bs@(PS _ _ !l)
+    | r /= 0 = Left "Base64-encoded bytestring requires padding"
+    | otherwise = unsafeDupablePerformIO $
+      decodeBase64_ dlen decodeB64Table bs
+  where
+    (!q, !r) = divMod l 4
+    !dlen = q * 3
 {-# INLINE decodeBase64 #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ByteString' value. This function
