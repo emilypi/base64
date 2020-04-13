@@ -64,6 +64,7 @@ innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
         poke (plusPtr dst 2) y
 
         go (plusPtr src 3) (plusPtr dst 4) (n + 4)
+{-# INLINE innerLoop #-}
 
 decodeLoop
     :: Ptr Word8
@@ -89,7 +90,7 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
       ++ show (p `minusPtr` sptr)
 
     look :: Ptr Word8 -> IO Word32
-    look p = do
+    look !p = do
       !i <- peekByteOff @Word8 p 0
       !v <- peekByteOff @Word8 dtable (fromIntegral i)
       return (fromIntegral v)
@@ -97,10 +98,10 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
     go !dst !src !n
       | src >= end = return (Right (PS dfp 0 n))
       | otherwise = do
-        a <- look src
-        b <- look (src `plusPtr` 1)
-        c <- look (src `plusPtr` 2)
-        d <- look (src `plusPtr` 3)
+        !a <- look src
+        !b <- look (src `plusPtr` 1)
+        !c <- look (src `plusPtr` 2)
+        !d <- look (src `plusPtr` 3)
 
         if
           | a == 0x63 -> padErr src
@@ -146,7 +147,7 @@ lenientLoop !dtable !sptr !dptr !end !dfp = go dptr sptr 0
     finalize !n = return (PS dfp 0 n)
     {-# INLINE finalize #-}
 
-    look skip !p_ f = k p_
+    look !skip !p_ f = k p_
       where
         k !p
           | p >= end = f (plusPtr end (-1)) (0x63 :: Word32)
