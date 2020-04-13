@@ -68,12 +68,6 @@ loopTail !dfp (Ptr !alpha) !end !src !dst !n
       poke @Word8 (plusPtr dst 2) (aix d alpha)
       poke @Word8 (plusPtr dst 3) 0x3d
       return (PS dfp 0 (n + 4))
-
-
-
-
-
-
 {-# INLINE loopTail #-}
 
 

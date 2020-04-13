@@ -74,9 +74,9 @@ decodeBase64 bs@(PS _ _ !l)
     | r == 0 = unsafeDupablePerformIO $
       decodeBase64_ dlen decodeB64UrlTable bs
     | r == 2 = unsafeDupablePerformIO $
-      decodeBase64_ dlen decodeB64UrlTable (BS.append bs (BS.replicate 2 0x3d))
+      decodeBase64_ dlen decodeB64UrlTable (BS.append bs "==")
     | r == 3 = unsafeDupablePerformIO $
-      decodeBase64_ dlen decodeB64UrlTable (BS.append bs (BS.replicate 1 0x3d))
+      decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
     | otherwise = Left "Base64-encoded bytestring has invalid size"
   where
     (!q, !r) = divMod l 4
@@ -116,9 +116,9 @@ decodeBase64Unpadded bs@(PS !fp !o !l)
     | r == 0 = validateUnpadded $
       decodeBase64_ dlen decodeB64UrlTable bs
     | r == 2 = validateUnpadded $
-      decodeBase64_ dlen decodeB64UrlTable (BS.append bs (BS.replicate 2 0x3d))
+      decodeBase64_ dlen decodeB64UrlTable (BS.append bs "==")
     | r == 3 = validateUnpadded $
-      decodeBase64_ dlen decodeB64UrlTable (BS.append bs (BS.replicate 1 0x3d))
+      decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
     | otherwise = Left "Base64-encoded bytestring required to be unpadded"
   where
     (!q, !r) = divMod l 4
@@ -133,7 +133,6 @@ decodeBase64Unpadded bs@(PS !fp !o !l)
         if a == 0x3d || b == 0x3d
         then return $ Left "Base64-encoded bytestring required to be unpadded"
         else io
-
 {-# INLINE decodeBase64Unpadded #-}
 
 -- | Decode a padded Base64url-encoded 'ByteString' value. Input strings are
@@ -146,7 +145,7 @@ decodeBase64Unpadded bs@(PS !fp !o !l)
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Padded :: ByteString -> Either Text ByteString
-decodeBase64Padded bs@(PS _ _ !l)
+decodeBase64Padded bs@(PS !_ _ !l)
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
     | otherwise = unsafeDupablePerformIO $
       decodeBase64_ dlen decodeB64UrlTable bs
