@@ -25,8 +25,10 @@ module Data.ByteString.Base64.Internal.Head
 import Data.ByteString.Base64.Internal.Tail
 import Data.ByteString.Base64.Internal.Utils
 #if WORD_SIZE_IN_BITS == 32
+import Data.ByteString.Base64.Internal.Tables
 import Data.ByteString.Base64.Internal.W32.Loop
 #elif WORD_SIZE_IN_BITS >= 64
+import Data.ByteString.Base64.Internal.Tables
 import Data.ByteString.Base64.Internal.W64.Loop
 #else
 import Data.ByteString.Base64.Internal.W16.Loop
@@ -96,6 +98,7 @@ decodeBase64_
     -> IO (Either Text ByteString)
 decodeBase64_ _ _ (PS _ _ 0) = return $ Right mempty
 decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen') =
+#if WORD_SIZE_IN_BITS < 32
     withForeignPtr dtfp $ \dtable ->
     withForeignPtr sfp $ \sptr -> do
       dfp <- mallocPlainForeignPtrBytes dlen
@@ -107,6 +110,24 @@ decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen') =
           (castPtr (plusPtr sptr (soff + slen')))
           dfp
           0
+#else
+    withForeignPtr decodeB64Table_32bit_d0 $ \d0 ->
+    withForeignPtr decodeB64Table_32bit_d1 $ \d1 ->
+    withForeignPtr decodeB64Table_32bit_d2 $ \d2 ->
+    withForeignPtr decodeB64Table_32bit_d3 $ \d3 ->
+    withForeignPtr dtfp $ \dtable ->
+    withForeignPtr sfp $ \sptr -> do
+      dfp <- mallocPlainForeignPtrBytes dlen
+      withForeignPtr dfp $ \dptr ->
+        decodeLoop
+          d0 d1 d2 d3
+          dtable
+          (castPtr (plusPtr sptr soff))
+          (castPtr dptr)
+          (castPtr (plusPtr sptr (soff + slen')))
+          dfp
+          0
+#endif
 {-# INLINE decodeBase64_ #-}
 
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString

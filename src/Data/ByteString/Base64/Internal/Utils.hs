@@ -18,8 +18,10 @@ module Data.ByteString.Base64.Internal.Utils
 , w32
 , w64
 , w32_16
+, w32_64
 , w64_16
-, writeNPlainForeignPtrBytes
+, writeNPlainForeignPtrW8
+, writeNPlainForeignPtrW32
 ) where
 
 
@@ -69,22 +71,37 @@ w32_16 :: Word16 -> Word32
 w32_16 = fromIntegral
 {-# INLINE w32_16 #-}
 
+w32_64 :: Word32 -> Word64
+w32_64 = fromIntegral
+{-# INLINE w32_64 #-}
+
 -- | Allocate and fill @n@ bytes with some data
 --
-writeNPlainForeignPtrBytes
-    :: ( Storable a
-       , Storable b
-       )
-    => Int
-    -> [a]
-    -> ForeignPtr b
-writeNPlainForeignPtrBytes !n as = unsafeDupablePerformIO $ do
+writeNPlainForeignPtrW8
+    :: Int
+    -> [Word8]
+    -> ForeignPtr Word8
+writeNPlainForeignPtrW8 !n as = unsafeDupablePerformIO $ do
     fp <- mallocPlainForeignPtrBytes n
     withForeignPtr fp $ \p -> go p as
     return (castForeignPtr fp)
   where
     go !_ [] = return ()
     go !p (x:xs) = poke p x >> go (plusPtr p 1) xs
+
+-- | Allocate and fill @n@ bytes with some data
+--
+writeNPlainForeignPtrW32
+    :: Int
+    -> [Word32]
+    -> ForeignPtr Word32
+writeNPlainForeignPtrW32 !n as = unsafeDupablePerformIO $ do
+    fp <- mallocPlainForeignPtrBytes n
+    withForeignPtr fp $ \p -> go p as
+    return (castForeignPtr fp)
+  where
+    go !_ [] = return ()
+    go !p (x:xs) = poke p x >> go (plusPtr p 4) xs
 
 -- | Pack an 'Addr#' into an encoding table of 'Word16's
 --
@@ -99,4 +116,4 @@ packTable alphabet = etable
             | !i <- [0..63]
             , !j <- [0..63]
             ]
-      in EncodingTable (Ptr alphabet) (writeNPlainForeignPtrBytes 8192 bs)
+      in EncodingTable (Ptr alphabet) (castForeignPtr (writeNPlainForeignPtrW8 8192 bs))

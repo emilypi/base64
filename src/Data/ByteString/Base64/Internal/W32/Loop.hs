@@ -70,10 +70,14 @@ innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
 {-# INLINE innerLoop #-}
 
 decodeLoop
-    :: Ptr Word8
+    :: Ptr Word32
+    -> Ptr Word32
+    -> Ptr Word32
+    -> Ptr Word32
+    -> Ptr Word8
     -> Ptr Word32
         -- ^ src pointer
-    -> Ptr Word8
+    -> Ptr Word32
         -- ^ dst pointer
     -> Ptr Word32
         -- ^ end of src ptr
@@ -81,7 +85,8 @@ decodeLoop
         -- ^ dst foreign ptr (for consing bs)
     -> Int
     -> IO (Either Text ByteString)
-decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
+decodeLoop !d0 !d1 !d2 !d3 !dtable !sptr !dptr !end !dfp !nn =
+    go dptr sptr nn
   where
     err p = return . Left . T.pack
       $ "invalid character at offset: "
@@ -105,10 +110,17 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
             !y = fromIntegral ((unsafeShiftR t 8) .&. 0xff)
             !z = fromIntegral (t .&. 0xff)
 
-        !a <- w32 <$> peekByteOff dtable w
-        !b <- w32 <$> peekByteOff dtable x
-        !c <- w32 <$> peekByteOff dtable y
-        !d <- w32 <$> peekByteOff dtable z
+        !a <- peekElemOff @Word32 d0 w
+        !b <- peekElemOff @Word32 d1 x
+        !c <- peekElemOff @Word32 d2 y
+        !d <- peekElemOff @Word32 d3 z
+
+        putStrLn "here"
+        print a
+        print b
+        print c
+        print d
+
 
         if
           | a == 0x63 -> padErr src
@@ -121,14 +133,9 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
           | d == 0xff -> err (plusPtr src 3)
           | otherwise -> do
 
-            let !xx = (unsafeShiftL a 18)
-                  .|. (unsafeShiftL b 12)
-                  .|. (unsafeShiftL c 6)
-                  .|. d
+            let !xx = a .|. b .|. c .|. d
 
-            poke @Word8 dst (fromIntegral (unsafeShiftR xx 16))
-            poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR xx 8))
-            poke @Word8 (plusPtr dst 2) (fromIntegral xx)
+            poke @Word32 dst (fromIntegral xx)
             go (plusPtr dst 3) (plusPtr src 4) (n + 3)
 {-# INLINE decodeLoop #-}
 
