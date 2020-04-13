@@ -107,6 +107,7 @@ decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen') =
           (castPtr (plusPtr sptr (soff + slen')))
           dfp
           0
+{-# INLINE decodeBase64_ #-}
 
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
 decodeBase64Lenient_ !dtfp (PS !sfp !soff !slen) = unsafeDupablePerformIO $
