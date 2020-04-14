@@ -75,6 +75,7 @@ innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
         poke dst (fromIntegral xx)
 
         go (plusPtr src 6) (plusPtr dst 8) (n + 8)
+    {-# INLINE go #-}
 {-# INLINE innerLoop #-}
 
 decodeLoop
