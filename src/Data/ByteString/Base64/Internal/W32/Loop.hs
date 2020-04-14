@@ -67,6 +67,7 @@ innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
         poke dst (fromIntegral z)
 
         go (plusPtr src 3) (plusPtr dst 4) (n + 4)
+    {-# INLINE go #-}
 {-# INLINE innerLoop #-}
 
 decodeLoop
@@ -130,6 +131,7 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
             poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR xx 8))
             poke @Word8 (plusPtr dst 2) (fromIntegral xx)
             go (plusPtr dst 3) (plusPtr src 4) (n + 3)
+    {-# INLINE go #-}
 {-# INLINE decodeLoop #-}
 
 lenientLoop
