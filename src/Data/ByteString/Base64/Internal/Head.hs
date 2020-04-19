@@ -32,6 +32,7 @@ import Data.ByteString.Base64.Internal.W64.Loop
 #else
 import Data.ByteString.Base64.Internal.W16.Loop
 #endif
+import qualified Data.ByteString.Base64.Internal.W16.Loop as W16
 import Data.ByteString.Internal
 import Data.Text (Text)
 
@@ -40,7 +41,6 @@ import Foreign.Ptr
 
 import GHC.Exts
 import GHC.ForeignPtr
-import GHC.Word
 
 import System.IO.Unsafe
 
@@ -101,7 +101,7 @@ decodeBase64_ !dlen !dtable (PS !sfp !soff !slen') =
     withForeignPtr sfp $ \sptr -> do
       dfp <- mallocPlainForeignPtrBytes dlen
       withForeignPtr dfp $ \dptr ->
-        decodeLoop
+        W16.decodeLoop
           dtable
           (castPtr (plusPtr sptr soff))
           (castPtr dptr)
