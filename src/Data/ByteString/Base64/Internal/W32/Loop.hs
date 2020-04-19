@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
@@ -31,6 +32,7 @@ import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
 
+import GHC.Exts
 import GHC.Word
 
 
@@ -71,7 +73,7 @@ innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
 {-# INLINE innerLoop #-}
 
 decodeLoop
-    :: Ptr Word8
+    :: Addr#
     -> Ptr Word32
         -- ^ src pointer
     -> Ptr Word8
@@ -92,6 +94,8 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
       $ "invalid padding at offset: "
       ++ show (p `minusPtr` sptr)
 
+    lix !i = w32 (aix (fromIntegral i) dtable)
+
     go !dst !src !n
       | plusPtr src 4 >= end =
         W16.decodeLoop dtable (castPtr src) (castPtr dst) (castPtr end) dfp n
@@ -101,15 +105,10 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
 #else
         !t <- byteSwap32 <$> peek @Word32 src
 #endif
-        let !w = fromIntegral ((unsafeShiftR t 24) .&. 0xff)
-            !x = fromIntegral ((unsafeShiftR t 16) .&. 0xff)
-            !y = fromIntegral ((unsafeShiftR t 8) .&. 0xff)
-            !z = fromIntegral (t .&. 0xff)
-
-        !a <- w32 <$> peekByteOff dtable w
-        !b <- w32 <$> peekByteOff dtable x
-        !c <- w32 <$> peekByteOff dtable y
-        !d <- w32 <$> peekByteOff dtable z
+        let !a = lix ((unsafeShiftR t 24) .&. 0xff)
+            !b = lix ((unsafeShiftR t 16) .&. 0xff)
+            !c = lix ((unsafeShiftR t 8) .&. 0xff)
+            !d = lix (t .&. 0xff)
 
         if
           | a == 0x63 -> padErr src
@@ -135,7 +134,7 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
 {-# INLINE decodeLoop #-}
 
 lenientLoop
-    :: Ptr Word8
+    :: Addr#
         -- ^ decode lookup table
     -> Ptr Word8
         -- ^ src pointer

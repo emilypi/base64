@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
@@ -37,6 +38,7 @@ import Data.Text (Text)
 import Foreign.ForeignPtr
 import Foreign.Ptr
 
+import GHC.Exts
 import GHC.ForeignPtr
 import GHC.Word
 
@@ -91,12 +93,11 @@ encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
 --
 decodeBase64_
     :: Int
-    -> ForeignPtr Word8
+    -> Addr#
     -> ByteString
     -> IO (Either Text ByteString)
 decodeBase64_ _ _ (PS _ _ 0) = return $ Right mempty
-decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen') =
-    withForeignPtr dtfp $ \dtable ->
+decodeBase64_ !dlen !dtable (PS !sfp !soff !slen') =
     withForeignPtr sfp $ \sptr -> do
       dfp <- mallocPlainForeignPtrBytes dlen
       withForeignPtr dfp $ \dptr ->
@@ -109,9 +110,8 @@ decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen') =
           0
 {-# INLINE decodeBase64_ #-}
 
-decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
-decodeBase64Lenient_ !dtfp (PS !sfp !soff !slen) = unsafeDupablePerformIO $
-    withForeignPtr dtfp $ \dtable ->
+decodeBase64Lenient_ :: Addr# -> ByteString -> ByteString
+decodeBase64Lenient_ !dtable (PS !sfp !soff !slen) = unsafeDupablePerformIO $
     withForeignPtr sfp $ \sptr -> do
       dfp <- mallocPlainForeignPtrBytes dlen
       withForeignPtr dfp $ \dptr ->

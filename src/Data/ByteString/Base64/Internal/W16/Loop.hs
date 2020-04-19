@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
@@ -30,6 +31,7 @@ import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
 
+import GHC.Exts
 import GHC.Word
 
 
@@ -68,7 +70,7 @@ innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
 {-# INLINE innerLoop #-}
 
 decodeLoop
-    :: Ptr Word8
+    :: Addr#
         -- ^ decode lookup table
     -> Ptr Word8
         -- ^ src pointer
@@ -93,8 +95,7 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
     look :: Ptr Word8 -> IO Word32
     look !p = do
       !i <- peekByteOff @Word8 p 0
-      !v <- peekByteOff @Word8 dtable (fromIntegral i)
-      return (fromIntegral v)
+      return (w32 (aix i dtable))
 
     go !dst !src !n
       | src >= end = return (Right (PS dfp 0 n))
@@ -133,7 +134,7 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
 {-# INLINE decodeLoop #-}
 
 lenientLoop
-    :: Ptr Word8
+    :: Addr#
         -- ^ decode lookup table
     -> Ptr Word8
         -- ^ src pointer
@@ -154,13 +155,14 @@ lenientLoop !dtable !sptr !dptr !end !dfp = go dptr sptr 0
         k !p
           | p >= end = f (plusPtr end (-1)) (0x63 :: Word32)
           | otherwise = do
-            !i <- peekByteOff @Word8 p 0
-            !v <- peekByteOff @Word8 dtable (fromIntegral i)
+            !v <- lix <$> peekByteOff @Word8 p 0
 
             if
               | v == 0xff -> k (plusPtr p 1)
               | v == 0x63, skip -> k (plusPtr p 1)
               | otherwise -> f (plusPtr p 1) (fromIntegral v)
+
+    lix !i = aix (fromIntegral i) dtable
 
     go !dst !src !n
       | src >= end = finalize n
