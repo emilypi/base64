@@ -76,11 +76,10 @@ decodeLoop
         -- ^ dst pointer
     -> Ptr Word8
         -- ^ end of src ptr
-    -> ForeignPtr Word8
-        -- ^ dst foreign ptr (for consing bs)
+    -> (Ptr Word8 -> Ptr Word8 -> Int -> IO (Either Text ByteString))
     -> Int
     -> IO (Either Text ByteString)
-decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
+decodeLoop !dtable !sptr !dptr !end finish !nn = go dptr sptr nn
   where
     err p = return . Left . T.pack
       $ "invalid character at offset: "
@@ -97,7 +96,7 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
       return (fromIntegral v)
 
     go !dst !src !n
-      | src >= end = return (Right (PS dfp 0 n))
+      | plusPtr src 4 >= end = finish dst src n
       | otherwise = do
         !a <- look src
         !b <- look (src `plusPtr` 1)
@@ -107,6 +106,8 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
         if
           | a == 0x63 -> padErr src
           | b == 0x63 -> padErr (plusPtr src 1)
+          | c == 0x63 -> padErr (plusPtr src 2)
+          | d == 0x63 -> padErr (plusPtr src 3)
           | a == 0xff -> err src
           | b == 0xff -> err (plusPtr src 1)
           | c == 0xff -> err (plusPtr src 2)
@@ -119,16 +120,9 @@ decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
                   .|. d
 
             poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
-
-            if
-              | c == 0x63 -> return $ Right (PS dfp 0 (n + 1))
-              | d == 0x63 -> do
-                poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
-                return $ Right (PS dfp 0 (n + 2))
-              | otherwise -> do
-                poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
-                poke @Word8 (plusPtr dst 2) (fromIntegral w)
-                go (plusPtr dst 3) (plusPtr src 4) (n + 3)
+            poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
+            poke @Word8 (plusPtr dst 2) (fromIntegral w)
+            go (plusPtr dst 3) (plusPtr src 4) (n + 3)
     {-# INLINE go #-}
 {-# INLINE decodeLoop #-}
 
@@ -146,7 +140,7 @@ lenientLoop
     -> IO ByteString
 lenientLoop !dtable !sptr !dptr !end !dfp = go dptr sptr 0
   where
-    finalize !n = return (PS dfp 0 n)
+    finalize !n = return $ PS dfp 0 n
     {-# INLINE finalize #-}
 
     look !skip !p_ f = k p_
