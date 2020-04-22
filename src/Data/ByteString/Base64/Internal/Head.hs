@@ -99,13 +99,14 @@ decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen') =
     withForeignPtr dtfp $ \dtable ->
     withForeignPtr sfp $ \sptr -> do
       dfp <- mallocPlainForeignPtrBytes dlen
-      withForeignPtr dfp $ \dptr ->
+      withForeignPtr dfp $ \dptr -> do
+        let !end = plusPtr sptr (soff + slen')
         decodeLoop
           dtable
-          (castPtr (plusPtr sptr soff))
-          (castPtr dptr)
-          (castPtr (plusPtr sptr (soff + slen')))
-          dfp
+          (plusPtr sptr soff)
+          dptr
+          end
+          (decodeTail dfp dtable end)
           0
 {-# INLINE decodeBase64_ #-}
 

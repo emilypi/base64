@@ -72,66 +72,65 @@ innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
 
 decodeLoop
     :: Ptr Word8
-    -> Ptr Word32
+    -> Ptr Word8
         -- ^ src pointer
     -> Ptr Word8
         -- ^ dst pointer
-    -> Ptr Word32
+    -> Ptr Word8
         -- ^ end of src ptr
-    -> ForeignPtr Word8
-        -- ^ dst foreign ptr (for consing bs)
+    -> (Ptr Word8 -> Ptr Word8 -> Int -> IO (Either Text ByteString))
     -> Int
     -> IO (Either Text ByteString)
-decodeLoop !dtable !sptr !dptr !end !dfp !nn = go dptr sptr nn
-  where
-    err p = return . Left . T.pack
-      $ "invalid character at offset: "
-      ++ show (p `minusPtr` sptr)
+decodeLoop = W16.decodeLoop -- go dptr sptr nn
+--   where
+--     err p = return . Left . T.pack
+--       $ "invalid character at offset: "
+--       ++ show (p `minusPtr` sptr)
 
-    padErr p =  return . Left . T.pack
-      $ "invalid padding at offset: "
-      ++ show (p `minusPtr` sptr)
+--     padErr p =  return . Left . T.pack
+--       $ "invalid padding at offset: "
+--       ++ show (p `minusPtr` sptr)
 
-    go !dst !src !n
-      | plusPtr src 4 >= end =
-        W16.decodeLoop dtable (castPtr src) (castPtr dst) (castPtr end) dfp n
-      | otherwise = do
-#ifdef WORDS_BIGENDIAN
-        !t <- peek @Word32 src
-#else
-        !t <- byteSwap32 <$> peek @Word32 src
-#endif
-        let !w = fromIntegral ((unsafeShiftR t 24) .&. 0xff)
-            !x = fromIntegral ((unsafeShiftR t 16) .&. 0xff)
-            !y = fromIntegral ((unsafeShiftR t 8) .&. 0xff)
-            !z = fromIntegral (t .&. 0xff)
+--     go !dst !src !n
+--       | plusPtr src 4 >= end =
+--         W16.decodeLoop dtable (castPtr src) (castPtr dst) (castPtr end) dfp n
+--       | otherwise = do
+-- #ifdef WORDS_BIGENDIAN
+--         !t <- peek @Word32 src
+-- #else
+--         !t <- byteSwap32 <$> peek @Word32 src
+-- #endif
+--         let !w = fromIntegral ((unsafeShiftR t 24) .&. 0xff)
+--             !x = fromIntegral ((unsafeShiftR t 16) .&. 0xff)
+--             !y = fromIntegral ((unsafeShiftR t 8) .&. 0xff)
+--             !z = fromIntegral (t .&. 0xff)
 
-        !a <- w32 <$> peekByteOff dtable w
-        !b <- w32 <$> peekByteOff dtable x
-        !c <- w32 <$> peekByteOff dtable y
-        !d <- w32 <$> peekByteOff dtable z
+--         !a <- w32 <$> peekByteOff dtable w
+--         !b <- w32 <$> peekByteOff dtable x
+--         !c <- w32 <$> peekByteOff dtable y
+--         !d <- w32 <$> peekByteOff dtable z
 
-        if
-          | a == 0x63 -> padErr src
-          | b == 0x63 -> padErr (plusPtr src 1)
-          | c == 0x63 -> padErr (plusPtr src 2)
-          | d == 0x63 -> padErr (plusPtr src 3)
-          | a == 0xff -> err src
-          | b == 0xff -> err (plusPtr src 1)
-          | c == 0xff -> err (plusPtr src 2)
-          | d == 0xff -> err (plusPtr src 3)
-          | otherwise -> do
+--         if
+--           | a == 0x63 -> padErr src
+--           | b == 0x63 -> padErr (plusPtr src 1)
+--           | c == 0x63 -> padErr (plusPtr src 2)
+--           | d == 0x63 -> padErr (plusPtr src 3)
+--           | a == 0xff -> err src
+--           | b == 0xff -> err (plusPtr src 1)
+--           | c == 0xff -> err (plusPtr src 2)
+--           | d == 0xff -> err (plusPtr src 3)
+--           | otherwise -> do
 
-            let !xx = (unsafeShiftL a 18)
-                  .|. (unsafeShiftL b 12)
-                  .|. (unsafeShiftL c 6)
-                  .|. d
+--             let !xx = (unsafeShiftL a 18)
+--                   .|. (unsafeShiftL b 12)
+--                   .|. (unsafeShiftL c 6)
+--                   .|. d
 
-            poke @Word8 dst (fromIntegral (unsafeShiftR xx 16))
-            poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR xx 8))
-            poke @Word8 (plusPtr dst 2) (fromIntegral xx)
-            go (plusPtr dst 3) (plusPtr src 4) (n + 3)
-    {-# INLINE go #-}
+--             poke @Word8 dst (fromIntegral (unsafeShiftR xx 16))
+--             poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR xx 8))
+--             poke @Word8 (plusPtr dst 2) (fromIntegral xx)
+--             go (plusPtr dst 3) (plusPtr src 4) (n + 3)
+--     {-# INLINE go #-}
 {-# INLINE decodeLoop #-}
 
 lenientLoop

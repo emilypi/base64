@@ -81,18 +81,17 @@ innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
 decodeLoop
     :: Ptr Word8
         -- ^ decode lookup table
-    -> Ptr Word64
+    -> Ptr Word8
         -- ^ src pointer
     -> Ptr Word8
         -- ^ dst pointer
-    -> Ptr Word64
+    -> Ptr Word8
         -- ^ end of src ptr
-    -> ForeignPtr Word8
+    -> (Ptr Word8 -> Ptr Word8 -> Int -> IO (Either Text ByteString))
         -- ^ dst foreign ptr (for consing bs)
     -> Int
     -> IO (Either Text ByteString)
-decodeLoop !dtable !sptr !dptr !end !dfp !nn =
-  W16.decodeLoop dtable (castPtr sptr) (castPtr dptr) (castPtr end) dfp nn --  go dptr sptr nn
+decodeLoop = W16.decodeLoop
 --   where
 --     err p = return . Left . T.pack
 --       $ "invalid character at offset: "
