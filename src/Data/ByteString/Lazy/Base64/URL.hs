@@ -1,8 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 -- |
--- Module       : Data.ByteString.Base64.URL
+-- Module       : Data.ByteString.Lazy.Base64.URL
 -- Copyright    : (c) 2019-2020 Emily Pillmore
 -- License      : BSD-style
 --
@@ -11,41 +10,42 @@
 -- Portability  : portable
 --
 -- This module contains the combinators implementing the
--- RFC 4648 specification for the Base64-URL encoding including
+-- RFC 4648 specification for the Base64 encoding including
 -- unpadded and lenient variants
 --
-module Data.ByteString.Base64.URL
+module Data.ByteString.Lazy.Base64.URL
 ( encodeBase64
 , encodeBase64'
-, decodeBase64
 , encodeBase64Unpadded
 , encodeBase64Unpadded'
-, decodeBase64Unpadded
+, decodeBase64
 , decodeBase64Padded
+, decodeBase64Unpadded
 , decodeBase64Lenient
 , isBase64Url
 , isValidBase64Url
 ) where
 
 
-import qualified Data.ByteString as BS
-import Data.ByteString.Internal (ByteString(..))
-import Data.ByteString.Base64.Internal
-import Data.ByteString.Base64.Internal.Head
-import Data.ByteString.Base64.Internal.Tables
-import Data.Either (isRight)
-import Data.Text (Text)
-import qualified Data.Text.Encoding as T
+import Prelude hiding (all, elem)
 
-import System.IO.Unsafe
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Base64.URL as B64U
+import Data.ByteString.Base64.Internal.Utils (reChunk)
+import Data.ByteString.Lazy (elem, fromChunks, toChunks)
+import Data.ByteString.Lazy.Internal (ByteString(..))
+import Data.Either (isRight)
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Encoding as TL
 
 
 -- | Encode a 'ByteString' value as a Base64url 'Text' value with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
 --
-encodeBase64 :: ByteString -> Text
-encodeBase64 = T.decodeUtf8 . encodeBase64'
+encodeBase64 :: ByteString -> TL.Text
+encodeBase64 = TL.decodeUtf8 . encodeBase64'
 {-# INLINE encodeBase64 #-}
 
 -- | Encode a 'ByteString' as a Base64url 'ByteString' value with padding.
@@ -53,7 +53,8 @@ encodeBase64 = T.decodeUtf8 . encodeBase64'
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
 --
 encodeBase64' :: ByteString -> ByteString
-encodeBase64' = encodeBase64_ base64UrlTable
+encodeBase64' Empty = Empty
+encodeBase64' (Chunk c cs) = Chunk (B64U.encodeBase64' c) (encodeBase64' cs)
 
 -- | Decode a padded Base64url encoded 'ByteString' value. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
@@ -63,15 +64,11 @@ encodeBase64' = encodeBase64_ base64UrlTable
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
-decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 bs@(PS _ _ !l)
-    | r == 0 = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64UrlTable bs
-    | r == 2 = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "==")
-    | r == 3 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
-    | otherwise = Left "Base64-encoded bytestring has invalid size"
-  where
-    (!q, !r) = divMod l 4
-    !dlen = q * 3
+decodeBase64 :: ByteString -> Either T.Text ByteString
+decodeBase64 Empty = Right Empty
+decodeBase64 (Chunk c cs) = Chunk
+    <$> B64U.decodeBase64 c
+    <*> decodeBase64 cs
 {-# INLINE decodeBase64 #-}
 
 -- | Encode a 'ByteString' value as Base64url 'Text' without padding. Note that for Base64url,
@@ -80,8 +77,8 @@ decodeBase64 bs@(PS _ _ !l)
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
-encodeBase64Unpadded :: ByteString -> Text
-encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
+encodeBase64Unpadded :: ByteString -> TL.Text
+encodeBase64Unpadded = TL.decodeUtf8 . encodeBase64Unpadded'
 {-# INLINE encodeBase64Unpadded #-}
 
 -- | Encode a 'ByteString' value as Base64url without padding. Note that for Base64url,
@@ -91,7 +88,10 @@ encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 encodeBase64Unpadded' :: ByteString -> ByteString
-encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
+encodeBase64Unpadded' Empty = Empty
+encodeBase64Unpadded' (Chunk c cs) = Chunk
+    (B64U.encodeBase64Unpadded' c)
+    (encodeBase64Unpadded' cs)
 
 -- | Decode an unpadded Base64url-encoded 'ByteString' value. Input strings are
 -- required to be unpadded, and will undergo validation prior to decoding to
@@ -102,15 +102,11 @@ encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
-decodeBase64Unpadded :: ByteString -> Either Text ByteString
-decodeBase64Unpadded bs@(PS _ _ !l)
-    | r == 0 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable bs
-    | r == 2 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "==")
-    | r == 3 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
-    | otherwise = Left "Base64-encoded bytestring has invalid size"
-  where
-    (!q, !r) = divMod l 4
-    !dlen = q * 3
+decodeBase64Unpadded :: ByteString -> Either T.Text ByteString
+decodeBase64Unpadded Empty = Right Empty
+decodeBase64Unpadded (Chunk c cs) = Chunk
+    <$> B64U.decodeBase64Unpadded c
+    <*> decodeBase64Unpadded cs
 {-# INLINE decodeBase64Unpadded #-}
 
 -- | Decode a padded Base64url-encoded 'ByteString' value. Input strings are
@@ -122,14 +118,11 @@ decodeBase64Unpadded bs@(PS _ _ !l)
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
-decodeBase64Padded :: ByteString -> Either Text ByteString
-decodeBase64Padded bs@(PS !_ _ !l)
-    | r == 1 = Left "Base64-encoded bytestring has invalid size"
-    | r /= 0 = Left "Base64-encoded bytestring requires padding"
-    | otherwise = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64UrlTable bs
-  where
-    (!q, !r) = divMod l 4
-    !dlen = q * 3
+decodeBase64Padded :: ByteString -> Either T.Text ByteString
+decodeBase64Padded Empty = Right Empty
+decodeBase64Padded (Chunk c cs) = Chunk
+    <$> B64U.decodeBase64Padded c
+    <*> decodeBase64Padded cs
 {-# INLINE decodeBase64Padded #-}
 
 -- | Leniently decode an unpadded Base64url-encoded 'ByteString'. This function
@@ -139,7 +132,11 @@ decodeBase64Padded bs@(PS !_ _ !l)
 -- __Note:__ This is not RFC 4648-compliant.
 --
 decodeBase64Lenient :: ByteString -> ByteString
-decodeBase64Lenient = decodeBase64Lenient_ decodeB64UrlTable
+decodeBase64Lenient = fromChunks
+    . fmap B64U.decodeBase64Lenient
+    . reChunk
+    . fmap (BS.filter (flip elem "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_="))
+    . toChunks
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ByteString' is Base64url-encoded.
@@ -155,5 +152,11 @@ isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 bs)
 -- Base64 encoded 'ByteString' value, use 'isBase64Url'.
 --
 isValidBase64Url :: ByteString -> Bool
-isValidBase64Url = validateBase64 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+isValidBase64Url = go . toChunks
+  where
+    go [] = True
+    go [c] = B64U.isValidBase64Url c
+    go (c:cs) = -- note the lack of padding char
+      BS.all (flip elem "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_") c
+      && go cs
 {-# INLINE isValidBase64Url #-}

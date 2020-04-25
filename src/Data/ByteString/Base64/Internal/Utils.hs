@@ -15,6 +15,7 @@ module Data.ByteString.Base64.Internal.Utils
 ( EncodingTable(..)
 , aix
 , packTable
+, reChunk
 , w32
 , w64
 , w32_16
@@ -23,7 +24,9 @@ module Data.ByteString.Base64.Internal.Utils
 ) where
 
 
-import System.IO.Unsafe
+
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 
 import Foreign.ForeignPtr
 import Foreign.Ptr
@@ -33,6 +36,7 @@ import GHC.Exts
 import GHC.ForeignPtr
 import GHC.Word
 
+import System.IO.Unsafe
 
 -- | Only the lookup table need be a foreignptr,
 -- and then, only so that we can automate some touches to keep it alive
@@ -100,3 +104,26 @@ packTable alphabet = etable
             , !j <- [0..63]
             ]
       in EncodingTable (Ptr alphabet) (writeNPlainForeignPtrBytes 8192 bs)
+
+-- | Rechunk a list of bytestrings in multiples of 4
+--
+reChunk :: [ByteString] -> [ByteString]
+reChunk = go
+  where
+    go [] = []
+    go (b:bs) = case divMod (BS.length b) 4 of
+      (_, 0) -> b : go bs
+      (d, _) -> case BS.splitAt (d * 4) b of
+        ~(h, t) -> h : accum t bs
+
+    accum acc [] = [acc]
+    accum acc (c:cs) =
+      case BS.splitAt (4 - BS.length acc) c of
+        ~(h, t) ->
+          let acc' = BS.append acc h
+          in if BS.length acc' == 4
+             then
+               let cs' = if BS.null t then cs else t : cs
+               in acc' : go cs'
+             else accum acc' cs
+{-# INLINE reChunk #-}
