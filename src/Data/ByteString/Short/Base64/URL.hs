@@ -13,15 +13,19 @@
 --
 module Data.ByteString.Short.Base64.URL
 ( encodeBase64
+, encodeBase64Unpadded
 , encodeBase64'
+, encodeBase64Unpadded'
 , decodeBase64
+, decodeBase64Padded
+, decodeBase64Unpadded
 , decodeBase64Lenient
-, isBase64
-, isValidBase64
+, isBase64Url
+, isValidBase64Url
 ) where
 
 
-import Data.Bytestring.Base64.URL
+import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Short (ShortByteString, fromShort, toShort)
 import Data.Either (isRight)
 import Data.Text (Text)
@@ -41,7 +45,7 @@ encodeBase64 = fromShortByteStringUnsafe . encodeBase64'
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
 --
 encodeBase64' :: ShortByteString -> ShortByteString
-encodeBase64' = toShort . encodeBase64' . fromShort
+encodeBase64' = toShort . B64U.encodeBase64' . fromShort
 
 -- | Decode a padded Base64url encoded 'ShortByteString' value. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
@@ -52,7 +56,7 @@ encodeBase64' = toShort . encodeBase64' . fromShort
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: ShortByteString -> Either Text ShortByteString
-decodeBase64 = fmap toShort . decodeBase64 . fromShort
+decodeBase64 = fmap toShort . B64U.decodeBase64 . fromShort
 
 {-# INLINE decodeBase64 #-}
 
@@ -73,7 +77,7 @@ encodeBase64Unpadded = fromShortByteStringUnsafe . encodeBase64Unpadded'
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
 encodeBase64Unpadded' :: ShortByteString -> ShortByteString
-encodeBase64Unpadded' = toShort . encodeBase64Unpadded' . fromShort
+encodeBase64Unpadded' = toShort . B64U.encodeBase64Unpadded' . fromShort
 
 -- | Decode an unpadded Base64url-encoded 'ShortByteString' value. Input strings are
 -- required to be unpadded, and will undergo validation prior to decoding to
@@ -85,7 +89,7 @@ encodeBase64Unpadded' = toShort . encodeBase64Unpadded' . fromShort
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Unpadded :: ShortByteString -> Either Text ShortByteString
-decodeBase64Unpadded = fmap toShort . decodeBase64Unpadded . fromShort
+decodeBase64Unpadded = fmap toShort . B64U.decodeBase64Unpadded . fromShort
 {-# INLINE decodeBase64Unpadded #-}
 
 -- | Decode a padded Base64url-encoded 'ShortByteString' value. Input strings are
@@ -98,7 +102,7 @@ decodeBase64Unpadded = fmap toShort . decodeBase64Unpadded . fromShort
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Padded :: ShortByteString -> Either Text ShortByteString
-decodeBase64Padded = fmap toShort . decodeBase64Padded . fromShort
+decodeBase64Padded = fmap toShort . B64U.decodeBase64Padded . fromShort
 {-# INLINE decodeBase64Padded #-}
 
 -- | Leniently decode an unpadded Base64url-encoded 'ShortByteString'. This function
@@ -108,7 +112,7 @@ decodeBase64Padded = fmap toShort . decodeBase64Padded . fromShort
 -- __Note:__ This is not RFC 4648-compliant.
 --
 decodeBase64Lenient :: ShortByteString -> ShortByteString
-decodeBase64Lenient = toShort . decodeBase64Lenient . fromShort
+decodeBase64Lenient = toShort . B64U.decodeBase64Lenient . fromShort
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ShortByteString' is Base64url-encoded.
@@ -124,5 +128,5 @@ isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 bs)
 -- Base64 encoded 'ShortByteString' value, use 'isBase64Url'.
 --
 isValidBase64Url :: ShortByteString -> Bool
-isValidBase64Url = isValidBase64 . fromShort
+isValidBase64Url = B64U.isValidBase64Url . fromShort
 {-# INLINE isValidBase64Url #-}
