@@ -1,6 +1,6 @@
 -- |
 -- Module       : Data.ByteString.Short.Base64.URL
--- Copyright    : (c) 2019 Emily Pillmore
+-- Copyright    : (c) 2019-2020 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -27,7 +27,6 @@ module Data.ByteString.Short.Base64.URL
 
 import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Short (ShortByteString, fromShort, toShort)
-import Data.Either (isRight)
 import Data.Text (Text)
 import Data.Text.Short (ShortText)
 import Data.Text.Short.Unsafe (fromShortByteStringUnsafe)
@@ -118,7 +117,7 @@ decodeBase64Lenient = toShort . B64U.decodeBase64Lenient . fromShort
 -- | Tell whether a 'ShortByteString' is Base64url-encoded.
 --
 isBase64Url :: ShortByteString -> Bool
-isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 bs)
+isBase64Url = B64U.isBase64Url . fromShort
 {-# INLINE isBase64Url #-}
 
 -- | Tell whether a 'ShortByteString' is a valid Base64url format.
