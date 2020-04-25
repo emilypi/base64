@@ -42,14 +42,13 @@ innerLoop
     -> Ptr Word32
     -> Ptr Word32
     -> Ptr Word32
-    -> (Ptr Word8 -> Ptr Word8 -> Int -> IO ByteString)
-    -> Int
+    -> (Ptr Word8 -> Ptr Word8 -> IO ByteString)
     -> IO ByteString
-innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
+innerLoop !etable !sptr !dptr !end finish = go sptr dptr
   where
-    go !src !dst !n
+    go !src !dst
       | plusPtr src 3 >= end =
-        W16.innerLoop etable (castPtr src) (castPtr dst) (castPtr end) finish n
+        W16.innerLoop etable (castPtr src) (castPtr dst) (castPtr end) finish
       | otherwise = do
 #ifdef WORDS_BIGENDIAN
         !w <- peek @Word32 src
@@ -65,7 +64,7 @@ innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
         let !z = x .|. (unsafeShiftL y 16)
         poke dst (fromIntegral z)
 
-        go (plusPtr src 3) (plusPtr dst 4) (n + 4)
+        go (plusPtr src 3) (plusPtr dst 4)
     {-# INLINE go #-}
 {-# INLINE innerLoop #-}
 
