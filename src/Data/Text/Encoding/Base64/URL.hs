@@ -163,7 +163,7 @@ decodeBase64PaddedWith f t = case B64U.decodeBase64Padded $ T.encodeUtf8 t of
 -- __Note:__ This is not RFC 4648-compliant.
 --
 decodeBase64Lenient :: Text -> Text
-decodeBase64Lenient = T.decodeUtf8
+decodeBase64Lenient = T.decodeLatin1
     . B64U.decodeBase64Lenient
     . T.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
