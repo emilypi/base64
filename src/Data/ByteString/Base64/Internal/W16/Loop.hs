@@ -76,10 +76,9 @@ decodeLoop
         -- ^ dst pointer
     -> Ptr Word8
         -- ^ end of src ptr
-    -> (Ptr Word8 -> Ptr Word8 -> Int -> IO (Either Text ByteString))
-    -> Int
+    -> (Ptr Word8 -> Ptr Word8 -> IO (Either Text ByteString))
     -> IO (Either Text ByteString)
-decodeLoop !dtable !sptr !dptr !end finish !nn = go dptr sptr nn
+decodeLoop !dtable !sptr !dptr !end finish = go dptr sptr (0 :: Int)
   where
     err p = return . Left . T.pack
       $ "invalid character at offset: "
@@ -96,7 +95,7 @@ decodeLoop !dtable !sptr !dptr !end finish !nn = go dptr sptr nn
       return (fromIntegral v)
 
     go !dst !src !n
-      | plusPtr src 4 >= end = finish dst src n
+      | plusPtr src 4 >= end = finish dst src
       | otherwise = do
         !a <- look src
         !b <- look (src `plusPtr` 1)

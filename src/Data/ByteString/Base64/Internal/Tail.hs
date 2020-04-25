@@ -114,52 +114,60 @@ loopTailNoPad !dfp (Ptr !alpha) !end !src !dst !n
 
 decodeTail
     :: ForeignPtr Word8
+      -- ^ dst bytestring foreign ptr
     -> Ptr Word8
+      -- ^ decode table
     -> Ptr Word8
+      -- ^ original decode static pointer
     -> Ptr Word8
+      -- ^ end of the src ptr
     -> Ptr Word8
-    -> Int
+      -- ^ dst ptr
+    -> Ptr Word8
+      -- ^ src ptr
     -> IO (Either Text ByteString)
-decodeTail !dfp !dtable !end !dst !src !n
-    | src >= end = return (Right (PS dfp 0 n))
+decodeTail !dfp !dtable !dptr !end !dst !src
+    | src >= end = return (Right (PS dfp 0 (minusPtr dst dptr)))
     | otherwise = do
-      !a <- look src
-      !b <- look (src `plusPtr` 1)
-      !c <- look (src `plusPtr` 2)
-      !d <- look (src `plusPtr` 3)
+      !w <- peek @Word8 src
+      !x <- peek @Word8 (plusPtr src 1)
+      !y <- peek @Word8 (plusPtr src 2)
+      !z <- peek @Word8 (plusPtr src 3)
+
+      !a <- w32 <$> peekByteOff @Word8 dtable (fromIntegral w)
+      !b <- w32 <$> peekByteOff @Word8 dtable (fromIntegral x)
+      !c <- w32 <$> peekByteOff @Word8 dtable (fromIntegral y)
+      !d <- w32 <$> peekByteOff @Word8 dtable (fromIntegral z)
 
       if
-        | a == 0x63 -> padErr src
-        | b == 0x63 -> padErr (plusPtr src 1)
         | a == 0xff -> err src
         | b == 0xff -> err (plusPtr src 1)
         | c == 0xff -> err (plusPtr src 2)
         | d == 0xff -> err (plusPtr src 3)
+        | a == 0x63 -> padErr src
+        | b == 0x63 -> padErr (plusPtr src 1)
+        | c == 0x63, d /= 0x63 -> padErr (plusPtr src 3)
         | otherwise -> do
 
-          let !w = (unsafeShiftL a 18)
+          let !ww = (unsafeShiftL a 18)
                 .|. (unsafeShiftL b 12)
                 .|. (unsafeShiftL c 6)
                 .|. d
 
-          poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
-
           if
-            | c == 0x63 -> return $ Right (PS dfp 0 (n + 1))
+            | c == 0x63, d == 0x63 -> do
+              poke @Word8 dst (fromIntegral (unsafeShiftR ww 16))
+              return $ Right (PS dfp 0 (1 + (minusPtr dst dptr)))
             | d == 0x63 -> do
-              poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
-              return $ Right (PS dfp 0 (n + 2))
+              poke @Word8 dst (fromIntegral (unsafeShiftR ww 16))
+              poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR ww 8))
+              return $ Right (PS dfp 0 (2 + (minusPtr dst dptr)))
             | otherwise -> do
-              poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
-              poke @Word8 (plusPtr dst 2) (fromIntegral w)
-              return $ Right (PS dfp 0 (n + 3))
+              poke @Word8 dst (fromIntegral (unsafeShiftR ww 16))
+              poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR ww 8))
+              poke @Word8 (plusPtr dst 2) (fromIntegral ww)
+              return $ Right (PS dfp 0 (3 + (minusPtr dst dptr)))
   where
-    look :: Ptr Word8 -> IO Word32
-    look !p = do
-      !i <- peekByteOff @Word8 p 0
-      !v <- peekByteOff @Word8 dtable (fromIntegral i)
-      return (fromIntegral v)
-
     err p = return . Left . T.pack
       $ "invalid character at offset: "
       ++ show (p `minusPtr` src)
