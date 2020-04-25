@@ -56,8 +56,7 @@ encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
             (castPtr (plusPtr sptr soff))
             (castPtr dptr)
             end
-            (loopTail dfp aptr (castPtr end))
-            0
+            (loopTail dfp aptr dptr (castPtr end))
   where
     !dlen = 4 * ((slen + 2) `div` 3)
 
@@ -74,8 +73,7 @@ encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
             (castPtr (plusPtr sptr soff))
             (castPtr dptr)
             end
-            (loopTailNoPad dfp aptr (castPtr end))
-            0
+            (loopTailNoPad dfp aptr dptr (castPtr end))
   where
     !dlen = 4 * ((slen + 2) `div` 3)
 
