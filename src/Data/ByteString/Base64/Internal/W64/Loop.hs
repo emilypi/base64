@@ -24,7 +24,6 @@ import Data.Bits
 import Data.ByteString.Internal
 import Data.ByteString.Base64.Internal.Utils
 import qualified Data.ByteString.Base64.Internal.W16.Loop as W16
-import qualified Data.ByteString.Base64.Internal.W32.Loop as W32
 import Data.Text (Text)
 
 import Foreign.ForeignPtr
@@ -49,7 +48,7 @@ innerLoop !etable !sptr !dptr !end finish = go sptr dptr
   where
     go !src !dst
       | plusPtr src 7 >= end =
-        W32.innerLoop etable (castPtr src) (castPtr dst) (castPtr end) finish
+        W16.innerLoop etable (castPtr src) (castPtr dst) (castPtr end) finish
       | otherwise = do
 #ifdef WORDS_BIGENDIAN
         !t <- peek @Word64 src
