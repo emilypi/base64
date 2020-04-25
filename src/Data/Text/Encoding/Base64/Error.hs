@@ -1,6 +1,6 @@
 -- |
 -- Module       : Data.Text.Encoding.Base64.Error
--- Copyright 	: (c) 2019 Emily Pillmore
+-- Copyright 	: (c) 2019-2020 Emily Pillmore
 -- License	: BSD-style
 --
 -- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>

@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module       : Data.ByteString.Base64
--- Copyright    : (c) 2019 Emily Pillmore
+-- Copyright    : (c) 2019-2020 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
