@@ -40,10 +40,10 @@ loopTail
     -> Ptr Word8
     -> Ptr Word8
     -> Ptr Word8
-    -> Int
+    -> Ptr Word8
     -> IO ByteString
-loopTail !dfp (Ptr !alpha) !end !src !dst !n
-    | src == end = return (PS dfp 0 n)
+loopTail !dfp (Ptr !alpha) !dptr !end !src !dst
+    | src == end = return (PS dfp 0 (minusPtr dst dptr))
     | plusPtr src 1 == end = do
       !x <- peek @Word8  src
 
@@ -54,7 +54,7 @@ loopTail !dfp (Ptr !alpha) !end !src !dst !n
       poke @Word8 (plusPtr dst 1) (aix b alpha)
       poke @Word8 (plusPtr dst 2) 0x3d
       poke @Word8 (plusPtr dst 3) 0x3d
-      return (PS dfp 0 (n + 4))
+      return (PS dfp 0 (4 + minusPtr dst dptr))
 
     | otherwise = do
       !x <- peek @Word8  src
@@ -70,7 +70,7 @@ loopTail !dfp (Ptr !alpha) !end !src !dst !n
       poke @Word8 (plusPtr dst 1) (aix c alpha)
       poke @Word8 (plusPtr dst 2) (aix d alpha)
       poke @Word8 (plusPtr dst 3) 0x3d
-      return (PS dfp 0 (n + 4))
+      return (PS dfp 0 (4 + minusPtr dst dptr))
 {-# INLINE loopTail #-}
 
 
@@ -83,10 +83,10 @@ loopTailNoPad
     -> Ptr Word8
     -> Ptr Word8
     -> Ptr Word8
-    -> Int
+    -> Ptr Word8
     -> IO ByteString
-loopTailNoPad !dfp (Ptr !alpha) !end !src !dst !n
-      | src == end = return (PS dfp 0 n)
+loopTailNoPad !dfp (Ptr !alpha) !dptr !end !src !dst
+      | src == end = return (PS dfp 0 (minusPtr dst dptr))
       | plusPtr src 1 == end = do
         !x <- peek @Word8 src
 
@@ -95,7 +95,7 @@ loopTailNoPad !dfp (Ptr !alpha) !end !src !dst !n
 
         poke @Word8 dst (aix a alpha)
         poke @Word8 (plusPtr dst 1) (aix b alpha)
-        return (PS dfp 0 (n + 2))
+        return (PS dfp 0 (2 + (minusPtr dst dptr)))
       | otherwise = do
         !x <- peek @Word8 src
         !y <- peek @Word8 (plusPtr src 1)
@@ -109,7 +109,7 @@ loopTailNoPad !dfp (Ptr !alpha) !end !src !dst !n
         poke @Word8 dst (aix a alpha)
         poke @Word8 (plusPtr dst 1) (aix c alpha)
         poke @Word8 (plusPtr dst 2) (aix d alpha)
-        return (PS dfp 0 (n + 3))
+        return (PS dfp 0 (3 + (minusPtr dst dptr)))
 {-# INLINE loopTailNoPad #-}
 
 decodeTail

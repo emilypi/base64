@@ -42,13 +42,12 @@ innerLoop
     -> Ptr Word8
     -> Ptr Word16
     -> Ptr Word8
-    -> (Ptr Word8 -> Ptr Word8 -> Int -> IO ByteString)
-    -> Int
+    -> (Ptr Word8 -> Ptr Word8 -> IO ByteString)
     -> IO ByteString
-innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
+innerLoop !etable !sptr !dptr !end finish = go sptr dptr
   where
-    go !src !dst !n
-      | plusPtr src 2 >= end = finish src (castPtr dst) n
+    go !src !dst
+      | plusPtr src 2 >= end = finish src (castPtr dst)
       | otherwise = do
 
         !i <- w32 <$> peek src
@@ -63,7 +62,7 @@ innerLoop !etable !sptr !dptr !end finish !nn = go sptr dptr nn
         poke dst x
         poke (plusPtr dst 2) y
 
-        go (plusPtr src 3) (plusPtr dst 4) (n + 4)
+        go (plusPtr src 3) (plusPtr dst 4)
     {-# INLINE go #-}
 {-# INLINE innerLoop #-}
 
@@ -78,7 +77,7 @@ decodeLoop
         -- ^ end of src ptr
     -> (Ptr Word8 -> Ptr Word8 -> IO (Either Text ByteString))
     -> IO (Either Text ByteString)
-decodeLoop !dtable !sptr !dptr !end finish = go dptr sptr (0 :: Int)
+decodeLoop !dtable !sptr !dptr !end finish = go dptr sptr
   where
     err p = return . Left . T.pack
       $ "invalid character at offset: "
@@ -94,7 +93,7 @@ decodeLoop !dtable !sptr !dptr !end finish = go dptr sptr (0 :: Int)
       !v <- peekByteOff @Word8 dtable (fromIntegral i)
       return (fromIntegral v)
 
-    go !dst !src !n
+    go !dst !src
       | plusPtr src 4 >= end = finish dst src
       | otherwise = do
         !a <- look src
@@ -121,7 +120,7 @@ decodeLoop !dtable !sptr !dptr !end finish = go dptr sptr (0 :: Int)
             poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
             poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
             poke @Word8 (plusPtr dst 2) (fromIntegral w)
-            go (plusPtr dst 3) (plusPtr src 4) (n + 3)
+            go (plusPtr dst 3) (plusPtr src 4)
     {-# INLINE go #-}
 {-# INLINE decodeLoop #-}
 
