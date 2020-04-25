@@ -28,12 +28,16 @@ source-repository head
 library
   exposed-modules:     Data.ByteString.Base64
                      , Data.ByteString.Base64.URL
+                     , Data.ByteString.Lazy.Base64
+                     , Data.ByteString.Lazy.Base64.URL
                      , Data.ByteString.Short.Base64
                      , Data.ByteString.Short.Base64.URL
 
                      , Data.Text.Encoding.Base64
                      , Data.Text.Encoding.Base64.Error
                      , Data.Text.Encoding.Base64.URL
+                     , Data.Text.Lazy.Encoding.Base64
+                     , Data.Text.Lazy.Encoding.Base64.URL
                      , Data.Text.Short.Encoding.Base64
                      , Data.Text.Short.Encoding.Base64.URL
 
