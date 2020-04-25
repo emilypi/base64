@@ -70,17 +70,25 @@ encodeBase64' = encodeBase64_ base64UrlTable
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 bs@(PS _ _ !l)
+decodeBase64 bs@(PS !fp !o !l)
     | r == 0 = unsafeDupablePerformIO $
       decodeBase64_ dlen decodeB64UrlTable bs
     | r == 2 = unsafeDupablePerformIO $
       decodeBase64_ dlen decodeB64UrlTable (BS.append bs "==")
-    | r == 3 = unsafeDupablePerformIO $
-      decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
+    | r == 3 = validateUnpadded $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
     | otherwise = Left "Base64-encoded bytestring has invalid size"
   where
     (!q, !r) = divMod l 4
     !dlen = q * 3
+
+    validateUnpadded io = unsafeDupablePerformIO $
+      withForeignPtr fp $ \p -> do
+        let !end = l + o
+        a <- peek @Word8 (plusPtr p (end - 1))
+        if a == 0x3d
+        then return $ Left "Base64-encoded bytestring has invalid padding"
+        else io
+
 {-# INLINE decodeBase64 #-}
 
 -- | Encode a 'ByteString' value as Base64url 'Text' without padding. Note that for Base64url,
@@ -113,13 +121,10 @@ encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded bs@(PS !fp !o !l)
-    | r == 0 = validateUnpadded $
-      decodeBase64_ dlen decodeB64UrlTable bs
-    | r == 2 = validateUnpadded $
-      decodeBase64_ dlen decodeB64UrlTable (BS.append bs "==")
-    | r == 3 = validateUnpadded $
-      decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
-    | otherwise = Left "Base64-encoded bytestring required to be unpadded"
+    | r == 0 = validateUnpadded $ decodeBase64_ dlen decodeB64UrlTable bs
+    | r == 2 = validateUnpadded $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "==")
+    | r == 3 = validateUnpadded $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
+    | otherwise = Left "Base64-encoded bytestring has invalid size"
   where
     (!q, !r) = divMod l 4
     !dlen = q * 3
@@ -128,9 +133,7 @@ decodeBase64Unpadded bs@(PS !fp !o !l)
       withForeignPtr fp $ \p -> do
         let !end = l + o
         a <- peek @Word8 (plusPtr p (end - 1))
-        b <- peek @Word8 (plusPtr p (end - 2))
-
-        if a == 0x3d || b == 0x3d
+        if a == 0x3d
         then return $ Left "Base64-encoded bytestring required to be unpadded"
         else io
 {-# INLINE decodeBase64Unpadded #-}
@@ -146,6 +149,7 @@ decodeBase64Unpadded bs@(PS !fp !o !l)
 --
 decodeBase64Padded :: ByteString -> Either Text ByteString
 decodeBase64Padded bs@(PS !_ _ !l)
+    | r == 1 = Left "Base64-encoded bytestring has invalid size"
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
     | otherwise = unsafeDupablePerformIO $
       decodeBase64_ dlen decodeB64UrlTable bs
