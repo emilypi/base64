@@ -21,7 +21,7 @@ module Data.ByteString.Short.Base64
 ) where
 
 
-import Data.ByteString.Base64
+import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Short (ShortByteString, fromShort, toShort)
 import Data.Either (isRight)
 import Data.Text (Text)
@@ -32,7 +32,7 @@ import Data.Text.Short.Unsafe (fromShortByteStringUnsafe)
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
-encodeBase64 :: ShortByteString -> Text
+encodeBase64 :: ShortByteString -> ShortText
 encodeBase64 = fromShortByteStringUnsafe . encodeBase64'
 {-# INLINE encodeBase64 #-}
 
@@ -41,7 +41,7 @@ encodeBase64 = fromShortByteStringUnsafe . encodeBase64'
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 encodeBase64' :: ShortByteString -> ShortByteString
-encodeBase64' = toShort . encodeBase64' . fromShort
+encodeBase64' = toShort . B64.encodeBase64' . fromShort
 {-# INLINE encodeBase64' #-}
 
 -- | Decode a padded Base64-encoded 'ShortByteString' value.
@@ -53,7 +53,7 @@ encodeBase64' = toShort . encodeBase64' . fromShort
 -- use 'decodeBase64Unpadded'.
 --
 decodeBase64 :: ShortByteString -> Either Text ShortByteString
-decodeBase64 = fmap toShort . decodeBase64 . fromShort
+decodeBase64 = fmap toShort . B64.decodeBase64 . fromShort
 {-# INLINE decodeBase64 #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ShortByteString' value. This function
@@ -63,7 +63,7 @@ decodeBase64 = fmap toShort . decodeBase64 . fromShort
 -- __Note:__ This is not RFC 4648-compliant.
 --
 decodeBase64Lenient :: ShortByteString -> ShortByteString
-decodeBase64Lenient = toShort . decodeBase64Lenient . fromShort
+decodeBase64Lenient = toShort . B64.decodeBase64Lenient . fromShort
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ShortByteString' value is base64 encoded.
@@ -79,5 +79,5 @@ isBase64 bs = isValidBase64 bs && isRight (decodeBase64 bs)
 -- Base64 encoded 'ShortByteString' value, use 'isBase64'.
 --
 isValidBase64 :: ShortByteString -> Bool
-isValidBase64 = isValidBase64 . fromShort
+isValidBase64 = B64.isValidBase64 . fromShort
 {-# INLINE isValidBase64 #-}
