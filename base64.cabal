@@ -34,6 +34,8 @@ library
                      , Data.Text.Encoding.Base64
                      , Data.Text.Encoding.Base64.Error
                      , Data.Text.Encoding.Base64.URL
+                     , Data.Text.Short.Encoding.Base64
+                     , Data.Text.Short.Encoding.Base64.URL
 
   other-modules:       Data.ByteString.Base64.Internal
                        Data.ByteString.Base64.Internal.Head

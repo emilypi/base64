@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64
--- Copyright 	: (c) 2019 Emily Pillmore
+-- Copyright 	: (c) 2019-2020 Emily Pillmore
 -- License	: BSD-style
 --
 -- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
@@ -46,7 +46,7 @@ decodeBase64 :: Text -> Either Text Text
 decodeBase64 = fmap T.decodeLatin1 . B64.decodeBase64 . T.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
--- | Attempt to decode a lazy 'Text' value as Base64, converting from
+-- | Attempt to decode a 'Text' value as Base64, converting from
 -- 'ByteString' to 'Text' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -77,7 +77,7 @@ decodeBase64With f t = case B64.decodeBase64 $ T.encodeUtf8 t of
 -- __Note:__ This is not RFC 4648-compliant.
 --
 decodeBase64Lenient :: Text -> Text
-decodeBase64Lenient = T.decodeUtf8
+decodeBase64Lenient = T.decodeLatin1
     . B64.decodeBase64Lenient
     . T.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}

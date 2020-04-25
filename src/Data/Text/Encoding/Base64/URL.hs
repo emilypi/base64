@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.URL
--- Copyright 	: (c) 2019 Emily Pillmore
+-- Copyright 	: (c) 2019-2020 Emily Pillmore
 -- License	: BSD-style
 --
 -- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
@@ -54,7 +54,7 @@ decodeBase64 :: Text -> Either Text Text
 decodeBase64 = fmap T.decodeLatin1 . B64U.decodeBase64 . T.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
--- | Attempt to decode a lazy 'Text' value as Base64url, converting from
+-- | Attempt to decode a 'Text' value as Base64url, converting from
 -- 'ByteString' to 'Text' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -98,7 +98,7 @@ decodeBase64Unpadded = fmap T.decodeLatin1
     . T.encodeUtf8
 {-# INLINE decodeBase64Unpadded #-}
 
--- | Attempt to decode an unpadded lazy 'Text' value as Base64url, converting from
+-- | Attempt to decode an unpadded 'Text' value as Base64url, converting from
 -- 'ByteString' to 'Text' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -132,7 +132,7 @@ decodeBase64Padded = fmap T.decodeLatin1
     . T.encodeUtf8
 {-# INLINE decodeBase64Padded #-}
 
--- | Attempt to decode a padded lazy 'Text' value as Base64url, converting from
+-- | Attempt to decode a padded 'Text' value as Base64url, converting from
 -- 'ByteString' to 'Text' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
