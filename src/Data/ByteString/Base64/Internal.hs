@@ -18,21 +18,26 @@
 --
 module Data.ByteString.Base64.Internal
 ( validateBase64
+, validateLastPad
 ) where
 
 
 import qualified Data.ByteString as BS
 import Data.ByteString.Internal
+import Data.Text (Text)
 
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
 
+import GHC.Word
+
+import System.IO.Unsafe
 
 -- | Given a bytestring, check to see that it conforms to a given alphabet
 --
 validateBase64 :: ByteString -> ByteString -> Bool
-validateBase64 !alphabet (PS fp off l) =
+validateBase64 !alphabet (PS !fp !off !l) =
     accursedUnutterablePerformIO $ withForeignPtr fp $ \p ->
       go (plusPtr p off) (plusPtr p (l + off))
   where
@@ -49,3 +54,16 @@ validateBase64 !alphabet (PS fp off l) =
 
         if f w then go (plusPtr p 1) end else return False
 {-# INLINE validateBase64 #-}
+
+validateLastPad
+    :: ByteString
+    -> IO (Either Text ByteString)
+    -> Either Text ByteString
+validateLastPad (PS !fp !o !l) io = unsafeDupablePerformIO $
+    withForeignPtr fp $ \p -> do
+      let !end = l + o
+      a <- peek @Word8 (plusPtr p (end - 1))
+      if a == 0x3d
+      then return $ Left "Base64-encoded bytestring has invalid padding"
+      else io
+{-# INLINE validateLastPad #-}
