@@ -22,7 +22,6 @@ module Data.ByteString.Base64.Internal
 ) where
 
 
-import Data.Bool (bool)
 import qualified Data.ByteString as BS
 import Data.ByteString.Internal
 import Data.Text (Text)
@@ -30,8 +29,6 @@ import Data.Text (Text)
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
-
-import GHC.Word
 
 import System.IO.Unsafe
 
@@ -80,10 +77,7 @@ validateLastPad
     :: ByteString
     -> IO (Either Text ByteString)
     -> Either Text ByteString
-validateLastPad (PS !fp !o !l) io =
-    go $ accursedUnutterablePerformIO $ withForeignPtr fp $ \p -> do
-      a <- peek @Word8 (plusPtr p ((l + o) - 1))
-      return (a /= 0x3d)
-  where
-    go = bool (Left "Base64-encoded bytestring has invalid padding") (unsafeDupablePerformIO io)
+validateLastPad bs io
+    | BS.last bs == 0x3d = Left "Base64-encoded bytestring has invalid padding"
+    | otherwise = unsafeDupablePerformIO io
 {-# INLINE validateLastPad #-}
