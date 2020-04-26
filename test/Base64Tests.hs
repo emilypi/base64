@@ -172,7 +172,7 @@ paddingTests = testGroup "Padding tests"
         if
           | BS.last t == 0x3d -> do
             step "Padding required: no padding fails"
-            u @=? Left "Base64-encoded bytestring required to be unpadded"
+            u @=? Left "Base64-encoded bytestring has invalid padding"
 
             step "Padding required: padding succeeds"
             v @=? Right s
