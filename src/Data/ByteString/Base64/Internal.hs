@@ -55,6 +55,25 @@ validateBase64 !alphabet (PS !fp !off !l) =
         if f w then go (plusPtr p 1) end else return False
 {-# INLINE validateBase64 #-}
 
+-- | This function checks that the last char of a bytestring is '='
+-- and, if true, fails with a message or completes some io action.
+--
+-- This is necessary to check when decoding permissively (i.e. filling in padding chars).
+-- Consider the following 4 cases of a string of length l:
+--
+-- l = 0 mod 4: No pad chars are added, since the input is assumed to be good.
+-- l = 1 mod 4: Never an admissible length in base64
+-- l = 2 mod 4: 2 padding chars are added. If padding chars are present in the string, they will fail as to decode as final quanta
+-- l = 3 mod 4: 1 padding char is added. In this case  a string is of the form <body> + <padchar>, and adding the
+-- pad char will "complete" the string, possibly forming corrupting data. This case is degenerate and should be disallowed.
+--
+-- Hence, permissive decodes should only fill in padding chars when it makes sense to add them. That is,
+-- if an input is degenerate, it should never succeed when we add padding chars. We need the following invariant to hold:
+--
+-- @
+--   B64U.decodeUnpadded <|> B64.decodePadded ~ B64.decodePadded
+-- @
+--
 validateLastPad
     :: ByteString
     -> IO (Either Text ByteString)
