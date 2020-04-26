@@ -93,18 +93,17 @@ decodeBase64_
     -> ByteString
     -> IO (Either Text ByteString)
 decodeBase64_ _ _ (PS _ _ 0) = return $ Right mempty
-decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen') =
+decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen) =
     withForeignPtr dtfp $ \dtable ->
     withForeignPtr sfp $ \sptr -> do
       dfp <- mallocPlainForeignPtrBytes dlen
-      withForeignPtr dfp $ \dptr -> do
-        let !end = plusPtr sptr (soff + slen')
+      withForeignPtr dfp $ \dptr ->
         decodeLoop
           dtable
           (plusPtr sptr soff)
           dptr
-          end
-          (decodeTail dfp dtable dptr end)
+          (plusPtr sptr (soff + slen))
+          (decodeTail dfp dtable dptr)
 {-# INLINE decodeBase64_ #-}
 
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString

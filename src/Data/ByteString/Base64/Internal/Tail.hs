@@ -120,53 +120,49 @@ decodeTail
     -> Ptr Word8
       -- ^ original decode static pointer
     -> Ptr Word8
-      -- ^ end of the src ptr
-    -> Ptr Word8
       -- ^ dst ptr
     -> Ptr Word8
       -- ^ src ptr
     -> IO (Either Text ByteString)
-decodeTail !dfp !dtable !dptr !end !dst !src
-    | src >= end = return (Right (PS dfp 0 (minusPtr dst dptr)))
-    | otherwise = do
-      !w <- peek @Word8 src
-      !x <- peek @Word8 (plusPtr src 1)
-      !y <- peek @Word8 (plusPtr src 2)
-      !z <- peek @Word8 (plusPtr src 3)
+decodeTail !dfp !dtable !dptr !dst !src = do
+    !w <- peek @Word8 src
+    !x <- peek @Word8 (plusPtr src 1)
+    !y <- peek @Word8 (plusPtr src 2)
+    !z <- peek @Word8 (plusPtr src 3)
 
-      !a <- w32 <$> peekByteOff @Word8 dtable (fromIntegral w)
-      !b <- w32 <$> peekByteOff @Word8 dtable (fromIntegral x)
-      !c <- w32 <$> peekByteOff @Word8 dtable (fromIntegral y)
-      !d <- w32 <$> peekByteOff @Word8 dtable (fromIntegral z)
+    !a <- w32 <$> peekByteOff @Word8 dtable (fromIntegral w)
+    !b <- w32 <$> peekByteOff @Word8 dtable (fromIntegral x)
+    !c <- w32 <$> peekByteOff @Word8 dtable (fromIntegral y)
+    !d <- w32 <$> peekByteOff @Word8 dtable (fromIntegral z)
 
-      if
-        | a == 0xff -> err src
-        | b == 0xff -> err (plusPtr src 1)
-        | c == 0xff -> err (plusPtr src 2)
-        | d == 0xff -> err (plusPtr src 3)
-        | a == 0x63 -> padErr src
-        | b == 0x63 -> padErr (plusPtr src 1)
-        | c == 0x63, d /= 0x63 -> padErr (plusPtr src 3)
-        | otherwise -> do
+    if
+      | a == 0xff -> err src
+      | b == 0xff -> err (plusPtr src 1)
+      | c == 0xff -> err (plusPtr src 2)
+      | d == 0xff -> err (plusPtr src 3)
+      | a == 0x63 -> padErr src
+      | b == 0x63 -> padErr (plusPtr src 1)
+      | c == 0x63, d /= 0x63 -> padErr (plusPtr src 3)
+      | otherwise -> do
 
-          let !ww = (unsafeShiftL a 18)
-                .|. (unsafeShiftL b 12)
-                .|. (unsafeShiftL c 6)
-                .|. d
+        let !ww = (unsafeShiftL a 18)
+              .|. (unsafeShiftL b 12)
+              .|. (unsafeShiftL c 6)
+              .|. d
 
-          if
-            | c == 0x63, d == 0x63 -> do
-              poke @Word8 dst (fromIntegral (unsafeShiftR ww 16))
-              return $ Right (PS dfp 0 (1 + (minusPtr dst dptr)))
-            | d == 0x63 -> do
-              poke @Word8 dst (fromIntegral (unsafeShiftR ww 16))
-              poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR ww 8))
-              return $ Right (PS dfp 0 (2 + (minusPtr dst dptr)))
-            | otherwise -> do
-              poke @Word8 dst (fromIntegral (unsafeShiftR ww 16))
-              poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR ww 8))
-              poke @Word8 (plusPtr dst 2) (fromIntegral ww)
-              return $ Right (PS dfp 0 (3 + (minusPtr dst dptr)))
+        if
+          | c == 0x63, d == 0x63 -> do
+            poke @Word8 dst (fromIntegral (unsafeShiftR ww 16))
+            return $ Right (PS dfp 0 (1 + (minusPtr dst dptr)))
+          | d == 0x63 -> do
+            poke @Word8 dst (fromIntegral (unsafeShiftR ww 16))
+            poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR ww 8))
+            return $ Right (PS dfp 0 (2 + (minusPtr dst dptr)))
+          | otherwise -> do
+            poke @Word8 dst (fromIntegral (unsafeShiftR ww 16))
+            poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR ww 8))
+            poke @Word8 (plusPtr dst 2) (fromIntegral ww)
+            return $ Right (PS dfp 0 (3 + (minusPtr dst dptr)))
   where
     err p = return . Left . T.pack
       $ "invalid character at offset: "
