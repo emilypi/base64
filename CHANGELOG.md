@@ -1,5 +1,16 @@
 # Revision history for base64
 
+## 0.4.2
+
+* Added support for `Data.ByteString.Short`, `Data.ByteString.Lazy`, `Data.Text.Short`, and `Data.Text.Lazy`. ([#17](https://github.com/emilypi/base64/pull/17))
+* Optimize decode algorithm (now beats `base64-bytestring` in every category!) - ([#13](https://github.com/emilypi/base64/pull/13))
+* Use `decodeLatin1` when decoding to text, so that functions are total - ([#13](https://github.com/emilypi/base64/pull/13))
+* Added `decodeWith*` variants and a `Base64Error` type to handle decoding errors when decoding base64 values - ([#13](https://github.com/emilypi/base64/pull/13))
+* Improved error reporting: all offsets are now precisely accurate. - ([#13](https://github.com/emilypi/base64/pull/13))
+* Validations added to head, rejecting invalid corner cases (such as bytestrings of length `l == 1 mod 4`, which are never correct) - ([#16](https://github.com/emilypi/base64/pull/16))
+* Added `decodeBase64Padded` for symmetry - ([#13](https://github.com/emilypi/base64/pull/13))
+
+
 ## 0.4.1 -- 2020-02-04
 
 * Optimize loops for 32-bit and 64-bit architectures
