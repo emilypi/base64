@@ -49,8 +49,8 @@ tests = testGroup "Base64 Tests"
   ]
 
 mkTree :: forall a b. Harness a b => a -> TestTree
-mkTree a = testGroup (label @a)
-  [ properties a
+mkTree _ = testGroup (label @a)
+  [ properties @a undefined
   , rfcVectors
   , paddingTests
   ]
@@ -59,10 +59,10 @@ mkTree a = testGroup (label @a)
 -- Property tests
 
 properties :: forall a b. Harness a b => a -> TestTree
-properties a = testGroup "Property tests"
-  [ prop_roundtrip a
-  , prop_correctness a
-  , prop_url_padding a
+properties _ = testGroup "Property tests"
+  [ prop_roundtrip @a undefined
+  , prop_correctness @a undefined
+  , prop_url_padding @a undefined
   , prop_bos_coherence
   ]
 
