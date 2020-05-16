@@ -21,12 +21,15 @@ module Data.ByteString.Base64.Internal.Utils
 , w32_16
 , w64_16
 , writeNPlainForeignPtrBytes
+, runShortST
+, runDecodeST
 ) where
 
 
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
+import Data.Primitive.ByteArray
 
 import Foreign.ForeignPtr
 import Foreign.Ptr
@@ -34,6 +37,7 @@ import Foreign.Storable
 
 import GHC.Exts
 import GHC.ForeignPtr
+import GHC.ST (ST(..))
 import GHC.Word
 
 import System.IO.Unsafe
@@ -127,3 +131,28 @@ reChunk = go
                in acc' : go cs'
              else accum acc' cs
 {-# INLINE reChunk #-}
+
+
+-- | Write a byte array directly to Short bytestring
+--
+runShortST :: (forall s. ST s ByteArray) -> ShortByteString
+runShortST enc = runRW# $ \s0 -> case enc of
+  { ST g -> case g s0 of
+    { (# _, ByteArray r #) -> SBS r
+    }
+  }
+{-# INLINE runShortST #-}
+
+-- | Used for writing 'ByteArray#'-based encodes
+--
+runDecodeST
+    :: (forall s. ST s (Either Text ByteArray))
+    -> Either Text ShortByteString
+runDecodeST dec = runRW# $ \s0 -> case dec of
+  { ST g -> case g s0 of
+    { (# _, e #) -> case e of
+      Left t -> Left t
+      Right (ByteArray r) -> Right (SBS r)
+    }
+  }
+{-# INLINE runDecodeST #-}

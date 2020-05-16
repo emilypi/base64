@@ -18,6 +18,10 @@ module Data.ByteString.Base64.Internal.Head
 , encodeBase64Nopad_
 , decodeBase64_
 , decodeBase64Lenient_
+, encodeBase64Short_
+, encodeBase64ShortNopad_
+, decodeBase64Short_
+, decodeBase64ShortLenient_
 ) where
 
 #include "MachDeps.h"
@@ -26,10 +30,13 @@ import Data.ByteString.Base64.Internal.Tail
 import Data.ByteString.Base64.Internal.Utils
 #if WORD_SIZE_IN_BITS == 32
 import Data.ByteString.Base64.Internal.W32.Loop
+import Data.ByteString.Base64.Internal.W32.ShortLoop
 #elif WORD_SIZE_IN_BITS >= 64
 import Data.ByteString.Base64.Internal.W64.Loop
+import Data.ByteString.Base64.Internal.W64.ShortLoop
 #else
 import Data.ByteString.Base64.Internal.W16.Loop
+import Data.ByteString.Base64.Internal.W16.ShortLoop
 #endif
 import Data.ByteString.Internal
 import Data.Text (Text)
@@ -121,3 +128,52 @@ decodeBase64Lenient_ !dtfp (PS !sfp !soff !slen) = unsafeDupablePerformIO $
           dfp
   where
     !dlen = ((slen + 3) `div` 4) * 3
+
+-- ------------------------------------------------------------------ --
+-- Short loops
+
+encodeBase64_ :: EncodingTable -> ShortByteString -> ShortByteString
+encodeBase64_ (EncodingTable !aptr !efp) (SBS src#) =
+    withForeignPtr efp $ \etable -> return $ runShortST $ do
+      dst <- newByteArray dlen
+      Short.innerLoop l dst src
+      unsafeFreezeByteArray dst
+  where
+    !src = MutableByteArray (unsafeCoerce# src#)
+
+encodeBase64Nopad_ :: EncodingTable -> ShortByteString -> ShortByteString
+encodeBase64Nopad_ (EncodingTable !aptr !efp) (SBS src#) =
+    withForeignPtr efp $ \etable -> return $ runShortST $ do
+      dst <- newByteArray dlen
+      Short.innerLoopNopad l dst src
+      unsafeFreezeByteArray dst
+  where
+    !src = MutableByteArray (unsafeCoerce# src#)
+
+decodeBase64Short_
+    :: Int
+    -> Int
+    -> ForeignPtr Word8
+    -> ByteArray#
+    -> IO (Either Text ByteString)
+decodeBase64Short_ !slen !dlen !dtfp !src# =
+    withForeignPtr dtfp $ \dtable -> return $ runDecodeST $ do
+      dst <- newByteArray dlen
+      Short.decodeLoop dtable slen dst src
+  where
+    !src = MutableByteArray (unsafeCoerce# src#)
+
+decodeBase64ShortLenient_
+    :: Int
+    -> Int
+    -> ForeignPtr Word8
+    -> ByteArray#
+    -> IO ShortByteString
+decodeBase64ShortLenient_ !slen !dlen !dtfp !src# =
+    withForeignPtr dtfp $ \dtable -> return $ runShortST $ do
+      dst <- newByteArray dlen
+      q <- Short.lenientLoop dtable slen dst src
+      !_ <- resizeMutableByteArray dst q
+      unsafeFreezeByteArray dst
+  where
+    !src = MutableByteArray (unsafeCoerce# src#)
