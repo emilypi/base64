@@ -26,6 +26,7 @@ import "base64" Data.ByteString.Base64 as B64
 import "base64" Data.ByteString.Base64.URL as B64U
 import qualified "base64-bytestring" Data.ByteString.Base64 as Bos
 import qualified "base64-bytestring" Data.ByteString.Base64.URL as BosU
+import Data.Proxy
 
 import Internal
 
@@ -40,17 +41,17 @@ main = defaultMain tests
 
 tests :: TestTree
 tests = testGroup "Base64 Tests"
-  [ mkTree B64
-  , mkTree LB64
-  , mkTree SB64
-  , mkTree T64
-  , mkTree TL64
-  , mkTree TS64
+  [ mkTree (Proxy :: Proxy B64)
+  , mkTree (Proxy :: Proxy LB64)
+  , mkTree (Proxy :: Proxy SB64)
+  , mkTree (Proxy :: Proxy T64)
+  , mkTree (Proxy :: Proxy TL64)
+  , mkTree (Proxy :: Proxy TS64)
   ]
 
-mkTree :: forall a b. Harness a b => a -> TestTree
+mkTree :: forall a b proxy. Harness a b => proxy a -> TestTree
 mkTree _ = testGroup (label @a)
-  [ properties @a undefined
+  [ properties @a Proxy
   , rfcVectors
   , paddingTests
   ]
@@ -58,15 +59,15 @@ mkTree _ = testGroup (label @a)
 -- ---------------------------------------------------------------- --
 -- Property tests
 
-properties :: forall a b. Harness a b => a -> TestTree
+properties :: forall a b proxy. Harness a b => proxy a -> TestTree
 properties _ = testGroup "Property tests"
-  [ prop_roundtrip @a undefined
-  , prop_correctness @a undefined
-  , prop_url_padding @a undefined
+  [ prop_roundtrip @a Proxy
+  , prop_correctness @a Proxy
+  , prop_url_padding @a Proxy
   , prop_bos_coherence
   ]
 
-prop_roundtrip :: forall a b. Harness a b => a -> TestTree
+prop_roundtrip :: forall a b proxy. Harness a b => proxy a -> TestTree
 prop_roundtrip _ = testGroup "prop_roundtrip"
   [ testProperty "prop_std_roundtrip" $ \bs ->
       Right bs == decode @a (encode @a bs)
@@ -76,7 +77,7 @@ prop_roundtrip _ = testGroup "prop_roundtrip"
       Right bs == decodeUrl @a (encodeUrlNopad @a bs)
   ]
 
-prop_correctness :: forall a b. Harness a b => a -> TestTree
+prop_correctness :: forall a b proxy. Harness a b => proxy a -> TestTree
 prop_correctness _ = testGroup "prop_validity"
   [ testProperty "prop_std_valid" $ \bs ->
     validate @a bs
@@ -84,7 +85,7 @@ prop_correctness _ = testGroup "prop_validity"
     validateUrl @a bs
   ]
 
-prop_url_padding :: forall a b. Harness a b => a -> TestTree
+prop_url_padding :: forall a b proxy. Harness a b => proxy a -> TestTree
 prop_url_padding _ = testGroup "prop_url_padding"
   [ testProperty "prop_url_nopad_roundtrip" $ \bs ->
       Right bs == decodeUrlNopad @a (encodeUrlNopad @a bs)
