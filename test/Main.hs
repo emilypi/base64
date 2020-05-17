@@ -22,6 +22,8 @@ module Main
 
 import Prelude hiding (length)
 
+import Control.Applicative ((<|>))
+
 import qualified Data.ByteString as BS
 import "base64" Data.ByteString.Base64 as B64
 import "base64" Data.ByteString.Base64.URL as B64U
@@ -94,9 +96,12 @@ prop_url_padding _ = testGroup "prop_url_padding"
   , testProperty "prop_url_pad_roundtrip" $ \bs ->
       Right bs == decodeUrlPad @a (encodeUrl @a bs)
   , testProperty "prop_url_decode_invariant" $ \bs ->
-      (Right bs == decodeUrl @a (encodeUrl @a bs)
-      || Right bs == decodeUrlNopad @a (encodeUrlNopad @a bs))
-      || Right bs == decodeUrlPad @a (encodeUrl @a bs)
+      ( decodeUrlNopad @a (encodeUrlNopad @a bs)
+      == decodeUrl @a (encodeUrl @a bs)
+      ) ||
+      ( decodeUrlPad @a (encodeUrl @a bs)
+      == decodeUrl @a (encodeUrl @a bs)
+      )
   , testProperty "prop_url_padding_coherence" $ \bs ->
       Right bs == decodeUrl @a (encodeUrl @a bs)
       && Right bs == decodeUrlPad @a (encodeUrl @a bs)
