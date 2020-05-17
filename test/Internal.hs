@@ -32,8 +32,7 @@ import "base64" Data.Text.Lazy.Encoding.Base64 as TL64
 import "base64" Data.Text.Lazy.Encoding.Base64.URL as TL64U
 import "base64" Data.Text.Short.Encoding.Base64 as TS64
 import "base64" Data.Text.Short.Encoding.Base64.URL as TS64U
-
-
+import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -70,11 +69,13 @@ data TS64 = TS64
 
 -- | This class provides the generic API definition for
 -- the base64 std alphabet
-
+--
 class
-  ( Eq bs, Show bs
+  ( Eq bs
+  , Show bs
   , Arbitrary bs
   , CoArbitrary bs
+  , IsString bs
   ) => Harness a bs | a -> bs
   where
 
