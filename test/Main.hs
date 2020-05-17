@@ -20,6 +20,7 @@ module Main
 , tests
 ) where
 
+import Prelude hiding (length)
 
 import qualified Data.ByteString as BS
 import "base64" Data.ByteString.Base64 as B64
@@ -27,6 +28,7 @@ import "base64" Data.ByteString.Base64.URL as B64U
 import qualified "base64-bytestring" Data.ByteString.Base64 as Bos
 import qualified "base64-bytestring" Data.ByteString.Base64.URL as BosU
 import Data.Proxy
+import Data.String
 
 import Internal
 
@@ -52,7 +54,7 @@ tests = testGroup "Base64 Tests"
 mkTree :: forall a b proxy. Harness a b => proxy a -> TestTree
 mkTree _ = testGroup (label @a)
   [ properties @a Proxy
-  , rfcVectors
+  , rfcVectors @a Proxy
   , paddingTests
   ]
 
@@ -114,8 +116,8 @@ prop_bos_coherence = testGroup "prop_bos_coherence"
 -- ---------------------------------------------------------------- --
 -- Unit tests
 
-rfcVectors :: TestTree
-rfcVectors = testGroup "RFC 4648 Test Vectors"
+rfcVectors :: forall a b proxy. Harness a b => proxy a -> TestTree
+rfcVectors _ = testGroup "RFC 4648 Test Vectors"
     [ testGroup "std alphabet"
       [ testCaseStd "" ""
       , testCaseStd "f" "Zg=="
@@ -137,15 +139,13 @@ rfcVectors = testGroup "RFC 4648 Test Vectors"
       ]
     ]
   where
-    testCaseStd :: BS.ByteString -> BS.ByteString -> TestTree
     testCaseStd s t = testCase (show $ if s == "" then "empty" else s) $ do
-      t @=? B64.encodeBase64' s
-      Right s @=? B64.decodeBase64 (B64.encodeBase64' s)
+      t @=? encode @a s
+      Right s @=? decode @a (encode @a s)
 
-    testCaseUrl :: BS.ByteString -> BS.ByteString -> TestTree
     testCaseUrl s t = testCase (show $ if s == "" then "empty" else s) $ do
-      t @=? B64U.encodeBase64' s
-      Right s @=? B64U.decodeBase64Padded t
+      t @=? encodeUrl @a s
+      Right s @=? decodeUrlPad @a t
 
 paddingTests :: TestTree
 paddingTests = testGroup "Padding tests"
@@ -167,11 +167,10 @@ paddingTests = testGroup "Padding tests"
       ]
     ]
   where
-    ptest :: BS.ByteString -> BS.ByteString -> TestTree
     ptest s t =
       testCaseSteps (show $ if t == "" then "empty" else t) $ \step -> do
         let u = B64U.decodeBase64Unpadded t
-            v = B64U.decodeBase64Padded t
+            v =  B64U.decodeBase64Padded t
 
         if BS.last t == 0x3d then do
           step "Padding required: no padding fails"
@@ -185,7 +184,6 @@ paddingTests = testGroup "Padding tests"
           v @=? Right s
           v @=? u
 
-    utest :: BS.ByteString -> BS.ByteString -> TestTree
     utest s t =
       testCaseSteps (show $ if t == "" then "empty" else t) $ \step -> do
         let u = B64U.decodeBase64Padded t
