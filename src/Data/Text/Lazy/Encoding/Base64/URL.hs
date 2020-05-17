@@ -120,7 +120,7 @@ decodeBase64Unpadded = fmap TL.decodeLatin1
 -- Example:
 --
 -- @
--- 'decodeBase16With' 'TL.decodeUtf8''
+-- 'decodeBase64With' 'TL.decodeUtf8''
 --   :: 'TL.Text' -> 'Either' ('Base64Error' 'UnicodeException') 'TL.Text'
 -- @
 --
