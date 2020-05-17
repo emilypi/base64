@@ -92,7 +92,7 @@ decodeBase64With f t = case B64U.decodeBase64 $ T.encodeUtf8 t of
 --
 encodeBase64Unpadded :: Text -> Text
 encodeBase64Unpadded = B64U.encodeBase64Unpadded . T.encodeUtf8
-{-# INLINE encodeBase64Unpaddedx #-}
+{-# INLINE encodeBase64Unpadded #-}
 
 -- | Decode an unpadded Base64url encoded 'Text' value.
 --
