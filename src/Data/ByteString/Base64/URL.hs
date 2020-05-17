@@ -65,6 +65,7 @@ encodeBase64' = encodeBase64_ base64UrlTable
 --
 decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 bs@(PS _ _ !l)
+    | l == 0 = Right bs
     | r == 0 = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64UrlTable bs
     | r == 2 = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "==")
     | r == 3 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
@@ -104,6 +105,7 @@ encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
 --
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded bs@(PS _ _ !l)
+    | l == 0 = Right bs
     | r == 0 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable bs
     | r == 2 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "==")
     | r == 3 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
@@ -124,6 +126,7 @@ decodeBase64Unpadded bs@(PS _ _ !l)
 --
 decodeBase64Padded :: ByteString -> Either Text ByteString
 decodeBase64Padded bs@(PS !_ _ !l)
+    | l == 0 = Right bs
     | r == 1 = Left "Base64-encoded bytestring has invalid size"
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
     | otherwise = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64UrlTable bs

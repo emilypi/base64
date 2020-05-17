@@ -15,7 +15,7 @@ module Data.ByteString.Base64.Internal.Utils
 ( EncodingTable(..)
 , aix
 , packTable
-, reChunk
+, reChunkN
 , w32
 , w64
 , w32_16
@@ -107,23 +107,23 @@ packTable alphabet = etable
 
 -- | Rechunk a list of bytestrings in multiples of 4
 --
-reChunk :: [ByteString] -> [ByteString]
-reChunk = go
+reChunkN :: Int -> [ByteString] -> [ByteString]
+reChunkN n = go
   where
     go [] = []
-    go (b:bs) = case divMod (BS.length b) 4 of
+    go (b:bs) = case divMod (BS.length b) n of
       (_, 0) -> b : go bs
-      (d, _) -> case BS.splitAt (d * 4) b of
+      (d, _) -> case BS.splitAt (d * n) b of
         ~(h, t) -> h : accum t bs
 
     accum acc [] = [acc]
     accum acc (c:cs) =
-      case BS.splitAt (4 - BS.length acc) c of
+      case BS.splitAt (n - BS.length acc) c of
         ~(h, t) ->
           let acc' = BS.append acc h
-          in if BS.length acc' == 4
+          in if BS.length acc' == n
              then
                let cs' = if BS.null t then cs else t : cs
                in acc' : go cs'
              else accum acc' cs
-{-# INLINE reChunk #-}
+{-# INLINE reChunkN #-}
