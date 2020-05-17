@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PackageImports #-}
@@ -38,24 +39,8 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Short as TS
 
-import Test.QuickCheck.Instances
 import Test.QuickCheck hiding (label)
-
-
--- ------------------------------------------------------------------ --
--- Quickcheck instances
-
-instance Arbitrary TS.ShortText where
-  arbitrary = TS.fromText <$> arbitrary
-  shrink xs = fmap TS.fromText $ shrink (TS.toText xs)
-
-instance CoArbitrary TS.ShortText where
-  coarbitrary = coarbitrary . TS.toText
-
-instance Function TS.ShortText where
-  function = functionMap
-    (T.unpack . TS.toText)
-    (TS.fromText . T.pack)
+import Test.QuickCheck.Instances
 
 -- ------------------------------------------------------------------ --
 -- Test Harnesses
@@ -185,3 +170,18 @@ instance Harness TS64 TS.ShortText where
   decodeUrlNopad = TS64U.decodeBase64Unpadded
   lenientUrl = TS64U.decodeBase64Lenient
   validateUrl = TS64U.isBase64Url
+
+-- ------------------------------------------------------------------ --
+-- Quickcheck instances
+
+instance Arbitrary TS.ShortText where
+  arbitrary = TS.fromText <$> arbitrary
+  shrink xs = fmap TS.fromText $ shrink (TS.toText xs)
+
+instance CoArbitrary TS.ShortText where
+  coarbitrary = coarbitrary . TS.toText
+
+instance Function TS.ShortText where
+  function = functionMap
+    (T.unpack . TS.toText)
+    (TS.fromText . T.pack)
