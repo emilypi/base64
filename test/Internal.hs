@@ -61,7 +61,7 @@ class
   , Arbitrary bs
   , CoArbitrary bs
   , IsString bs
-  ) => Harness a bs | a -> bs
+  ) => Harness a bs | a -> bs, bs -> a
   where
 
   label :: String

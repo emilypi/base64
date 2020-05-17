@@ -69,56 +69,56 @@ properties _ = testGroup "Property tests"
 
 prop_roundtrip :: forall a b proxy. Harness a b => proxy a -> TestTree
 prop_roundtrip _ = testGroup "prop_roundtrip"
-  [ testProperty "prop_std_roundtrip" $ \bs ->
-      Right (encode @a bs) == decode @a (encode @a (encode @a bs))
-  , testProperty "prop_url_roundtrip" $ \bs ->
-      Right (encodeUrl @a bs) == decodeUrl @a (encodeUrl @a (encodeUrl @a bs))
-  , testProperty "prop_url_roundtrip_nopad" $ \bs ->
-      Right (encodeUrlNopad @a bs)
-        == decodeUrlNopad @a (encodeUrlNopad @a (encodeUrlNopad @a bs))
+  [ testProperty "prop_std_roundtrip" $ \(bs :: b) ->
+      Right (encode bs) == decode (encode (encode bs))
+  , testProperty "prop_url_roundtrip" $ \(bs :: b) ->
+      Right (encodeUrl bs) == decodeUrl (encodeUrl (encodeUrl bs))
+  , testProperty "prop_url_roundtrip_nopad" $ \(bs :: b) ->
+      Right (encodeUrlNopad bs)
+        == decodeUrlNopad (encodeUrlNopad (encodeUrlNopad bs))
   ]
 
 prop_correctness :: forall a b proxy. Harness a b => proxy a -> TestTree
 prop_correctness _ = testGroup "prop_validity"
-  [ testProperty "prop_std_valid" $ \bs ->
-    validate @a (encode @a bs)
-  , testProperty "prop_url_valid" $ \bs ->
-    validateUrl @a (encodeUrl @a bs)
+  [ testProperty "prop_std_valid" $ \(bs :: b) ->
+    validate (encode bs)
+  , testProperty "prop_url_valid" $ \(bs :: b) ->
+    validateUrl (encodeUrl bs)
   ]
 
 prop_url_padding :: forall a b proxy. Harness a b => proxy a -> TestTree
 prop_url_padding _ = testGroup "prop_url_padding"
-  [ testProperty "prop_url_nopad_roundtrip" $ \bs ->
-      Right (encodeUrlNopad @a bs)
-        == decodeUrlNopad @a (encodeUrlNopad @a (encodeUrlNopad @a bs))
+  [ testProperty "prop_url_nopad_roundtrip" $ \(bs :: b) ->
+      Right (encodeUrlNopad bs)
+        == decodeUrlNopad (encodeUrlNopad (encodeUrlNopad bs))
 
-  , testProperty "prop_url_pad_roundtrip" $ \bs ->
-      Right (encodeUrl @a bs) == decodeUrlPad @a (encodeUrl @a (encodeUrl @a bs))
+  , testProperty "prop_url_pad_roundtrip" $ \(bs :: b) ->
+      Right (encodeUrl bs) == decodeUrlPad (encodeUrl (encodeUrl bs))
 
-  , testProperty "prop_url_decode_invariant" $ \bs ->
-      ( decodeUrlNopad @a (encodeUrlNopad @a (encodeUrlNopad @a bs))
-      == decodeUrl @a (encodeUrl @a (encodeUrl @a bs))
+  , testProperty "prop_url_decode_invariant" $ \(bs :: b) ->
+      ( decodeUrlNopad (encodeUrlNopad (encodeUrlNopad bs))
+      == decodeUrl (encodeUrl (encodeUrl bs))
       ) ||
-      ( decodeUrlPad @a (encodeUrl @a (encodeUrl @a bs))
-      == decodeUrl @a (encodeUrl @a (encodeUrl @a bs))
+      ( decodeUrlPad (encodeUrl (encodeUrl bs))
+      == decodeUrl (encodeUrl (encodeUrl bs))
       )
 
-  , testProperty "prop_url_padding_coherence" $ \bs ->
-      Right bs == decodeUrl @a (encodeUrl @a (encodeUrl @a bs))
-      && Right bs == decodeUrlPad @a (encodeUrl @a (encodeUrl @a bs))
+  , testProperty "prop_url_padding_coherence" $ \(bs :: b) ->
+      Right bs == decodeUrl (encodeUrl (encodeUrl bs))
+      && Right bs == decodeUrlPad (encodeUrl (encodeUrl bs))
 
-  , testProperty "prop_url_nopadding_coherence" $ \bs ->
-      Right bs == decodeUrlNopad @a (encodeUrlNopad @a (encodeUrlNopad @a bs))
-      && Right bs == decodeUrl @a (encodeUrlNopad @a (encodeUrlNopad @a bs))
+  , testProperty "prop_url_nopadding_coherence" $ \(bs :: b) ->
+      Right bs == decodeUrlNopad (encodeUrlNopad (encodeUrlNopad bs))
+      && Right bs == decodeUrl (encodeUrlNopad (encodeUrlNopad bs))
   ]
 
 
 prop_bos_coherence :: TestTree
 prop_bos_coherence = testGroup "prop_bos_coherence"
-  [ testProperty "prop_std_bos_coherence" $ \bs ->
+  [ testProperty "prop_std_bos_coherence" $ \(bs :: b) ->
       Right bs == B64.decodeBase64 (B64.encodeBase64' bs)
       && Right bs == Bos.decode (Bos.encode bs)
-  , testProperty "prop_url_bos_coherence" $ \bs ->
+  , testProperty "prop_url_bos_coherence" $ \(bs :: b) ->
       Right bs == B64U.decodeBase64 (B64U.encodeBase64' bs)
       && Right bs == BosU.decode (BosU.encode bs)
   ]
