@@ -49,7 +49,13 @@ encodeBase64 = fromByteStringUnsafe
 -- of 4, then padding chars will be added to fill out the input to a multiple of
 -- 4 for safe decoding as base64url encodings are optionally padded.
 --
--- For a decoder that fails on unpadded input of incorrect size, use 'decodeBase64Unpadded'.
+-- For a decoder that fails on unpadded input, use 'decodeBase64Unpadded'.
+--
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
+-- and pass in a custom decode function.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -66,7 +72,7 @@ decodeBase64 = fmap fromText . B64TU.decodeBase64 . toText
 -- Example:
 --
 -- @
--- 'decodeBase16With' 'T.decodeUtf8''
+-- 'decodeBase64With' 'T.decodeUtf8''
 --   :: 'ShortText' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
 -- @
 --
@@ -95,6 +101,12 @@ encodeBase64Unpadded = fromByteStringUnsafe
 
 -- | Decode an unpadded Base64url encoded 'ShortText' value.
 --
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64UnpaddedWith`
+-- and pass in a custom decode function.
+--
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Unpadded :: ShortText -> Either Text ShortText
@@ -110,7 +122,7 @@ decodeBase64Unpadded = fmap fromText . B64TU.decodeBase64Unpadded . toText
 -- Example:
 --
 -- @
--- 'decodeBase16With' 'T.decodeUtf8''
+-- 'decodeBase64With' 'T.decodeUtf8''
 --   :: 'ShortText' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
 -- @
 --
@@ -127,6 +139,12 @@ decodeBase64UnpaddedWith f t = case BS64U.decodeBase64Unpadded (toShortByteStrin
 
 -- | Decode an padded Base64url encoded 'ShortText' value
 --
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64PaddedWith`
+-- and pass in a custom decode function.
+--
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Padded :: ShortText -> Either Text ShortText
@@ -142,7 +160,7 @@ decodeBase64Padded = fmap fromText . B64TU.decodeBase64Padded . toText
 -- Example:
 --
 -- @
--- 'decodeBase16With' 'T.decodeUtf8''
+-- 'decodeBase64With' 'T.decodeUtf8''
 --   :: 'ShortText' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
 -- @
 --

@@ -38,7 +38,13 @@ encodeBase64 :: Text -> Text
 encodeBase64 = B64.encodeBase64 . T.encodeUtf8
 {-# INLINE encodeBase64 #-}
 
--- | Decode a padded Base64-encoded 'Text' value
+-- | Decode a padded Base64-encoded 'Text' value.
+--
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
+-- and pass in a custom decode function.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -55,7 +61,7 @@ decodeBase64 = fmap T.decodeLatin1 . B64.decodeBase64 . T.encodeUtf8
 -- Example:
 --
 -- @
--- 'decodeBase16With' 'T.decodeUtf8''
+-- 'decodeBase64With' 'T.decodeUtf8''
 --   :: 'Text' -> 'Either' ('Base64Error' 'UnicodeException') 'Text'
 -- @
 --
