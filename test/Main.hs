@@ -17,7 +17,6 @@
 --
 module Main
 ( main
-, tests
 ) where
 
 import Prelude hiding (length)
