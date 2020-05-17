@@ -44,6 +44,12 @@ encodeBase64 = fromByteStringUnsafe
 
 -- | Decode a padded Base64-encoded 'ShortText' value
 --
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
+-- and pass in a custom decode function.
+--
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: ShortText -> Either Text ShortText
@@ -59,7 +65,7 @@ decodeBase64 = fmap fromText . B64T.decodeBase64 . toText
 -- Example:
 --
 -- @
--- 'decodeBase16With' 'T.decodeUtf8''
+-- 'decodeBase64With' 'T.decodeUtf8''
 --   :: 'ShortText' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
 -- @
 --

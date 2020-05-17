@@ -47,7 +47,13 @@ encodeBase64 = BL64U.encodeBase64 . TL.encodeUtf8
 -- of 4, then padding chars will be added to fill out the input to a multiple of
 -- 4 for safe decoding as base64url encodings are optionally padded.
 --
--- For a decoder that fails on unpadded input of incorrect size, use 'decodeBase64Unpadded'.
+-- For a decoder that fails on unpadded input, use 'decodeBase64Unpadded'.
+--
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
+-- and pass in a custom decode function.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -64,7 +70,7 @@ decodeBase64 = fmap TL.decodeLatin1 . BL64U.decodeBase64 . TL.encodeUtf8
 -- Example:
 --
 -- @
--- 'decodeBase16With' 'TL.decodeUtf8''
+-- 'decodeBase64With' 'TL.decodeUtf8''
 --   :: 'TL.Text' -> 'Either' ('Base64Error' 'UnicodeException') 'TL.Text'
 -- @
 --
@@ -90,6 +96,12 @@ encodeBase64Unpadded = BL64U.encodeBase64Unpadded . TL.encodeUtf8
 {-# INLINE encodeBase64Unpadded #-}
 
 -- | Decode an unpadded Base64url encoded 'TL.Text' value.
+--
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64WUnpaddedWith`
+-- and pass in a custom decode function.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -125,6 +137,12 @@ decodeBase64UnpaddedWith f t = case BL64U.decodeBase64Unpadded $ TL.encodeUtf8 t
 
 -- | Decode an padded Base64url encoded 'TL.Text' value
 --
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64PaddedWith`
+-- and pass in a custom decode function.
+--
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64Padded :: TL.Text -> Either T.Text TL.Text
@@ -142,7 +160,7 @@ decodeBase64Padded = fmap TL.decodeLatin1
 -- Example:
 --
 -- @
--- 'decodeBase16With' 'TL.decodeUtf8''
+-- 'decodeBase64With' 'TL.decodeUtf8''
 --   :: 'TL.Text' -> 'Either' ('Base64Error' 'UnicodeException') 'TL.Text'
 -- @
 --

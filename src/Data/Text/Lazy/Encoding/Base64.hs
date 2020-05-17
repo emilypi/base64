@@ -42,6 +42,12 @@ encodeBase64 = BL64.encodeBase64 . TL.encodeUtf8
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
+-- and pass in a custom decode function.
+--
 decodeBase64 :: TL.Text -> Either T.Text TL.Text
 decodeBase64 = fmap TL.decodeLatin1 . BL64.decodeBase64 . TL.encodeUtf8
 {-# INLINE decodeBase64 #-}
@@ -55,7 +61,7 @@ decodeBase64 = fmap TL.decodeLatin1 . BL64.decodeBase64 . TL.encodeUtf8
 -- Example:
 --
 -- @
--- 'decodeBase16With' 'TL.decodeUtf8''
+-- 'decodeBase64With' 'TL.decodeUtf8''
 --   :: 'TL.Text' -> 'Either' ('Base64Error' 'UnicodeException') 'TL.Text'
 -- @
 --
