@@ -22,15 +22,12 @@ module Main
 
 import Prelude hiding (length)
 
-import Control.Applicative ((<|>))
-
 import qualified Data.ByteString as BS
 import "base64" Data.ByteString.Base64 as B64
 import "base64" Data.ByteString.Base64.URL as B64U
 import qualified "base64-bytestring" Data.ByteString.Base64 as Bos
 import qualified "base64-bytestring" Data.ByteString.Base64.URL as BosU
 import Data.Proxy
-import Data.String
 
 import Internal
 
@@ -74,19 +71,20 @@ properties _ = testGroup "Property tests"
 prop_roundtrip :: forall a b proxy. Harness a b => proxy a -> TestTree
 prop_roundtrip _ = testGroup "prop_roundtrip"
   [ testProperty "prop_std_roundtrip" $ \bs ->
-      Right bs == decode @a (encode @a bs)
+      Right (encode @a bs) == decode @a (encode @a (encode @a bs))
   , testProperty "prop_url_roundtrip" $ \bs ->
-      Right bs == decodeUrl @a (encodeUrl @a bs)
+      Right (encodeUrl @a bs) == decodeUrl @a (encodeUrl @a (encodeUrl @a bs))
   , testProperty "prop_url_roundtrip_nopad" $ \bs ->
-      Right bs == decodeUrl @a (encodeUrlNopad @a bs)
+      Right (encodeUrlNopad @a bs)
+        == decodeUrlNopad @a (encodeUrlNopad @a (encodeUrlNopad @a bs))
   ]
 
 prop_correctness :: forall a b proxy. Harness a b => proxy a -> TestTree
 prop_correctness _ = testGroup "prop_validity"
   [ testProperty "prop_std_valid" $ \bs ->
-    validate @a bs
+    validate @a (encode @a bs)
   , testProperty "prop_url_valid" $ \bs ->
-    validateUrl @a bs
+    validateUrl @a (encodeUrl @a bs)
   ]
 
 prop_url_padding :: forall a b proxy. Harness a b => proxy a -> TestTree
