@@ -90,19 +90,27 @@ prop_correctness _ = testGroup "prop_validity"
 prop_url_padding :: forall a b proxy. Harness a b => proxy a -> TestTree
 prop_url_padding _ = testGroup "prop_url_padding"
   [ testProperty "prop_url_nopad_roundtrip" $ \bs ->
-      Right bs == decodeUrlNopad @a (encodeUrlNopad @a bs)
+      Right (encodeUrlNopad @a bs)
+        == decodeUrlNopad @a (encodeUrlNopad @a (encodeUrlNopad @a bs))
+
   , testProperty "prop_url_pad_roundtrip" $ \bs ->
-      Right bs == decodeUrlPad @a (encodeUrl @a bs)
+      Right (encodeUrl @a bs) == decodeUrlPad @a (encodeUrl @a (encodeUrl @a bs))
+
   , testProperty "prop_url_decode_invariant" $ \bs ->
-      ( decodeUrlNopad @a (encodeUrlNopad @a bs)
-      == decodeUrl @a (encodeUrl @a bs)
+      ( decodeUrlNopad @a (encodeUrlNopad @a (encodeUrlNopad @a bs))
+      == decodeUrl @a (encodeUrl @a (encodeUrl @a bs))
       ) ||
-      ( decodeUrlPad @a (encodeUrl @a bs)
-      == decodeUrl @a (encodeUrl @a bs)
+      ( decodeUrlPad @a (encodeUrl @a (encodeUrl @a bs))
+      == decodeUrl @a (encodeUrl @a (encodeUrl @a bs))
       )
+
   , testProperty "prop_url_padding_coherence" $ \bs ->
-      Right bs == decodeUrl @a (encodeUrl @a bs)
-      && Right bs == decodeUrlPad @a (encodeUrl @a bs)
+      Right bs == decodeUrl @a (encodeUrl @a (encodeUrl @a bs))
+      && Right bs == decodeUrlPad @a (encodeUrl @a (encodeUrl @a bs))
+
+  , testProperty "prop_url_nopadding_coherence" $ \bs ->
+      Right bs == decodeUrlNopad @a (encodeUrlNopad @a (encodeUrlNopad @a bs))
+      && Right bs == decodeUrl @a (encodeUrlNopad @a (encodeUrlNopad @a bs))
   ]
 
 
