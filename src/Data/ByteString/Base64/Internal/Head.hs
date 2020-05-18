@@ -59,6 +59,7 @@ encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
             (loopTail dfp aptr dptr (castPtr end))
   where
     !dlen = 4 * ((slen + 2) `div` 3)
+{-# inline encodeBase64_ #-}
 
 encodeBase64Nopad_ :: EncodingTable -> ByteString -> ByteString
 encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
@@ -76,6 +77,7 @@ encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
             (loopTailNoPad dfp aptr dptr (castPtr end))
   where
     !dlen = 4 * ((slen + 2) `div` 3)
+{-# inline encodeBase64Nopad_ #-}
 
 -- | The main decode function. Takes a padding flag, a decoding table, and
 -- the input value, producing either an error string on the left, or a
@@ -104,7 +106,7 @@ decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen) =
           dptr
           (plusPtr sptr (soff + slen))
           (decodeTail dfp dtable sptr dptr)
-{-# INLINE decodeBase64_ #-}
+{-# inline decodeBase64_ #-}
 
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
 decodeBase64Lenient_ !dtfp (PS !sfp !soff !slen) = unsafeDupablePerformIO $

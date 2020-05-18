@@ -58,10 +58,6 @@ encodeBase64' = fromChunks
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
--- /Note:/ This function is not RFC compliant, and __will__ add padding to an
--- unpadded Base64-encoded value for decoding. For strictly RFC-compliant decoding,
--- use 'decodeBase64Unpadded'.
---
 decodeBase64 :: ByteString -> Either T.Text ByteString
 decodeBase64 = fmap (fromChunks . (:[]))
   . B64.decodeBase64

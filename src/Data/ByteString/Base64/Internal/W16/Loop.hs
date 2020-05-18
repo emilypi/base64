@@ -63,8 +63,7 @@ innerLoop !etable !sptr !dptr !end finish = go sptr dptr
         poke (plusPtr dst 2) y
 
         go (plusPtr src 3) (plusPtr dst 4)
-    {-# INLINE go #-}
-{-# INLINE innerLoop #-}
+{-# inline innerLoop #-}
 
 decodeLoop
     :: Ptr Word8
@@ -121,8 +120,7 @@ decodeLoop !dtable !sptr !dptr !end finish = go dptr sptr
             poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
             poke @Word8 (plusPtr dst 2) (fromIntegral w)
             go (plusPtr dst 3) (plusPtr src 4)
-    {-# INLINE go #-}
-{-# INLINE decodeLoop #-}
+{-# inline decodeLoop #-}
 
 lenientLoop
     :: Ptr Word8
@@ -177,4 +175,3 @@ lenientLoop !dtable !sptr !dptr !end !dfp = go dptr sptr 0
                   else do
                     poke @Word8 (plusPtr dst 2) (fromIntegral w)
                     go (plusPtr dst 3) dp (n + 3)
-{-# INLINE lenientLoop #-}

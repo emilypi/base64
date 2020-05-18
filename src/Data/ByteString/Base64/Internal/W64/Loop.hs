@@ -73,8 +73,7 @@ innerLoop !etable !sptr !dptr !end finish = go sptr dptr
         poke dst (fromIntegral xx)
 
         go (plusPtr src 6) (plusPtr dst 8)
-    {-# INLINE go #-}
-{-# INLINE innerLoop #-}
+{-# inline innerLoop #-}
 
 decodeLoop
     :: Ptr Word8
@@ -89,6 +88,7 @@ decodeLoop
         -- ^ dst foreign ptr (for consing bs)
     -> IO (Either Text ByteString)
 decodeLoop = W16.decodeLoop
+{-# inline decodeLoop #-}
 
 lenientLoop
     :: Ptr Word8
