@@ -56,7 +56,7 @@ decodeBase64 :: ShortText -> Either Text ShortText
 decodeBase64 = fmap fromText . B64T.decodeBase64 . toText
 {-# INLINE decodeBase64 #-}
 
--- | Attempt to decode a 'ShortText' value as Base64, converting from
+-- | Attempt to decode a 'ShortByteString' value as Base64, converting from
 -- 'ByteString' to 'ShortText' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -72,10 +72,10 @@ decodeBase64 = fmap fromText . B64T.decodeBase64 . toText
 decodeBase64With
     :: (ShortByteString -> Either err ShortText)
       -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
-    -> ShortText
+    -> ShortByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) ShortText
-decodeBase64With f t = case BS64.decodeBase64 (toShortByteString t) of
+decodeBase64With f t = case BS64.decodeBase64 t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64With #-}

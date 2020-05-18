@@ -63,7 +63,7 @@ decodeBase64 :: ShortText -> Either Text ShortText
 decodeBase64 = fmap fromText . B64TU.decodeBase64 . toText
 {-# INLINE decodeBase64 #-}
 
--- | Attempt to decode a 'ShortText' value as Base64url, converting from
+-- | Attempt to decode a 'ShortByteString' value as Base64url, converting from
 -- 'ByteString' to 'ShortText' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -79,10 +79,10 @@ decodeBase64 = fmap fromText . B64TU.decodeBase64 . toText
 decodeBase64With
     :: (ShortByteString -> Either err ShortText)
       -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
-    -> ShortText
+    -> ShortByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) ShortText
-decodeBase64With f t = case BS64U.decodeBase64 (toShortByteString t) of
+decodeBase64With f t = case BS64U.decodeBase64 t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64With #-}
@@ -113,8 +113,8 @@ decodeBase64Unpadded :: ShortText -> Either Text ShortText
 decodeBase64Unpadded = fmap fromText . B64TU.decodeBase64Unpadded . toText
 {-# INLINE decodeBase64Unpadded #-}
 
--- | Attempt to decode an unpadded 'ShortText' value as Base64url, converting from
--- 'ByteString' to 'ShortText' according to some encoding function. In practice,
+-- | Attempt to decode an unpadded 'ShortByteString' value as Base64url, converting from
+-- 'ShortByteString' to 'ShortText' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-8 RFC-4648 section 4>
@@ -129,10 +129,10 @@ decodeBase64Unpadded = fmap fromText . B64TU.decodeBase64Unpadded . toText
 decodeBase64UnpaddedWith
     :: (ShortByteString -> Either err ShortText)
       -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
-    -> ShortText
+    -> ShortByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) ShortText
-decodeBase64UnpaddedWith f t = case BS64U.decodeBase64Unpadded (toShortByteString t) of
+decodeBase64UnpaddedWith f t = case BS64U.decodeBase64Unpadded t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64UnpaddedWith #-}
@@ -151,7 +151,7 @@ decodeBase64Padded :: ShortText -> Either Text ShortText
 decodeBase64Padded = fmap fromText . B64TU.decodeBase64Padded . toText
 {-# INLINE decodeBase64Padded #-}
 
--- | Attempt to decode a padded 'ShortText' value as Base64url, converting from
+-- | Attempt to decode a padded 'ShortByteString' value as Base64url, converting from
 -- 'ByteString' to 'ShortText' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -167,10 +167,10 @@ decodeBase64Padded = fmap fromText . B64TU.decodeBase64Padded . toText
 decodeBase64PaddedWith
     :: (ShortByteString -> Either err ShortText)
       -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
-    -> ShortText
+    -> ShortByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) ShortText
-decodeBase64PaddedWith f t = case BS64U.decodeBase64Padded (toShortByteString t) of
+decodeBase64PaddedWith f t = case BS64U.decodeBase64Padded t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64PaddedWith #-}

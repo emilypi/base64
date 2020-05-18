@@ -27,17 +27,18 @@ import "base64" Data.ByteString.Lazy.Base64 as LB64
 import "base64" Data.ByteString.Lazy.Base64.URL as LB64U
 import "base64" Data.ByteString.Short.Base64 as SB64
 import "base64" Data.ByteString.Short.Base64.URL as SB64U
-import "base64" Data.Text.Encoding.Base64 as T64
-import "base64" Data.Text.Encoding.Base64.URL as T64U
-import "base64" Data.Text.Lazy.Encoding.Base64 as TL64
-import "base64" Data.Text.Lazy.Encoding.Base64.URL as TL64U
-import "base64" Data.Text.Short.Encoding.Base64 as TS64
-import "base64" Data.Text.Short.Encoding.Base64.URL as TS64U
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
+import "base64" Data.Text.Encoding.Base64 as T64
+import "base64" Data.Text.Encoding.Base64.URL as T64U
+import Data.Text.Encoding.Base64.Error (Base64Error(..))
 import qualified Data.Text.Lazy as TL
+import "base64" Data.Text.Lazy.Encoding.Base64 as TL64
+import "base64" Data.Text.Lazy.Encoding.Base64.URL as TL64U
 import qualified Data.Text.Short as TS
+import "base64" Data.Text.Short.Encoding.Base64 as TS64
+import "base64" Data.Text.Short.Encoding.Base64.URL as TS64U
 
 import Test.QuickCheck hiding (label)
 import Test.QuickCheck.Instances
@@ -184,6 +185,30 @@ instance Harness TS64 TS.ShortText where
   correctUrl = TS64U.isBase64Url
   validateUrl = TS64U.isValidBase64Url
   validate = TS64.isValidBase64
+
+class Harness a cs => TextHarness a cs bs | a -> cs, bs -> cs, cs -> a, cs -> bs where
+  decodeWith_ :: (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
+  decodeUrlWith_ :: (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
+  decodeUrlPaddedWith_ :: (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
+  decodeUrlUnpaddedWith_ :: (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
+
+instance TextHarness T64 Text BS.ByteString where
+  decodeWith_ = T64.decodeBase64With
+  decodeUrlWith_ = T64U.decodeBase64With
+  decodeUrlPaddedWith_ = T64U.decodeBase64PaddedWith
+  decodeUrlUnpaddedWith_ = T64U.decodeBase64UnpaddedWith
+
+instance TextHarness TL64 TL.Text LBS.ByteString where
+  decodeWith_ = TL64.decodeBase64With
+  decodeUrlWith_ = TL64U.decodeBase64With
+  decodeUrlPaddedWith_ = TL64U.decodeBase64PaddedWith
+  decodeUrlUnpaddedWith_ = TL64U.decodeBase64UnpaddedWith
+
+instance TextHarness TS64 TS.ShortText SBS.ShortByteString where
+  decodeWith_ = TS64.decodeBase64With
+  decodeUrlWith_ = TS64U.decodeBase64With
+  decodeUrlPaddedWith_ = TS64U.decodeBase64PaddedWith
+  decodeUrlUnpaddedWith_ = TS64U.decodeBase64UnpaddedWith
 
 -- ------------------------------------------------------------------ --
 -- Quickcheck instances

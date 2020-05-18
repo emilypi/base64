@@ -61,7 +61,7 @@ decodeBase64 :: TL.Text -> Either T.Text TL.Text
 decodeBase64 = fmap TL.decodeLatin1 . BL64U.decodeBase64 . TL.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
--- | Attempt to decode a 'TL.Text' value as Base64url, converting from
+-- | Attempt to decode a lazy 'ByteString' value as Base64url, converting from
 -- 'ByteString' to 'TL.Text' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -77,10 +77,10 @@ decodeBase64 = fmap TL.decodeLatin1 . BL64U.decodeBase64 . TL.encodeUtf8
 decodeBase64With
     :: (ByteString -> Either err TL.Text)
       -- ^ convert a bytestring to text (e.g. 'TL.decodeUtf8'')
-    -> TL.Text
+    -> ByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) TL.Text
-decodeBase64With f t = case BL64U.decodeBase64 $ TL.encodeUtf8 t of
+decodeBase64With f t = case BL64U.decodeBase64 t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64With #-}
@@ -111,7 +111,7 @@ decodeBase64Unpadded = fmap TL.decodeLatin1
     . TL.encodeUtf8
 {-# INLINE decodeBase64Unpadded #-}
 
--- | Attempt to decode an unpadded 'TL.Text' value as Base64url, converting from
+-- | Attempt to decode an unpadded lazy 'ByteString' value as Base64url, converting from
 -- 'ByteString' to 'TL.Text' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -127,10 +127,10 @@ decodeBase64Unpadded = fmap TL.decodeLatin1
 decodeBase64UnpaddedWith
     :: (ByteString -> Either err TL.Text)
       -- ^ convert a bytestring to text (e.g. 'TL.decodeUtf8'')
-    -> TL.Text
+    -> ByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) TL.Text
-decodeBase64UnpaddedWith f t = case BL64U.decodeBase64Unpadded $ TL.encodeUtf8 t of
+decodeBase64UnpaddedWith f t = case BL64U.decodeBase64Unpadded t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64UnpaddedWith #-}
@@ -151,7 +151,7 @@ decodeBase64Padded = fmap TL.decodeLatin1
     . TL.encodeUtf8
 {-# INLINE decodeBase64Padded #-}
 
--- | Attempt to decode a padded 'TL.Text' value as Base64url, converting from
+-- | Attempt to decode a padded lazy 'ByteString' value as Base64url, converting from
 -- 'ByteString' to 'TL.Text' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -167,10 +167,10 @@ decodeBase64Padded = fmap TL.decodeLatin1
 decodeBase64PaddedWith
     :: (ByteString -> Either err TL.Text)
       -- ^ convert a bytestring to text (e.g. 'TL.decodeUtf8'')
-    -> TL.Text
+    -> ByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) TL.Text
-decodeBase64PaddedWith f t = case BL64U.decodeBase64Padded $ TL.encodeUtf8 t of
+decodeBase64PaddedWith f t = case BL64U.decodeBase64Padded t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64PaddedWith #-}

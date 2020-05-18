@@ -103,7 +103,7 @@ decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen) =
           (plusPtr sptr soff)
           dptr
           (plusPtr sptr (soff + slen))
-          (decodeTail dfp dtable dptr)
+          (decodeTail dfp dtable sptr dptr)
 {-# INLINE decodeBase64_ #-}
 
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
