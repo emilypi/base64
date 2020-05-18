@@ -22,6 +22,7 @@ module Main
 import Prelude hiding (length)
 
 import qualified Data.ByteString as BS
+import Data.ByteString.Internal (c2w)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Short as SBS
 import "base64" Data.ByteString.Base64 as B64
@@ -29,6 +30,9 @@ import "base64" Data.ByteString.Base64.URL as B64U
 import qualified "base64-bytestring" Data.ByteString.Base64 as Bos
 import qualified "base64-bytestring" Data.ByteString.Base64.URL as BosU
 import Data.Proxy
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Short as TS
 import Data.Word
 
 import Internal
@@ -58,12 +62,15 @@ tests = testGroup "Base64 Tests"
     ]
   , mkTree (Proxy :: Proxy T64)
     [ mkPropTree
+    , mkUnitTree (c2w . T.last) T.length
     ]
   , mkTree (Proxy :: Proxy TL64)
     [ mkPropTree
+    , mkUnitTree (c2w . TL.last) (fromIntegral . TL.length)
     ]
   , mkTree (Proxy :: Proxy TS64)
     [ mkPropTree
+    , mkUnitTree (c2w . T.last . TS.toText) TS.length
     ]
   ]
 
@@ -129,13 +136,16 @@ prop_url_padding _ = testGroup "prop_url_padding"
       == decodeUrl (encodeUrl (encodeUrl bs))
       )
 
+  -- NOTE: we need to fix the bitmasking issue for "impossible"
+  -- inputs
+
   , testProperty "prop_url_padding_coherence" $ \(bs :: b) ->
-      Right bs == decodeUrl (encodeUrl (encodeUrl bs))
-      && Right bs == decodeUrlPad (encodeUrl (encodeUrl bs))
+      Right (encodeUrl bs) == decodeUrl (encodeUrl (encodeUrl bs))
+      && Right (encodeUrl bs) == decodeUrlPad (encodeUrl (encodeUrl bs))
 
   , testProperty "prop_url_nopadding_coherence" $ \(bs :: b) ->
-      Right bs == decodeUrlNopad (encodeUrlNopad (encodeUrlNopad bs))
-      && Right bs == decodeUrl (encodeUrlNopad (encodeUrlNopad bs))
+      Right (encodeUrlNopad bs) == decodeUrlNopad (encodeUrlNopad (encodeUrlNopad bs))
+      && Right (encodeUrlNopad bs) == decodeUrl (encodeUrlNopad (encodeUrlNopad bs))
   ]
 
 
