@@ -78,12 +78,14 @@ mkTree :: forall a b proxy. Harness a b => proxy a -> [proxy a -> TestTree] -> T
 mkTree a = testGroup (label @a) . fmap ($ a)
 
 mkPropTree :: forall a b proxy. Harness a b => proxy a -> TestTree
-mkPropTree a = testGroup "Property Tests"
-  [ prop_roundtrip a
-  , prop_correctness a
-  , prop_url_padding a
-  , prop_bos_coherence
-  ]
+mkPropTree = testGroup "Property Tests" . (<*>) ts . pure
+  where
+    ts =
+      [ prop_roundtrip
+      , prop_correctness
+      , prop_url_padding
+      , const prop_bos_coherence
+      ]
 
 mkUnitTree
   :: forall a b proxy
@@ -92,10 +94,12 @@ mkUnitTree
   -> (b -> Int)
   -> proxy a
   -> TestTree
-mkUnitTree last_ length_ a = testGroup "Unit tests"
-  [ paddingTests a last_ length_
-  , rfcVectors a
-  ]
+mkUnitTree last_ length_ = testGroup "Unit tests" . (<*>) ts . pure
+  where
+    ts =
+      [ paddingTests last_ length_
+      , rfcVectors
+      ]
 -- ---------------------------------------------------------------- --
 -- Property tests
 
@@ -204,11 +208,11 @@ rfcVectors _ = testGroup "RFC 4648 Test Vectors"
 paddingTests
   :: forall a b proxy
   . Harness a b
-  => proxy a
-  -> (b -> Word8)
+  => (b -> Word8)
   -> (b -> Int)
+  -> proxy a
   -> TestTree
-paddingTests _ last_ length_ = testGroup "Padding tests"
+paddingTests last_ length_ _ = testGroup "Padding tests"
     [ testGroup "URL decodePadding coherence"
       [ ptest "<" "PA=="
       , ptest "<<" "PDw="
