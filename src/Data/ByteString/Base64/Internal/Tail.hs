@@ -120,11 +120,13 @@ decodeTail
     -> Ptr Word8
       -- ^ original decode static pointer
     -> Ptr Word8
+      -- ^ original source pointer (for offset calculation)
+    -> Ptr Word8
       -- ^ dst ptr
     -> Ptr Word8
       -- ^ src ptr
     -> IO (Either Text ByteString)
-decodeTail !dfp !dtable !dptr !dst !src = do
+decodeTail !dfp !dtable !sptr !dptr !dst !src = do
     !w <- peek @Word8 src
     !x <- peek @Word8 (plusPtr src 1)
     !y <- peek @Word8 (plusPtr src 2)
@@ -166,8 +168,8 @@ decodeTail !dfp !dtable !dptr !dst !src = do
   where
     err p = return . Left . T.pack
       $ "invalid character at offset: "
-      ++ show (p `minusPtr` src)
+      ++ show (p `minusPtr` sptr)
 
     padErr p =  return . Left . T.pack
       $ "invalid padding at offset: "
-      ++ show (p `minusPtr` src)
+      ++ show (p `minusPtr` sptr)

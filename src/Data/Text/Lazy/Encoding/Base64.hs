@@ -52,7 +52,7 @@ decodeBase64 :: TL.Text -> Either T.Text TL.Text
 decodeBase64 = fmap TL.decodeLatin1 . BL64.decodeBase64 . TL.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
--- | Attempt to decode a 'TL.Text' value as Base64, converting from
+-- | Attempt to decode a 'ByteString' value as Base64, converting from
 -- 'ByteString' to 'TL.Text' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -68,10 +68,10 @@ decodeBase64 = fmap TL.decodeLatin1 . BL64.decodeBase64 . TL.encodeUtf8
 decodeBase64With
     :: (ByteString -> Either err TL.Text)
       -- ^ convert a bytestring to text (e.g. 'TL.decodeUtf8'')
-    -> TL.Text
+    -> ByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) TL.Text
-decodeBase64With f t = case BL64.decodeBase64 $ TL.encodeUtf8 t of
+decodeBase64With f t = case BL64.decodeBase64 t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64With #-}
