@@ -139,6 +139,7 @@ mkDecodeTree
   :: forall t a b c e proxy
   . ( TextHarness a b c
     , Harness t c
+    , Show e
     )
   => (c -> Either e b)
   -> proxy t
@@ -379,6 +380,7 @@ decodeWithVectors
   :: forall t a b c e proxy
   . ( TextHarness a c b
     , Harness t b
+    , Show e
     )
   => (b -> Either e c)
     -- ^ utf8
@@ -421,5 +423,23 @@ decodeWithVectors utf8 _ _ = testGroup "DecodeWith* unit tests"
       case decodeUrlUnpaddedWith_ @a utf8 (encodeUrlNopad @t "\1079743") of
         Left (ConversionError _) -> return ()
         _ -> assertFailure "conversion phase"
+    ]
+  , testGroup "decodeWith positive tests"
+    [ testCase "decodeWith utf8 inputs on decodeUtf8" $ do
+      a <- either (assertFailure . show) pure $ decode @a "Zm9vYmFy"
+      b <- either (assertFailure . show) pure $ decodeWith_ @a utf8 "Zm9vYmFy"
+      a @=? b
+    , testCase "decodeUrlWith utf8 inputs on decodeUtf8" $ do
+      a <- either (assertFailure . show) pure $ decodeUrl @a "PDw_Pz4-"
+      b <- either (assertFailure . show) pure $ decodeUrlWith_ @a utf8 "PDw_Pz4-"
+      a @=? b
+    , testCase "decodeUrlPaddedWith utf8 inputs on decodeUtf8" $ do
+      a <- either (assertFailure . show) pure $ decodeUrlPad @a "PDw_Pz4-"
+      b <- either (assertFailure . show) pure $ decodeUrlPaddedWith_ @a utf8 "PDw_Pz4-"
+      a @=? b
+    , testCase "decodeUrlUnpaddedWith utf8 inputs on decodeUtf8" $ do
+      a <- either (assertFailure . show) pure $ decodeUrlNopad @a "PDw_Pz4-"
+      b <- either (assertFailure . show) pure $ decodeUrlUnpaddedWith_ @a utf8 "PDw_Pz4-"
+      a @=? b
     ]
   ]
