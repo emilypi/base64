@@ -159,10 +159,10 @@ prop_url_padding _ = testGroup "prop_url_padding"
 
 prop_bos_coherence :: TestTree
 prop_bos_coherence = testGroup "prop_bos_coherence"
-  [ testProperty "prop_std_bos_coherence" $ \(bs :: b) ->
+  [ testProperty "prop_std_bos_coherence" $ \bs ->
       Right bs == B64.decodeBase64 (B64.encodeBase64' bs)
       && Right bs == Bos.decode (Bos.encode bs)
-  , testProperty "prop_url_bos_coherence" $ \(bs :: b) ->
+  , testProperty "prop_url_bos_coherence" $ \bs ->
       Right bs == B64U.decodeBase64 (B64U.encodeBase64' bs)
       && Right bs == BosU.decode (BosU.encode bs)
   ]
