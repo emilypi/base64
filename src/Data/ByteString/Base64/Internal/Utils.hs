@@ -15,6 +15,8 @@ module Data.ByteString.Base64.Internal.Utils
 ( EncodingTable(..)
 , aix
 , packTable
+, peekWord32BE
+, peekWord64BE
 , reChunkN
 , w32
 , w64
@@ -32,6 +34,7 @@ import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
 
+import GHC.ByteOrder
 import GHC.Exts
 import GHC.ForeignPtr
 import GHC.Word
@@ -127,3 +130,15 @@ reChunkN n = go
                in acc' : go cs'
              else accum acc' cs
 {-# INLINE reChunkN #-}
+
+peekWord32BE :: Ptr Word32 -> IO Word32
+peekWord32BE p = case targetByteOrder of
+  LittleEndian -> byteSwap32 <$> peek p
+  BigEndian    -> peek p
+{-# inline peekWord32BE #-}
+
+peekWord64BE :: Ptr Word64 -> IO Word64
+peekWord64BE p = case targetByteOrder of
+  LittleEndian -> byteSwap64 <$> peek p
+  BigEndian    -> peek p
+{-# inline peekWord64BE #-}
