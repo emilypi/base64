@@ -77,16 +77,27 @@ tests = testGroup "Base64 Tests"
 mkTree :: forall a b proxy. Harness a b => proxy a -> [proxy a -> TestTree] -> TestTree
 mkTree a = testGroup (label @a) . fmap ($ a)
 
-mkPropTree :: forall a b proxy. Harness a b => proxy a -> TestTree
-mkPropTree = testGroup "Property Tests" . (<*>) ts . pure
-  where
-    ts =
-      [ prop_roundtrip
-      , prop_correctness
-      , prop_url_padding
-      , const prop_bos_coherence
-      ]
+mkTests
+  :: forall a b proxy
+  . Harness a b
+  => String
+  -> [proxy a -> TestTree]
+  -> proxy a
+  -> TestTree
+mkTests context ts = testGroup context . (<*>) ts . pure
 
+-- | Make property tests for a given harness instance
+--
+mkPropTree :: forall a b proxy. Harness a b => proxy a -> TestTree
+mkPropTree = mkTests "Property Tests"
+  [ prop_roundtrip
+  , prop_correctness
+  , prop_url_padding
+  , const prop_bos_coherence
+  ]
+
+-- | Make unit tests for a given harness instance
+--
 mkUnitTree
   :: forall a b proxy
   . Harness a b
@@ -94,12 +105,11 @@ mkUnitTree
   -> (b -> Int)
   -> proxy a
   -> TestTree
-mkUnitTree last_ length_ = testGroup "Unit tests" . (<*>) ts . pure
-  where
-    ts =
-      [ paddingTests last_ length_
-      , rfcVectors
-      ]
+mkUnitTree last_ length_ = mkTests "Unit tests"
+  [ paddingTests last_ length_
+  , rfcVectors
+  ]
+
 -- ---------------------------------------------------------------- --
 -- Property tests
 
