@@ -77,6 +77,8 @@ class
   lenientUrl :: bs -> bs
   lenient :: bs -> bs
 
+  correct :: bs -> Bool
+  correctUrl :: bs -> Bool
   validate :: bs -> Bool
   validateUrl :: bs -> Bool
 
@@ -87,14 +89,16 @@ instance Harness B64 BS.ByteString where
   encode = B64.encodeBase64'
   decode = B64.decodeBase64
   lenient = B64.decodeBase64Lenient
-  validate = B64.isBase64
+  correct = B64.isBase64
+  validate = B64.isValidBase64
   encodeUrl = B64U.encodeBase64'
   encodeUrlNopad = B64U.encodeBase64Unpadded'
   decodeUrl = B64U.decodeBase64
   decodeUrlPad = B64U.decodeBase64Padded
   decodeUrlNopad = B64U.decodeBase64Unpadded
   lenientUrl = B64U.decodeBase64Lenient
-  validateUrl = B64U.isBase64Url
+  correctUrl = B64U.isBase64Url
+  validateUrl = B64U.isValidBase64Url
 
 instance Harness LB64 LBS.ByteString where
   label = "Lazy ByteString"
@@ -102,14 +106,16 @@ instance Harness LB64 LBS.ByteString where
   encode = LB64.encodeBase64'
   decode = LB64.decodeBase64
   lenient = LB64.decodeBase64Lenient
-  validate = LB64.isBase64
+  correct = LB64.isBase64
+  validate = LB64.isValidBase64
   encodeUrl = LB64U.encodeBase64'
   encodeUrlNopad = LB64U.encodeBase64Unpadded'
   decodeUrl = LB64U.decodeBase64
   decodeUrlPad = LB64U.decodeBase64Padded
   decodeUrlNopad = LB64U.decodeBase64Unpadded
   lenientUrl = LB64U.decodeBase64Lenient
-  validateUrl = LB64U.isBase64Url
+  correctUrl = LB64U.isBase64Url
+  validateUrl = LB64U.isValidBase64Url
 
 instance Harness SB64 SBS.ShortByteString where
   label = "Short ByteString"
@@ -117,14 +123,16 @@ instance Harness SB64 SBS.ShortByteString where
   encode = SB64.encodeBase64'
   decode = SB64.decodeBase64
   lenient = SB64.decodeBase64Lenient
-  validate = SB64.isBase64
+  correct = SB64.isBase64
+  validate = SB64.isValidBase64
   encodeUrl = SB64U.encodeBase64'
   encodeUrlNopad = SB64U.encodeBase64Unpadded'
   decodeUrl = SB64U.decodeBase64
   decodeUrlPad = SB64U.decodeBase64Padded
   decodeUrlNopad = SB64U.decodeBase64Unpadded
   lenientUrl = SB64U.decodeBase64Lenient
-  validateUrl = SB64U.isBase64Url
+  correctUrl = SB64U.isBase64Url
+  validateUrl = SB64U.isValidBase64Url
 
 instance Harness T64 Text where
   label = "Text"
@@ -132,14 +140,16 @@ instance Harness T64 Text where
   encode = T64.encodeBase64
   decode = T64.decodeBase64
   lenient = T64.decodeBase64Lenient
-  validate = T64.isBase64
+  correct = T64.isBase64
   encodeUrl = T64U.encodeBase64
   encodeUrlNopad = T64U.encodeBase64Unpadded
   decodeUrl = T64U.decodeBase64
   decodeUrlPad = T64U.decodeBase64Padded
   decodeUrlNopad = T64U.decodeBase64Unpadded
   lenientUrl = T64U.decodeBase64Lenient
-  validateUrl = T64U.isBase64Url
+  correctUrl = T64U.isBase64Url
+  validateUrl = T64U.isValidBase64Url
+  validate = T64.isValidBase64
 
 instance Harness TL64 TL.Text where
   label = "Lazy Text"
@@ -147,14 +157,16 @@ instance Harness TL64 TL.Text where
   encode = TL64.encodeBase64
   decode = TL64.decodeBase64
   lenient = TL64.decodeBase64Lenient
-  validate = TL64.isBase64
+  correct = TL64.isBase64
   encodeUrl = TL64U.encodeBase64
   encodeUrlNopad = TL64U.encodeBase64Unpadded
   decodeUrl = TL64U.decodeBase64
   decodeUrlPad = TL64U.decodeBase64Padded
   decodeUrlNopad = TL64U.decodeBase64Unpadded
   lenientUrl = TL64U.decodeBase64Lenient
-  validateUrl = TL64U.isBase64Url
+  correctUrl = TL64U.isBase64Url
+  validateUrl = TL64U.isValidBase64Url
+  validate = TL64.isValidBase64
 
 instance Harness TS64 TS.ShortText where
   label = "Short Text"
@@ -162,14 +174,16 @@ instance Harness TS64 TS.ShortText where
   encode = TS64.encodeBase64
   decode = TS64.decodeBase64
   lenient = TS64.decodeBase64Lenient
-  validate = TS64.isBase64
+  correct = TS64.isBase64
   encodeUrl = TS64U.encodeBase64
   encodeUrlNopad = TS64U.encodeBase64Unpadded
   decodeUrl = TS64U.decodeBase64
   decodeUrlPad = TS64U.decodeBase64Padded
   decodeUrlNopad = TS64U.decodeBase64Unpadded
   lenientUrl = TS64U.decodeBase64Lenient
-  validateUrl = TS64U.isBase64Url
+  correctUrl = TS64U.isBase64Url
+  validateUrl = TS64U.isValidBase64Url
+  validate = TS64.isValidBase64
 
 -- ------------------------------------------------------------------ --
 -- Quickcheck instances
