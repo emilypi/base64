@@ -54,10 +54,6 @@ encodeBase64' = encodeBase64_ base64Table
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
--- /Note:/ This function is not RFC compliant, and __will__ add padding to an
--- unpadded Base64-encoded value for decoding. For strictly RFC-compliant decoding,
--- use 'decodeBase64Unpadded'.
---
 decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 bs@(PS _ _ !l)
     | r == 1 = Left "Base64-encoded bytestring has invalid size"

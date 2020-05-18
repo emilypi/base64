@@ -47,10 +47,6 @@ encodeBase64' = toShort . B64.encodeBase64' . fromShort
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
--- /Note:/ This function is not RFC compliant, and __will__ add padding to an
--- unpadded Base64-encoded value for decoding. For strictly RFC-compliant decoding,
--- use 'decodeBase64Unpadded'.
---
 decodeBase64 :: ShortByteString -> Either Text ShortByteString
 decodeBase64 = fmap toShort . B64.decodeBase64 . fromShort
 {-# INLINE decodeBase64 #-}

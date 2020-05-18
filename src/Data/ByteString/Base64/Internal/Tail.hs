@@ -71,8 +71,7 @@ loopTail !dfp (Ptr !alpha) !dptr !end !src !dst
       poke @Word8 (plusPtr dst 2) (aix d alpha)
       poke @Word8 (plusPtr dst 3) 0x3d
       return (PS dfp 0 (4 + minusPtr dst dptr))
-{-# INLINE loopTail #-}
-
+{-# inline loopTail #-}
 
 -- | Finalize a bytestring by filling out the remaining bits
 -- without padding.
@@ -110,7 +109,7 @@ loopTailNoPad !dfp (Ptr !alpha) !dptr !end !src !dst
         poke @Word8 (plusPtr dst 1) (aix c alpha)
         poke @Word8 (plusPtr dst 2) (aix d alpha)
         return (PS dfp 0 (3 + (minusPtr dst dptr)))
-{-# INLINE loopTailNoPad #-}
+{-# inline loopTailNoPad #-}
 
 decodeTail
     :: ForeignPtr Word8
@@ -173,3 +172,4 @@ decodeTail !dfp !dtable !sptr !dptr !dst !src = do
     padErr p =  return . Left . T.pack
       $ "invalid padding at offset: "
       ++ show (p `minusPtr` sptr)
+{-# inline decodeTail #-}
