@@ -227,7 +227,6 @@ paddingTests _ last_ length_ = testGroup "Padding tests"
       ]
     ]
   where
-    ptest :: b -> b -> TestTree
     ptest s t =
       testCaseSteps (show $ if t == "" then "empty" else t) $ \step -> do
         let u = decodeUrlNopad @a t
@@ -245,7 +244,6 @@ paddingTests _ last_ length_ = testGroup "Padding tests"
           v @=? Right s
           v @=? u
 
-    utest :: b -> b -> TestTree
     utest s t =
       testCaseSteps (show $ if t == "" then "empty" else t) $ \step -> do
         let u = decodeUrlPad @a t
