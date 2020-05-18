@@ -22,11 +22,14 @@ module Main
 import Prelude hiding (length)
 
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString.Short as SBS
 import "base64" Data.ByteString.Base64 as B64
 import "base64" Data.ByteString.Base64.URL as B64U
 import qualified "base64-bytestring" Data.ByteString.Base64 as Bos
 import qualified "base64-bytestring" Data.ByteString.Base64.URL as BosU
 import Data.Proxy
+import Data.Word
 
 import Internal
 
@@ -42,30 +45,53 @@ main = defaultMain tests
 tests :: TestTree
 tests = testGroup "Base64 Tests"
   [ mkTree (Proxy :: Proxy B64)
+    [ mkPropTree
+    , mkUnitTree BS.last BS.length
+    ]
   , mkTree (Proxy :: Proxy LB64)
+    [ mkPropTree
+    , mkUnitTree LBS.last (fromIntegral . LBS.length)
+    ]
   , mkTree (Proxy :: Proxy SB64)
+    [ mkPropTree
+    , mkUnitTree (BS.last . SBS.fromShort) SBS.length
+    ]
   , mkTree (Proxy :: Proxy T64)
+    [ mkPropTree
+    ]
   , mkTree (Proxy :: Proxy TL64)
+    [ mkPropTree
+    ]
   , mkTree (Proxy :: Proxy TS64)
+    [ mkPropTree
+    ]
   ]
 
-mkTree :: forall a b proxy. Harness a b => proxy a -> TestTree
-mkTree _ = testGroup (label @a)
-  [ properties @a Proxy
-  , rfcVectors @a Proxy
-  , paddingTests
+mkTree :: forall a b proxy. Harness a b => proxy a -> [proxy a -> TestTree] -> TestTree
+mkTree a = testGroup (label @a) . fmap ($ a)
+
+mkPropTree :: forall a b proxy. Harness a b => proxy a -> TestTree
+mkPropTree a = testGroup "Property Tests"
+  [ prop_roundtrip a
+  , prop_correctness a
+  , prop_url_padding a
+  , prop_bos_coherence
   ]
 
+mkUnitTree
+  :: forall a b proxy
+  . Harness a b
+  => (b -> Word8)
+  -> (b -> Int)
+  -> proxy a
+  -> TestTree
+mkUnitTree last_ length_ a = testGroup "Unit tests"
+  [ paddingTests a last_ length_
+  , rfcVectors a
+  ]
 -- ---------------------------------------------------------------- --
 -- Property tests
 
-properties :: forall a b proxy. Harness a b => proxy a -> TestTree
-properties _ = testGroup "Property tests"
-  [ prop_roundtrip @a Proxy
-  , prop_correctness @a Proxy
-  , prop_url_padding @a Proxy
-  , prop_bos_coherence
-  ]
 
 prop_roundtrip :: forall a b proxy. Harness a b => proxy a -> TestTree
 prop_roundtrip _ = testGroup "prop_roundtrip"
@@ -157,8 +183,14 @@ rfcVectors _ = testGroup "RFC 4648 Test Vectors"
       t @=? encodeUrl @a s
       Right s @=? decodeUrlPad @a t
 
-paddingTests :: TestTree
-paddingTests = testGroup "Padding tests"
+paddingTests
+  :: forall a b proxy
+  . Harness a b
+  => proxy a
+  -> (b -> Word8)
+  -> (b -> Int)
+  -> TestTree
+paddingTests _ last_ length_ = testGroup "Padding tests"
     [ testGroup "URL decodePadding coherence"
       [ ptest "<" "PA=="
       , ptest "<<" "PDw="
@@ -177,12 +209,13 @@ paddingTests = testGroup "Padding tests"
       ]
     ]
   where
+    ptest :: b -> b -> TestTree
     ptest s t =
       testCaseSteps (show $ if t == "" then "empty" else t) $ \step -> do
-        let u = B64U.decodeBase64Unpadded t
-            v =  B64U.decodeBase64Padded t
+        let u = decodeUrlNopad @a t
+            v = decodeUrlPad @a t
 
-        if BS.last t == 0x3d then do
+        if last_ t == 0x3d then do
           step "Padding required: no padding fails"
           u @=? Left "Base64-encoded bytestring has invalid padding"
 
@@ -194,12 +227,13 @@ paddingTests = testGroup "Padding tests"
           v @=? Right s
           v @=? u
 
+    utest :: b -> b -> TestTree
     utest s t =
       testCaseSteps (show $ if t == "" then "empty" else t) $ \step -> do
-        let u = B64U.decodeBase64Padded t
-            v = B64U.decodeBase64Unpadded t
+        let u = decodeUrlPad @a t
+            v = decodeUrlNopad @a t
 
-        if BS.length t `mod` 4 == 0 then do
+        if length_ t `mod` 4 == 0 then do
           step "String has no padding: decodes should coincide"
           u @=? Right s
           v @=? Right s
