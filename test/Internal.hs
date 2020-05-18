@@ -45,12 +45,12 @@ import Test.QuickCheck.Instances
 -- ------------------------------------------------------------------ --
 -- Test Harnesses
 
-data B64 = B64
-data LB64 = LB64
-data SB64 = SB64
-data T64 = T64
-data TL64 = TL64
-data TS64 = TS64
+data B64
+data LB64
+data SB64
+data T64
+data TL64
+data TS64
 
 -- | This class provides the generic API definition for
 -- the base64 std alphabet
