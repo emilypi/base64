@@ -109,6 +109,10 @@ prop_roundtrip _ = testGroup "prop_roundtrip"
   , testProperty "prop_url_roundtrip_nopad" $ \(bs :: b) ->
       Right (encodeUrlNopad bs)
         == decodeUrlNopad (encodeUrlNopad (encodeUrlNopad bs))
+  , testProperty "prop_std_lenient_roundtrip" $ \(bs :: b) ->
+      encode bs == lenient (encode (encode bs))
+  , testProperty "prop_url_lenient_roundtrip" $ \(bs :: b) ->
+      encodeUrl bs == lenientUrl (encodeUrl (encodeUrl bs))
   ]
 
 prop_correctness :: forall a b proxy. Harness a b => proxy a -> TestTree
@@ -117,6 +121,10 @@ prop_correctness _ = testGroup "prop_validity"
     validate (encode bs)
   , testProperty "prop_url_valid" $ \(bs :: b) ->
     validateUrl (encodeUrl bs)
+  , testProperty "prop_std_correct" $ \(bs :: b) ->
+    correct (encode bs)
+  , testProperty "prop_url_correct" $ \(bs :: b) ->
+    correctUrl (encodeUrl bs)
   ]
 
 prop_url_padding :: forall a b proxy. Harness a b => proxy a -> TestTree
