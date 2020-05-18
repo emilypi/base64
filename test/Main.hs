@@ -19,6 +19,7 @@ module Main
 ( main
 ) where
 
+
 import Prelude hiding (length)
 
 import qualified Data.ByteString as BS
@@ -74,7 +75,12 @@ tests = testGroup "Base64 Tests"
     ]
   ]
 
-mkTree :: forall a b proxy. Harness a b => proxy a -> [proxy a -> TestTree] -> TestTree
+mkTree
+  :: forall a b proxy
+  . Harness a b
+  => proxy a
+  -> [proxy a -> TestTree]
+  -> TestTree
 mkTree a = testGroup (label @a) . fmap ($ a)
 
 mkTests
@@ -207,13 +213,21 @@ rfcVectors _ = testGroup "RFC 4648 Test Vectors"
       ]
     ]
   where
-    testCaseStd s t = testCase (show $ if s == "" then "empty" else s) $ do
-      t @=? encode @a s
-      Right s @=? decode @a (encode @a s)
+    testCaseStd s t =
+      testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
+        step "encode is sound"
+        t @=? encode @a s
 
-    testCaseUrl s t = testCase (show $ if s == "" then "empty" else s) $ do
-      t @=? encodeUrl @a s
-      Right s @=? decodeUrlPad @a t
+        step "decode is sound"
+        Right s @=? decode (encode @a s)
+
+    testCaseUrl s t =
+      testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
+        step "encode is sound"
+        t @=? encodeUrl @a s
+
+        step "decode is sound"
+        Right s @=? decodeUrlPad t
 
 paddingTests
   :: forall a b proxy
@@ -243,8 +257,8 @@ paddingTests last_ length_ _ = testGroup "Padding tests"
   where
     ptest s t =
       testCaseSteps (show $ if t == "" then "empty" else t) $ \step -> do
-        let u = decodeUrlNopad @a t
-            v = decodeUrlPad @a t
+        let u = decodeUrlNopad t
+            v = decodeUrlPad t
 
         if last_ t == 0x3d then do
           step "Padding required: no padding fails"
@@ -260,8 +274,8 @@ paddingTests last_ length_ _ = testGroup "Padding tests"
 
     utest s t =
       testCaseSteps (show $ if t == "" then "empty" else t) $ \step -> do
-        let u = decodeUrlPad @a t
-            v = decodeUrlNopad @a t
+        let u = decodeUrlPad t
+            v = decodeUrlNopad t
 
         if length_ t `mod` 4 == 0 then do
           step "String has no padding: decodes should coincide"
