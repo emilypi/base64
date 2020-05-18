@@ -68,10 +68,10 @@ decodeBase64 = fmap T.decodeLatin1 . B64.decodeBase64 . T.encodeUtf8
 decodeBase64With
     :: (ByteString -> Either err Text)
       -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
-    -> Text
+    -> ByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) Text
-decodeBase64With f t = case B64.decodeBase64 $ T.encodeUtf8 t of
+decodeBase64With f t = case B64.decodeBase64 t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64With #-}
