@@ -1,5 +1,4 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
@@ -50,13 +49,10 @@ innerLoop !etable !sptr !dptr !end finish = go sptr dptr
       | plusPtr src 3 >= end =
         W16.innerLoop etable (castPtr src) (castPtr dst) (castPtr end) finish
       | otherwise = do
-#ifdef WORDS_BIGENDIAN
-        !w <- peek @Word32 src
-#else
-        !w <- byteSwap32 <$> peek @Word32 src
-#endif
-        let !a = (unsafeShiftR w 20) .&. 0xfff
-            !b = (unsafeShiftR w 8) .&. 0xfff
+        !w <- peekWord32BE src
+
+        let !a = unsafeShiftR w 20
+            !b = unsafeShiftR w 8
 
         !x <- w32_16 <$> peekElemOff etable (fromIntegral a)
         !y <- w32_16 <$> peekElemOff etable (fromIntegral b)
