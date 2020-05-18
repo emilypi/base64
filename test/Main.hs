@@ -219,7 +219,7 @@ rfcVectors _ = testGroup "RFC 4648 Test Vectors"
         t @=? encode @a s
 
         step "decode is sound"
-        Right s @=? decode (encode @a s)
+        Right s @=? decode (encode s)
 
     testCaseUrl s t =
       testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
