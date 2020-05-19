@@ -73,7 +73,7 @@ decodeBase64 = fmap fromText . B64TU.decodeBase64 . toText
 --
 -- @
 -- 'decodeBase64With' 'T.decodeUtf8''
---   :: 'ShortText' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
+--   :: 'ShortByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
 -- @
 --
 decodeBase64With
@@ -123,7 +123,7 @@ decodeBase64Unpadded = fmap fromText . B64TU.decodeBase64Unpadded . toText
 --
 -- @
 -- 'decodeBase64With' 'T.decodeUtf8''
---   :: 'ShortText' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
+--   :: 'ShortByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
 -- @
 --
 decodeBase64UnpaddedWith
@@ -161,7 +161,7 @@ decodeBase64Padded = fmap fromText . B64TU.decodeBase64Padded . toText
 --
 -- @
 -- 'decodeBase64With' 'T.decodeUtf8''
---   :: 'ShortText' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
+--   :: 'ShortByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
 -- @
 --
 decodeBase64PaddedWith
