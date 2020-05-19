@@ -56,7 +56,7 @@ decodeBase64 = fmap T.decodeLatin1 . B64.decodeBase64 . T.encodeUtf8
 -- 'ByteString' to 'Text' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
--- See: <https://tools.ietf.org/html/rfc4648#section-8 RFC-4648 section 8>
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 -- Example:
 --
