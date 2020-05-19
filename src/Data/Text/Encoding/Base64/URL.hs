@@ -120,7 +120,7 @@ decodeBase64Unpadded = fmap T.decodeLatin1
 --
 -- @
 -- 'decodeBase64With' 'T.decodeUtf8''
---   :: 'Text' -> 'Either' ('Base64Error' 'UnicodeException') 'Text'
+--   :: 'ByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'Text'
 -- @
 --
 decodeBase64UnpaddedWith
