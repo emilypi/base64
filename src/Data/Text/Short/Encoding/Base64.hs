@@ -66,7 +66,7 @@ decodeBase64 = fmap fromText . B64T.decodeBase64 . toText
 --
 -- @
 -- 'decodeBase64With' 'T.decodeUtf8''
---   :: 'ShortText' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
+--   :: 'ShortByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
 -- @
 --
 decodeBase64With

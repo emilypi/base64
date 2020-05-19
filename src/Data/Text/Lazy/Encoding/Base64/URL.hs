@@ -71,7 +71,7 @@ decodeBase64 = fmap TL.decodeLatin1 . BL64U.decodeBase64 . TL.encodeUtf8
 --
 -- @
 -- 'decodeBase64With' 'TL.decodeUtf8''
---   :: 'TL.Text' -> 'Either' ('Base64Error' 'UnicodeException') 'TL.Text'
+--   :: 'ByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'TL.Text'
 -- @
 --
 decodeBase64With
@@ -121,7 +121,7 @@ decodeBase64Unpadded = fmap TL.decodeLatin1
 --
 -- @
 -- 'decodeBase64With' 'TL.decodeUtf8''
---   :: 'TL.Text' -> 'Either' ('Base64Error' 'UnicodeException') 'TL.Text'
+--   :: 'ByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'TL.Text'
 -- @
 --
 decodeBase64UnpaddedWith
@@ -161,7 +161,7 @@ decodeBase64Padded = fmap TL.decodeLatin1
 --
 -- @
 -- 'decodeBase64With' 'TL.decodeUtf8''
---   :: 'TL.Text' -> 'Either' ('Base64Error' 'UnicodeException') 'TL.Text'
+--   :: 'ByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'TL.Text'
 -- @
 --
 decodeBase64PaddedWith
