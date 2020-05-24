@@ -119,7 +119,7 @@ decodeLoop !dtable !sptr !dptr !end finish = go dptr sptr
             poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
             poke @Word8 (plusPtr dst 2) (fromIntegral w)
             go (plusPtr dst 3) (plusPtr src 4)
-{-# inline decodeLoop #-}
+
 
 lenientLoop
     :: Ptr Word8
