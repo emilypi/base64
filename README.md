@@ -24,5 +24,5 @@ Additionally this library has
 - Optics for handling more complex structures with Base64 representations via the `base64-lens` package
 - Checks for both validity and correctness of Base64 and Base64url encodings
 
-There are no dependencies aside from those bundled with GHC, and the ultra-minimal `ghc-byteorder`.
+There are no dependencies aside from those bundled with GHC, and the `ghc-byteorder` re-export.
 
