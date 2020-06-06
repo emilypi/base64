@@ -86,16 +86,16 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
 
     look :: Ptr Word8 -> IO Word32
     look !p = do
-      !i <- peekByteOff @Word8 p 0
-      !v <- peekByteOff @Word8 dtable (fromIntegral i)
+      i <- peekByteOff @Word8 p 0
+      v <- peekByteOff @Word8 dtable (fromIntegral i)
       return (fromIntegral v)
 
     go !dst !src
       | plusPtr src 4 >= end = do
-        !a <- look src
-        !b <- look (src `plusPtr` 1)
-        !c <- look (src `plusPtr` 2)
-        !d <- look (src `plusPtr` 3)
+        a <- look src
+        b <- look (src `plusPtr` 1)
+        c <- look (src `plusPtr` 2)
+        d <- look (src `plusPtr` 3)
         finalChunk dst src a b c d
 
       | otherwise = do
@@ -119,13 +119,14 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
      | c == 0xff = err (plusPtr src 2)
      | d == 0xff = err (plusPtr src 3)
      | otherwise = do
-       let !w = ((shiftL a 18)
-             .|. (shiftL b 12)
-             .|. (shiftL c 6)
+
+       let !w = ((unsafeShiftL a 18)
+             .|. (unsafeShiftL b 12)
+             .|. (unsafeShiftL c 6)
              .|. d) :: Word32
 
-       poke @Word8 dst (fromIntegral (shiftR w 16))
-       poke @Word8 (plusPtr dst 1) (fromIntegral (shiftR w 8))
+       poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
+       poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
        poke @Word8 (plusPtr dst 2) (fromIntegral w)
        go (plusPtr dst 3) (plusPtr src 4)
 
@@ -133,7 +134,7 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
     -- 3 bytes. Note that in this stage, we can have padding chars
     -- but only in the final 2 positions.
     --
-    finalChunk !dst !src a b c d
+    finalChunk !dst !src !a !b !c !d
       | a == 0x63 = padErr src
       | b == 0x63 = padErr (plusPtr src 1)
       | c == 0x63 && d /= 0x63 = err (plusPtr src 3) -- make sure padding is coherent.
@@ -142,21 +143,21 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
       | c == 0xff = err (plusPtr src 2)
       | d == 0xff = err (plusPtr src 3)
       | otherwise = do
-        let !w = ((shiftL a 18)
-              .|. (shiftL b 12)
-              .|. (shiftL c 6)
+        let !w = ((unsafeShiftL a 18)
+              .|. (unsafeShiftL b 12)
+              .|. (unsafeShiftL c 6)
               .|. d) :: Word32
 
-        poke @Word8 dst (fromIntegral (shiftR w 16))
+        poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
 
         if c == 0x63 && d == 0x63
         then return $ Right $ PS dfp 0 (1 + (dst `minusPtr` dptr))
         else if d == 0x63
           then do
-            poke @Word8 (plusPtr dst 1) (fromIntegral (shiftR w 8))
+            poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
             return $ Right $ PS dfp 0 (2 + (dst `minusPtr` dptr))
           else do
-            poke @Word8 (plusPtr dst 1) (fromIntegral (shiftR w 8))
+            poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
             poke @Word8 (plusPtr dst 2) (fromIntegral w)
             return $ Right $ PS dfp 0 (3 + (dst `minusPtr` dptr))
 {-# inline decodeLoop #-}
@@ -202,13 +203,13 @@ lenientLoop !dtable !sptr !dptr !end !dfp = go dptr sptr 0
             | otherwise ->
               look False bp $ \cp c ->
               look False cp $ \dp d -> do
-                let !w = (shiftL a 18) .|. (shiftL b 12) .|. (shiftL c 6) .|. d
+                let !w = (unsafeShiftL a 18) .|. (unsafeShiftL b 12) .|. (unsafeShiftL c 6) .|. d
 
-                poke @Word8 dst (fromIntegral (shiftR w 16))
+                poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
                 if c == 0x63
                 then finalize (n + 1)
                 else do
-                  poke @Word8 (plusPtr dst 1) (fromIntegral (w `shiftR` 8))
+                  poke @Word8 (plusPtr dst 1) (fromIntegral (w `unsafeShiftR` 8))
                   if d == 0x63
                   then finalize (n + 2)
                   else do
