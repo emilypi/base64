@@ -103,7 +103,6 @@ benchmark bench
     , bytestring
     , criterion
     , deepseq
-    , memory
     , random-bytestring
     , text
 
