@@ -41,7 +41,7 @@ import "base64" Data.Text.Short.Encoding.Base64 as TS64
 import "base64" Data.Text.Short.Encoding.Base64.URL as TS64U
 
 import Test.QuickCheck hiding (label)
-import Test.QuickCheck.Instances
+import Test.QuickCheck.Instances ()
 
 -- ------------------------------------------------------------------ --
 -- Test Harnesses

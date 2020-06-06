@@ -71,7 +71,8 @@ decodeBase64 bs@(PS _ _ !l)
     | r == 3 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
     | otherwise = Left "Base64-encoded bytestring has invalid size"
   where
-    (!q, !r) = divMod l 4
+    !q = l `quot` 4
+    !r = l `rem` 4
     !dlen = q * 3
 {-# INLINE decodeBase64 #-}
 
@@ -111,7 +112,8 @@ decodeBase64Unpadded bs@(PS _ _ !l)
     | r == 3 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
     | otherwise = Left "Base64-encoded bytestring has invalid size"
   where
-    (!q, !r) = divMod l 4
+    !q = l `quot` 4
+    !r = l `rem` 4
     !dlen = q * 3
 {-# INLINE decodeBase64Unpadded #-}
 
@@ -131,7 +133,8 @@ decodeBase64Padded bs@(PS !_ _ !l)
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
     | otherwise = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64UrlTable bs
   where
-    (!q, !r) = divMod l 4
+    !q = l `quot` 4
+    !r = l `rem` 4
     !dlen = q * 3
 {-# INLINE decodeBase64Padded #-}
 
