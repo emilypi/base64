@@ -72,7 +72,7 @@ decodeLoop
         -- ^ dst pointer
     -> Ptr Word8
         -- ^ end of src ptr
-    -> (Ptr Word8 -> Ptr Word8 -> IO (Either Text ByteString))
+    -> ForeignPtr Word8
     -> IO (Either Text ByteString)
 decodeLoop = W16.decodeLoop
 {-# INLINE decodeLoop #-}
