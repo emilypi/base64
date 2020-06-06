@@ -55,15 +55,14 @@ encodeBase64' = encodeBase64_ base64Table
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 bs@(PS _ _ !l)
-    | l == 0 = Right bs
+decodeBase64 bs@(PS _ _ l)
     | r == 1 = Left "Base64-encoded bytestring has invalid size"
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
     | otherwise = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64Table bs
   where
-    !q = l `quot` 4
-    !r = l `rem` 4
-    !dlen = q * 3
+    q = l `quot` 4
+    r = l `rem` 4
+    dlen = q * 3
 {-# INLINE decodeBase64 #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ByteString' value. This function
