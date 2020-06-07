@@ -56,6 +56,7 @@ encodeBase64' = encodeBase64_ base64Table
 --
 decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 bs@(PS _ _ l)
+    | l == 0 = Right bs
     | r == 1 = Left "Base64-encoded bytestring has invalid size"
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
     | otherwise = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64Table bs
