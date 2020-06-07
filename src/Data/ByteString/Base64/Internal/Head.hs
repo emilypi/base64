@@ -104,7 +104,6 @@ decodeBase64_ dlen dtfp (PS sfp soff slen) =
           (plusPtr sptr (soff + slen))
           dfp
 
-
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
 decodeBase64Lenient_ !dtfp (PS !sfp !soff !slen) = unsafeDupablePerformIO $
     withForeignPtr dtfp $ \dtable ->
