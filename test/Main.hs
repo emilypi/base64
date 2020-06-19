@@ -31,7 +31,6 @@ import "base64" Data.ByteString.Base64 as B64
 import "base64" Data.ByteString.Base64.URL as B64U
 import qualified "base64-bytestring" Data.ByteString.Base64 as Bos
 import qualified "base64-bytestring" Data.ByteString.Base64.URL as BosU
-import Data.Proxy
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Text.Encoding.Base64.Error (Base64Error(..))
@@ -53,33 +52,33 @@ main = defaultMain tests
 
 tests :: TestTree
 tests = testGroup "Base64 Tests"
-  [ mkTree (Proxy :: Proxy B64)
+  [ mkTree b64
     [ mkPropTree
     , mkUnitTree BS.last BS.length
     ]
-  , mkTree (Proxy :: Proxy LB64)
+  , mkTree lb64
     [ mkPropTree
     , mkUnitTree LBS.last (fromIntegral . LBS.length)
     ]
-  , mkTree (Proxy :: Proxy SB64)
+  , mkTree sb64
     [ mkPropTree
     , mkUnitTree (BS.last . SBS.fromShort) SBS.length
     ]
-  , mkTree (Proxy :: Proxy T64)
+  , mkTree t64
     [ mkPropTree
     , mkUnitTree (c2w . T.last) T.length
-    , mkDecodeTree T.decodeUtf8' (Proxy :: Proxy B64)
+    , mkDecodeTree T.decodeUtf8' b64
     ]
-  , mkTree (Proxy :: Proxy TL64)
+  , mkTree tl64
     [ mkPropTree
     , mkUnitTree (c2w . TL.last) (fromIntegral . TL.length)
-    , mkDecodeTree TL.decodeUtf8' (Proxy :: Proxy LB64)
+    , mkDecodeTree TL.decodeUtf8' lb64
     ]
-  , mkTree (Proxy :: Proxy TS64)
+  , mkTree ts64
     [ mkPropTree
     , mkUnitTree (c2w . T.last . TS.toText) TS.length
     , mkDecodeTree
-      (second TS.fromText . T.decodeUtf8' . SBS.fromShort)  (Proxy :: Proxy SB64)
+      (second TS.fromText . T.decodeUtf8' . SBS.fromShort) sb64
     ]
   ]
 
