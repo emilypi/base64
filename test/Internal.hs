@@ -27,6 +27,7 @@ import "base64" Data.ByteString.Lazy.Base64 as LB64
 import "base64" Data.ByteString.Lazy.Base64.URL as LB64U
 import "base64" Data.ByteString.Short.Base64 as SB64
 import "base64" Data.ByteString.Short.Base64.URL as SB64U
+import Data.Proxy
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -52,6 +53,24 @@ data SB64
 data T64
 data TL64
 data TS64
+
+b64 :: Proxy B64
+b64 = Proxy
+
+lb64 :: Proxy LB64
+lb64 = Proxy
+
+sb64 :: Proxy SB64
+sb64 = Proxy
+
+t64 :: Proxy T64
+t64 = Proxy
+
+tl64 :: Proxy TL64
+tl64 = Proxy
+
+ts64 :: Proxy TS64
+ts64 = Proxy
 
 -- | This class provides the generic API definition for
 -- the base64 std alphabet
