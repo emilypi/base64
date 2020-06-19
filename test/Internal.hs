@@ -1,7 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE PackageImports #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- |
@@ -47,29 +49,30 @@ import Test.QuickCheck.Instances ()
 -- ------------------------------------------------------------------ --
 -- Test Harnesses
 
-data B64
-data LB64
-data SB64
-data T64
-data TL64
-data TS64
+data Impl
+  = B64
+  | LB64
+  | SB64
+  | T64
+  | TL64
+  | TS64
 
-b64 :: Proxy B64
+b64 :: Proxy 'B64
 b64 = Proxy
 
-lb64 :: Proxy LB64
+lb64 :: Proxy 'LB64
 lb64 = Proxy
 
-sb64 :: Proxy SB64
+sb64 :: Proxy 'SB64
 sb64 = Proxy
 
-t64 :: Proxy T64
+t64 :: Proxy 'T64
 t64 = Proxy
 
-tl64 :: Proxy TL64
+tl64 :: Proxy 'TL64
 tl64 = Proxy
 
-ts64 :: Proxy TS64
+ts64 :: Proxy 'TS64
 ts64 = Proxy
 
 -- | This class provides the generic API definition for
@@ -81,7 +84,7 @@ class
   , Arbitrary bs
   , CoArbitrary bs
   , IsString bs
-  ) => Harness a bs | a -> bs, bs -> a
+  ) => Harness (a :: Impl) bs | a -> bs, bs -> a
   where
 
   label :: String
@@ -103,7 +106,7 @@ class
   validateUrl :: bs -> Bool
 
 
-instance Harness B64 BS.ByteString where
+instance Harness 'B64 BS.ByteString where
   label = "ByteString"
 
   encode = B64.encodeBase64'
@@ -120,7 +123,7 @@ instance Harness B64 BS.ByteString where
   correctUrl = B64U.isBase64Url
   validateUrl = B64U.isValidBase64Url
 
-instance Harness LB64 LBS.ByteString where
+instance Harness 'LB64 LBS.ByteString where
   label = "Lazy ByteString"
 
   encode = LB64.encodeBase64'
@@ -137,7 +140,7 @@ instance Harness LB64 LBS.ByteString where
   correctUrl = LB64U.isBase64Url
   validateUrl = LB64U.isValidBase64Url
 
-instance Harness SB64 SBS.ShortByteString where
+instance Harness 'SB64 SBS.ShortByteString where
   label = "Short ByteString"
 
   encode = SB64.encodeBase64'
@@ -154,7 +157,7 @@ instance Harness SB64 SBS.ShortByteString where
   correctUrl = SB64U.isBase64Url
   validateUrl = SB64U.isValidBase64Url
 
-instance Harness T64 Text where
+instance Harness 'T64 Text where
   label = "Text"
 
   encode = T64.encodeBase64
@@ -171,7 +174,7 @@ instance Harness T64 Text where
   validateUrl = T64U.isValidBase64Url
   validate = T64.isValidBase64
 
-instance Harness TL64 TL.Text where
+instance Harness 'TL64 TL.Text where
   label = "Lazy Text"
 
   encode = TL64.encodeBase64
@@ -188,7 +191,7 @@ instance Harness TL64 TL.Text where
   validateUrl = TL64U.isValidBase64Url
   validate = TL64.isValidBase64
 
-instance Harness TS64 TS.ShortText where
+instance Harness 'TS64 TS.ShortText where
   label = "Short Text"
 
   encode = TS64.encodeBase64
@@ -205,25 +208,27 @@ instance Harness TS64 TS.ShortText where
   validateUrl = TS64U.isValidBase64Url
   validate = TS64.isValidBase64
 
-class Harness a cs => TextHarness a cs bs | a -> cs, bs -> cs, cs -> a, cs -> bs where
+class Harness a cs
+  => TextHarness (a :: Impl) cs bs
+  | a -> cs, bs -> cs, cs -> a, cs -> bs where
   decodeWith_ :: (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
   decodeUrlWith_ :: (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
   decodeUrlPaddedWith_ :: (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
   decodeUrlUnpaddedWith_ :: (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
 
-instance TextHarness T64 Text BS.ByteString where
+instance TextHarness 'T64 Text BS.ByteString where
   decodeWith_ = T64.decodeBase64With
   decodeUrlWith_ = T64U.decodeBase64With
   decodeUrlPaddedWith_ = T64U.decodeBase64PaddedWith
   decodeUrlUnpaddedWith_ = T64U.decodeBase64UnpaddedWith
 
-instance TextHarness TL64 TL.Text LBS.ByteString where
+instance TextHarness 'TL64 TL.Text LBS.ByteString where
   decodeWith_ = TL64.decodeBase64With
   decodeUrlWith_ = TL64U.decodeBase64With
   decodeUrlPaddedWith_ = TL64U.decodeBase64PaddedWith
   decodeUrlUnpaddedWith_ = TL64U.decodeBase64UnpaddedWith
 
-instance TextHarness TS64 TS.ShortText SBS.ShortByteString where
+instance TextHarness 'TS64 TS.ShortText SBS.ShortByteString where
   decodeWith_ = TS64.decodeBase64With
   decodeUrlWith_ = TS64U.decodeBase64With
   decodeUrlPaddedWith_ = TS64U.decodeBase64PaddedWith
