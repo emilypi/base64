@@ -83,16 +83,19 @@ w32_16 = fromIntegral
 --
 mask_2bits :: Word8
 mask_2bits = 3  -- (1 << 2) - 1
+{-# INLINE mask_2bits #-}
 
 -- | Mask bottom 4 bits
 --
 mask_4bits :: Word8
 mask_4bits = 15 -- (1 << 4) - 1
+{-# INLINE mask_4bits #-}
 
 -- | Validate some ptr index against some bitmask
 --
 validateLastPos :: Word32 -> Word8 -> Bool
 validateLastPos pos mask = (fromIntegral pos .&. mask) == 0
+{-# INLINE validateLastPos #-}
 
 -- | Allocate and fill @n@ bytes with some data
 --
