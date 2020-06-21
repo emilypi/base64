@@ -1,5 +1,11 @@
 # Revision history for base64
 
+## 0.4.2.1
+
+* [Security fix]: reject non-canonical base64 encoded values - ([#25](https://github.com/emilypi/base64/pull/25))
+
+* Perf improvements
+
 ## 0.4.2
 
 * Added support for `Data.ByteString.Short`, `Data.ByteString.Lazy`, `Data.Text.Short`, and `Data.Text.Lazy`. ([#17](https://github.com/emilypi/base64/pull/17))
