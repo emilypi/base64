@@ -14,10 +14,13 @@
 module Data.ByteString.Base64.Internal.Utils
 ( EncodingTable(..)
 , aix
+, mask_2bits
+, mask_4bits
 , packTable
 , peekWord32BE
 , peekWord64BE
 , reChunkN
+, validateLastPos
 , w32
 , w64
 , w32_16
@@ -26,7 +29,7 @@ module Data.ByteString.Base64.Internal.Utils
 ) where
 
 
-
+import Data.Bits
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 
@@ -75,6 +78,21 @@ w64_16 = fromIntegral
 w32_16 :: Word16 -> Word32
 w32_16 = fromIntegral
 {-# INLINE w32_16 #-}
+
+-- | Mask bottom 2 bits
+--
+mask_2bits :: Word8
+mask_2bits = 3  -- (1 << 2) - 1
+
+-- | Mask bottom 4 bits
+--
+mask_4bits :: Word8
+mask_4bits = 15 -- (1 << 4) - 1
+
+-- | Validate some ptr index against some bitmask
+--
+validateLastPos :: Word32 -> Word8 -> Bool
+validateLastPos pos mask = (fromIntegral pos .&. mask) == 0
 
 -- | Allocate and fill @n@ bytes with some data
 --
