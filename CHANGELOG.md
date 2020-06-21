@@ -2,7 +2,7 @@
 
 ## 0.4.2.1
 
-* [Security fix]: reject non-canonical base64 encoded values - ([#25](https://github.com/emilypi/base64/pull/25))
+* Security fix: reject non-canonical base64 encoded values - ([#25](https://github.com/emilypi/base64/pull/25))
 
 * Perf improvements
 
