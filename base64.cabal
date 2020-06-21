@@ -1,6 +1,6 @@
 cabal-version:      2.0
 name:               base64
-version:            0.4.2
+version:            0.4.2.1
 synopsis:           Fast RFC 4648-compliant Base64 encoding
 description:
   RFC 4648-compliant padded and unpadded base64 and base64url encoding and decoding. This library provides
