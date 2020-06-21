@@ -84,6 +84,10 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
       $ "invalid padding at offset: "
       ++ show (p `minusPtr` sptr)
 
+    canonErr p = return . Left . T.pack
+      $ "non-canonical encoding detected at offset: "
+      ++ show (p `minusPtr` sptr)
+
     look :: Ptr Word8 -> IO Word32
     look !p = do
       i <- peekByteOff @Word8 p 0
@@ -151,11 +155,16 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
         poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
 
         if c == 0x63 && d == 0x63
-        then return $ Right $ PS dfp 0 (1 + (dst `minusPtr` dptr))
+        then
+          if validateLastPos b mask_4bits
+          then return $ Right $ PS dfp 0 (1 + (dst `minusPtr` dptr))
+          else canonErr (plusPtr src 1)
         else if d == 0x63
-          then do
-            poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
-            return $ Right $ PS dfp 0 (2 + (dst `minusPtr` dptr))
+          then if validateLastPos c mask_2bits
+            then do
+               poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
+               return $ Right $ PS dfp 0 (2 + (dst `minusPtr` dptr))
+            else canonErr (plusPtr src 2)
           else do
             poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
             poke @Word8 (plusPtr dst 2) (fromIntegral w)

@@ -347,30 +347,52 @@ paddingTests last_ length_ _ = testGroup "Padding tests"
 --
 offsetVectors :: forall a b proxy. Harness a b => proxy a -> TestTree
 offsetVectors _ = testGroup "Offset tests"
-  [ testCase "Invalid staggered padding" $ do
-    decodeUrl @a "=A==" @=? Left "invalid padding at offset: 0"
-    decodeUrl @a "P===" @=? Left "invalid padding at offset: 1"
-  , testCase "Invalid character coverage - final chunk" $ do
-    decodeUrl @a "%D==" @=? Left "invalid character at offset: 0"
-    decodeUrl @a "P%==" @=? Left "invalid character at offset: 1"
-    decodeUrl @a "PD%=" @=? Left "invalid character at offset: 2"
-    decodeUrl @a "PA=%" @=? Left "invalid character at offset: 3"
-    decodeUrl @a "PDw%" @=? Left "invalid character at offset: 3"
-  , testCase "Invalid character coverage - decode chunk" $ do
-    decodeUrl @a "%Dw_PDw_" @=? Left "invalid character at offset: 0"
-    decodeUrl @a "P%w_PDw_" @=? Left "invalid character at offset: 1"
-    decodeUrl @a "PD%_PDw_" @=? Left "invalid character at offset: 2"
-    decodeUrl @a "PDw%PDw_" @=? Left "invalid character at offset: 3"
-  , testCase "Invalid padding in body" $ do
-    decodeUrl @a "PD=_PDw_" @=? Left "invalid padding at offset: 2"
-    decodeUrl @a "PDw=PDw_" @=? Left "invalid padding at offset: 3"
-  , testCase "Padding fails everywhere but end" $ do
-    decode @a "=eAoeAo=" @=? Left "invalid padding at offset: 0"
-    decode @a "e=AoeAo=" @=? Left "invalid padding at offset: 1"
-    decode @a "eA=oeAo=" @=? Left "invalid padding at offset: 2"
-    decode @a "eAo=eAo=" @=? Left "invalid padding at offset: 3"
-    decode @a "eAoe=Ao=" @=? Left "invalid padding at offset: 4"
-    decode @a "eAoeA=o=" @=? Left "invalid padding at offset: 5"
+  [ testGroup "Invalid padding"
+    [ testCase "Invalid staggered padding" $ do
+      decodeUrl @a "=A==" @=? Left "invalid padding at offset: 0"
+      decodeUrl @a "P===" @=? Left "invalid padding at offset: 1"
+    , testCase "Invalid character coverage - final chunk" $ do
+      decodeUrl @a "%D==" @=? Left "invalid character at offset: 0"
+      decodeUrl @a "P%==" @=? Left "invalid character at offset: 1"
+      decodeUrl @a "PD%=" @=? Left "invalid character at offset: 2"
+      decodeUrl @a "PA=%" @=? Left "invalid character at offset: 3"
+      decodeUrl @a "PDw%" @=? Left "invalid character at offset: 3"
+    , testCase "Invalid character coverage - decode chunk" $ do
+      decodeUrl @a "%Dw_PDw_" @=? Left "invalid character at offset: 0"
+      decodeUrl @a "P%w_PDw_" @=? Left "invalid character at offset: 1"
+      decodeUrl @a "PD%_PDw_" @=? Left "invalid character at offset: 2"
+      decodeUrl @a "PDw%PDw_" @=? Left "invalid character at offset: 3"
+    , testCase "Invalid padding in body" $ do
+      decodeUrl @a "PD=_PDw_" @=? Left "invalid padding at offset: 2"
+      decodeUrl @a "PDw=PDw_" @=? Left "invalid padding at offset: 3"
+    , testCase "Padding fails everywhere but end" $ do
+      decode @a "=eAoeAo=" @=? Left "invalid padding at offset: 0"
+      decode @a "e=AoeAo=" @=? Left "invalid padding at offset: 1"
+      decode @a "eA=oeAo=" @=? Left "invalid padding at offset: 2"
+      decode @a "eAo=eAo=" @=? Left "invalid padding at offset: 3"
+      decode @a "eAoe=Ao=" @=? Left "invalid padding at offset: 4"
+      decode @a "eAoeA=o=" @=? Left "invalid padding at offset: 5"
+    ]
+  , testGroup "Non-canonical encodings fail and canonical encodings succeed"
+    [ testCase "roundtrip for d ~ ZA==" $ do
+      decode @a "ZE==" @=? Left "non-canonical encoding detected at offset: 1"
+      decode @a "ZK==" @=? Left "non-canonical encoding detected at offset: 1"
+      decode @a "ZA==" @=? Right "d"
+    , testCase "roundtrip for f` ~ ZmA=" $ do
+      decode @a "ZmC=" @=? Left "non-canonical encoding detected at offset: 2"
+      decode @a "ZmD=" @=? Left "non-canonical encoding detected at offset: 2"
+      decode @a "ZmA=" @=? Right "f`"
+
+    , testCase "roundtrip for foo` ~ Zm9vYA==" $ do
+      decode @a "Zm9vYE==" @=? Left "non-canonical encoding detected at offset: 5"
+      decode @a "Zm9vYK==" @=? Left "non-canonical encoding detected at offset: 5"
+      decode @a "Zm9vYA==" @=? Right "foo`"
+
+    , testCase "roundtrip for foob` ~ Zm9vYmA=" $ do
+      decode @a "Zm9vYmC=" @=? Left "non-canonical encoding detected at offset: 6"
+      decode @a "Zm9vYmD=" @=? Left "non-canonical encoding detected at offset: 6"
+      decode @a "Zm9vYmA=" @=? Right "foob`"
+    ]
   ]
 
 -- | Unit test trees for the `decode*With` family of text-valued functions
