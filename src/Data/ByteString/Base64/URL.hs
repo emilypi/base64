@@ -161,5 +161,5 @@ isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 bs)
 -- Base64 encoded 'ByteString' value, use 'isBase64Url'.
 --
 isValidBase64Url :: ByteString -> Bool
-isValidBase64Url = validateBase64 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+isValidBase64Url = validateBase64Url "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 {-# INLINE isValidBase64Url #-}
