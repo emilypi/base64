@@ -9,8 +9,9 @@
 -- Portability	: non-portable
 --
 -- This module contains the combinators implementing the
--- RFC 4648 specification for the Base64-URL encoding including
+-- RFC 4648 specification for the Base64url encoding including
 -- unpadded and lenient variants
+--
 module Data.Text.Encoding.Base64.URL
 ( encodeBase64
 , decodeBase64
