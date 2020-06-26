@@ -7,7 +7,7 @@
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
 -- Stability    : Experimental
--- Portability  : portable
+-- Portability  : non-portable
 --
 -- This module contains the combinators implementing the
 -- RFC 4648 specification for the Base64 encoding including
