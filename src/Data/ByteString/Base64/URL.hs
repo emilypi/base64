@@ -1,6 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 -- |
 -- Module       : Data.ByteString.Base64.URL
 -- Copyright    : (c) 2019-2020 Emily Pillmore
@@ -8,10 +7,10 @@
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
 -- Stability    : Experimental
--- Portability  : portable
+-- Portability  : non-portable
 --
 -- This module contains the combinators implementing the
--- RFC 4648 specification for the Base64-URL encoding including
+-- RFC 4648 specification for the Base64url encoding including
 -- unpadded and lenient variants
 --
 module Data.ByteString.Base64.URL
@@ -148,7 +147,11 @@ decodeBase64Lenient :: ByteString -> ByteString
 decodeBase64Lenient = decodeBase64Lenient_ decodeB64UrlTable
 {-# INLINE decodeBase64Lenient #-}
 
--- | Tell whether a 'ByteString' is Base64url-encoded.
+-- | Tell whether a 'ByteString' is encoded in padded /or/ unpadded Base64url format.
+--
+-- This function will also detect non-canonical encodings such as @ZE==@, which are
+-- externally valid Base64url-encoded values, but are internally inconsistent "impossible"
+-- values.
 --
 isBase64Url :: ByteString -> Bool
 isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 bs)
@@ -161,5 +164,5 @@ isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 bs)
 -- Base64 encoded 'ByteString' value, use 'isBase64Url'.
 --
 isValidBase64Url :: ByteString -> Bool
-isValidBase64Url = validateBase64 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+isValidBase64Url = validateBase64Url "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 {-# INLINE isValidBase64Url #-}

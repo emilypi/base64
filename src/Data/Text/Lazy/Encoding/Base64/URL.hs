@@ -5,10 +5,10 @@
 --
 -- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
 -- Stability	: Experimental
--- Portability	: portable
+-- Portability	: non-portable
 --
 -- This module contains the combinators implementing the
--- RFC 4648 specification for the Base64-URL encoding including
+-- RFC 4648 specification for the Base64url encoding including
 -- unpadded and lenient variants
 --
 module Data.Text.Lazy.Encoding.Base64.URL

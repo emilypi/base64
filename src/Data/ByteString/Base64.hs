@@ -7,7 +7,7 @@
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
 -- Stability    : Experimental
--- Portability  : portable
+-- Portability  : non-portable
 --
 -- This module contains the combinators implementing the
 -- RFC 4648 specification for the Base64 encoding including
@@ -77,6 +77,10 @@ decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ByteString' value is base64 encoded.
+--
+-- This function will also detect non-canonical encodings such as @ZE==@, which are
+-- externally valid Base64url-encoded values, but are internally inconsistent "impossible"
+-- values.
 --
 isBase64 :: ByteString -> Bool
 isBase64 bs = isValidBase64 bs && isRight (decodeBase64 bs)

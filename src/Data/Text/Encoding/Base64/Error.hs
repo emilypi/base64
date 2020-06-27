@@ -5,7 +5,7 @@
 --
 -- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
 -- Stability	: Experimental
--- Portability	: portable
+-- Portability	: non-portable
 --
 -- This module contains the error types raised (not as exceptions!)
 -- in the decoding process.
