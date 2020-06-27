@@ -32,6 +32,7 @@ import "base64" Data.ByteString.Short.Base64.URL as SB64U
 import Data.Proxy
 import Data.String
 import Data.Text (Text)
+import qualified Data.Text as T
 import "base64" Data.Text.Encoding.Base64 as T64
 import "base64" Data.Text.Encoding.Base64.URL as T64U
 import Data.Text.Encoding.Base64.Error (Base64Error(..))
@@ -43,7 +44,6 @@ import "base64" Data.Text.Short.Encoding.Base64 as TS64
 import "base64" Data.Text.Short.Encoding.Base64.URL as TS64U
 
 import Test.QuickCheck hiding (label)
-import Test.QuickCheck.Instances ()
 
 -- ------------------------------------------------------------------ --
 -- Test Harnesses
@@ -235,6 +235,41 @@ instance TextHarness 'TS64 TS.ShortText SBS.ShortByteString where
 
 -- ------------------------------------------------------------------ --
 -- Quickcheck instances
+
+instance Arbitrary BS.ByteString where
+    arbitrary = BS.pack <$> arbitrary
+    shrink xs = BS.pack <$> shrink (BS.unpack xs)
+
+instance CoArbitrary BS.ByteString where
+    coarbitrary = coarbitrary . BS.unpack
+
+instance Arbitrary LBS.ByteString where
+    arbitrary = LBS.pack <$> arbitrary
+    shrink xs = LBS.pack <$> shrink (LBS.unpack xs)
+
+instance CoArbitrary LBS.ByteString where
+    coarbitrary = coarbitrary . LBS.unpack
+
+instance Arbitrary SBS.ShortByteString where
+    arbitrary = SBS.pack <$> arbitrary
+    shrink xs = SBS.pack <$> shrink (SBS.unpack xs)
+
+instance CoArbitrary SBS.ShortByteString where
+    coarbitrary = coarbitrary . SBS.unpack
+
+instance Arbitrary T.Text where
+    arbitrary = T.pack <$> arbitrary
+    shrink xs = T.pack <$> shrink (T.unpack xs)
+
+instance Arbitrary TL.Text where
+    arbitrary = TL.pack <$> arbitrary
+    shrink xs = TL.pack <$> shrink (TL.unpack xs)
+
+instance CoArbitrary T.Text where
+    coarbitrary = coarbitrary . T.unpack
+
+instance CoArbitrary TL.Text where
+    coarbitrary = coarbitrary . TL.unpack
 
 instance Arbitrary TS.ShortText where
   arbitrary = TS.fromText <$> arbitrary

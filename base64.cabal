@@ -81,11 +81,10 @@ test-suite tasty
     , base64-bytestring
     , bytestring
     , QuickCheck
-    , quickcheck-instances
     , random-bytestring
     , tasty
     , tasty-hunit
-    , tasty-quickcheck >=3.17
+    , tasty-quickcheck
     , text
     , text-short
 
