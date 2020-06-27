@@ -32,7 +32,6 @@ import "base64" Data.ByteString.Short.Base64.URL as SB64U
 import Data.Proxy
 import Data.String
 import Data.Text (Text)
-import qualified Data.Text as T
 import "base64" Data.Text.Encoding.Base64 as T64
 import "base64" Data.Text.Encoding.Base64.URL as T64U
 import Data.Text.Encoding.Base64.Error (Base64Error(..))
@@ -243,8 +242,3 @@ instance Arbitrary TS.ShortText where
 
 instance CoArbitrary TS.ShortText where
   coarbitrary = coarbitrary . TS.toText
-
-instance Function TS.ShortText where
-  function = functionMap
-    (T.unpack . TS.toText)
-    (TS.fromText . T.pack)
