@@ -85,7 +85,7 @@ test-suite tasty
     , random-bytestring
     , tasty
     , tasty-hunit
-    , tasty-quickcheck
+    , tasty-quickcheck >=3.17
     , text
     , text-short
 
