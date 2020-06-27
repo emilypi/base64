@@ -18,6 +18,7 @@
 --
 module Data.ByteString.Base64.Internal
 ( validateBase64
+, validateBase64Url
 , validateLastPad
 ) where
 
@@ -52,6 +53,34 @@ validateBase64 !alphabet (PS !fp !off !l) =
 
         if f w then go (plusPtr p 1) end else return False
 {-# INLINE validateBase64 #-}
+
+validateBase64Url :: ByteString -> ByteString -> Bool
+validateBase64Url !alphabet bs@(PS _ _ l)
+    | l == 0 = True
+    | r == 0 = f bs
+    | r == 2 = f (BS.append bs "==")
+    | r == 3 = f (BS.append bs "=")
+    | otherwise = False
+
+  where
+    r = l `rem` 4
+
+    f (PS fp o n) = accursedUnutterablePerformIO $
+      withForeignPtr fp $ \p -> go (plusPtr p o) (plusPtr p (n + o))
+
+    go !p !end
+      | p == end = return True
+      | otherwise = do
+        w <- peek p
+
+        let check a
+              | a == 0x3d, plusPtr p 1 == end = True
+              | a == 0x3d, plusPtr p 2 == end = True
+              | a == 0x3d = False
+              | otherwise = BS.elem a alphabet
+
+        if check w then go (plusPtr p 1) end else return False
+{-# INLINE validateBase64Url #-}
 
 -- | This function checks that the last char of a bytestring is '='
 -- and, if true, fails with a message or completes some io action.

@@ -130,6 +130,8 @@ mkUnitTree last_ length_ = mkTests "Unit tests"
   [ paddingTests last_ length_
   , rfcVectors
   , offsetVectors
+  , validityTests
+  , canonicityTests
   ]
 
 -- | Make unit tests for textual 'decode*With' functions
@@ -373,7 +375,10 @@ offsetVectors _ = testGroup "Offset tests"
       decode @a "eAoe=Ao=" @=? Left "invalid padding at offset: 4"
       decode @a "eAoeA=o=" @=? Left "invalid padding at offset: 5"
     ]
-  , testGroup "Non-canonical encodings fail and canonical encodings succeed"
+  ]
+
+canonicityTests :: forall a b proxy. Harness a b => proxy a -> TestTree
+canonicityTests _ =  testGroup "Canonicity unit tests"
     [ testCase "roundtrip for d ~ ZA==" $ do
       decode @a "ZE==" @=? Left "non-canonical encoding detected at offset: 1"
       decode @a "ZK==" @=? Left "non-canonical encoding detected at offset: 1"
@@ -393,7 +398,6 @@ offsetVectors _ = testGroup "Offset tests"
       decode @a "Zm9vYmD=" @=? Left "non-canonical encoding detected at offset: 6"
       decode @a "Zm9vYmA=" @=? Right "foob`"
     ]
-  ]
 
 -- | Unit test trees for the `decode*With` family of text-valued functions
 --
@@ -462,5 +466,60 @@ decodeWithVectors utf8 _ _ = testGroup "DecodeWith* unit tests"
       a <- either (assertFailure . show) pure $ decodeUrlNopad @a "PDw_Pz4-"
       b <- either (assertFailure . show) pure $ decodeUrlUnpaddedWith_ @a utf8 "PDw_Pz4-"
       a @=? b
+    ]
+  ]
+
+-- | Validity unit tests for the URL workflow
+--
+validityTests :: forall a b proxy. Harness a b => proxy a -> TestTree
+validityTests _ = testGroup "Validity and correctness unit tests"
+  [ testGroup "Validity unit tests"
+    [ testCase "Padding tests" $ do
+      not (validateUrl @a "P") @? "P"
+      validateUrl @a "PA" @? "PA"
+      validateUrl @a "PDw" @? "PDw"
+      validateUrl @a "PDw_" @? "PDw_"
+      validateUrl @a "PA==" @? "PA=="
+      validateUrl @a "PDw=" @? "PDw="
+      validateUrl @a "PDw_" @? "PDw_"
+
+    , testCase "Canonicity tests" $ do
+      validateUrl @a "ZK==" @? "ZK=="
+      validateUrl @a "ZE==" @? "ZE=="
+
+      validateUrl @a "ZA==" @? "ZA=="
+      validateUrl @a "ZK==" @? "ZK=="
+      validateUrl @a "ZK" @? "ZK"
+
+      validateUrl @a "ZmA=" @? "ZmA="
+      validateUrl @a "ZmC=" @? "ZmC="
+      validateUrl @a "ZmE" @? "ZmE"
+
+      validateUrl @a "Zm9vYmA=" @? "Zm9vYmA="
+      validateUrl @a "Zm9vYmC=" @? "Zm9vYmC="
+      validateUrl @a "Zm9vYmC" @? "Zm9vYmC"
+    ]
+  , testGroup "Correctness unit tests"
+    [ testCase "Padding tests" $ do
+      not (validateUrl @a "P") @? "P"
+      correctUrl @a "PA" @? "PA"
+      correctUrl @a "PDw" @? "PDw"
+      correctUrl @a "PDw_" @? "PDw_"
+      correctUrl @a "PA==" @? "PA=="
+      correctUrl @a "PDw=" @? "PDw="
+      correctUrl @a "PDw_" @? "PDw_"
+
+    , testCase "Canonicity tests" $ do
+      not (correctUrl @a "ZK==") @? "ZK=="
+      not (correctUrl @a "ZE==") @? "ZE=="
+      correctUrl @a "ZA==" @? "ZA=="
+
+      correctUrl @a "ZmA=" @? "ZmA="
+      not (correctUrl @a "ZmC=") @? "ZmC="
+      not (correctUrl @a "ZmD") @? "ZmD"
+
+      correctUrl @a "Zm9vYmA=" @? "Zm9vYmA="
+      not (correctUrl @a "Zm9vYmC=") @? "Zm9vYmC="
+      not (correctUrl @a "Zm9vYmC") @? "Zm9vYmC"
     ]
   ]
