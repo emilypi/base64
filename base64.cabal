@@ -81,7 +81,7 @@ test-suite tasty
     , base64-bytestring
     , bytestring
     , QuickCheck
-    , quickcheck-instances
+    , quickcheck-instances  >=0.3.17
     , random-bytestring
     , tasty
     , tasty-hunit
