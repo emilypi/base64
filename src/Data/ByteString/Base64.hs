@@ -16,10 +16,13 @@
 -- internal and external validation for canonicity.
 --
 module Data.ByteString.Base64
-( encodeBase64
+( -- * Encoding
+  encodeBase64
 , encodeBase64'
+  -- * Decoding
 , decodeBase64
 , decodeBase64Lenient
+  -- * Validation
 , isBase64
 , isValidBase64
 ) where
@@ -40,6 +43,11 @@ import System.IO.Unsafe
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> encodeBase64 "Sun"
+-- "U3Vu"
+--
 encodeBase64 :: ByteString -> Text
 encodeBase64 = T.decodeUtf8 . encodeBase64'
 {-# inline encodeBase64 #-}
@@ -48,6 +56,11 @@ encodeBase64 = T.decodeUtf8 . encodeBase64'
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> encodeBase64' "Sun"
+-- "U3Vu"
+--
 encodeBase64' :: ByteString -> ByteString
 encodeBase64' = encodeBase64_ base64Table
 {-# inline encodeBase64' #-}
@@ -55,6 +68,17 @@ encodeBase64' = encodeBase64_ base64Table
 -- | Decode a padded Base64-encoded 'ByteString' value.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+-- === __Examples__:
+--
+-- >>> decodeBase64 "U3Vu"
+-- Right "Sun"
+--
+-- >>> decodeBase64 "U3V"
+-- Left "Base64-encoded bytestring requires padding"
+--
+-- >>> decodebase64 "U3V="
+-- Left "non-canonical encoding detected at offset: 2"
 --
 decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 bs@(PS _ _ !l)
@@ -74,6 +98,17 @@ decodeBase64 bs@(PS _ _ !l)
 --
 -- __Note:__ This is not RFC 4648-compliant.
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64Lenient "U3Vu"
+-- "Sun"
+--
+-- >>> decodeBase64Lenient "U3V"
+-- "Su"
+--
+-- >>> decodebase64Lenient "U3V="
+-- "Su"
+--
 decodeBase64Lenient :: ByteString -> ByteString
 decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 {-# inline decodeBase64Lenient #-}
@@ -84,6 +119,17 @@ decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 -- externally valid Base64url-encoded values, but are internally inconsistent "impossible"
 -- values.
 --
+-- === __Examples__:
+--
+-- >>> isBase64 "U3Vu"
+-- True
+--
+-- >>> isBase64 "U3V"
+-- False
+--
+-- >>> isBase64 "U3V="
+-- False
+--
 isBase64 :: ByteString -> Bool
 isBase64 bs = isValidBase64 bs && isRight (decodeBase64 bs)
 {-# inline isBase64 #-}
@@ -93,6 +139,20 @@ isBase64 bs = isValidBase64 bs && isRight (decodeBase64 bs)
 -- This will not tell you whether or not this is a correct Base64url representation,
 -- only that it conforms to the correct shape. To check whether it is a true
 -- Base64 encoded 'ByteString' value, use 'isBase64'.
+--
+-- === __Examples__:
+--
+-- >>> isValidBase64 "U3Vu"
+-- True
+--
+-- >>> isValidBase64 "U3V"
+-- True
+--
+-- >>> isValidBase64 "U3V="
+-- True
+--
+-- >>> isValidBase64 "%"
+-- False
 --
 isValidBase64 :: ByteString -> Bool
 isValidBase64 = validateBase64 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"

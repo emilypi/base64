@@ -14,10 +14,13 @@
 -- external + internal validations for canonicity.
 --
 module Data.Text.Short.Encoding.Base64
-( encodeBase64
+( -- * Encoding
+  encodeBase64
+  -- * Decoding
 , decodeBase64
 , decodeBase64With
 , decodeBase64Lenient
+  -- * Validation
 , isBase64
 , isValidBase64
 ) where
@@ -37,6 +40,11 @@ import Data.Text.Short.Unsafe
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> encodeBase64 "Sun"
+-- "U3Vu"
+--
 encodeBase64 :: ShortText -> ShortText
 encodeBase64 = fromByteStringUnsafe
   . B64.encodeBase64'
@@ -53,6 +61,17 @@ encodeBase64 = fromByteStringUnsafe
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64 "U3Vu"
+-- Right "Sun"
+--
+-- >>> decodeBase64 "U3V"
+-- Left "Base64-encoded bytestring requires padding"
+--
+-- >>> decodebase64 "U3V="
+-- Left "non-canonical encoding detected at offset: 2"
+--
 decodeBase64 :: ShortText -> Either Text ShortText
 decodeBase64 = fmap fromText . B64T.decodeBase64 . toText
 {-# INLINE decodeBase64 #-}
@@ -63,7 +82,7 @@ decodeBase64 = fmap fromText . B64T.decodeBase64 . toText
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
--- Example:
+-- === __Example__:
 --
 -- @
 -- 'decodeBase64With' 'T.decodeUtf8''
@@ -87,11 +106,33 @@ decodeBase64With f t = case BS64.decodeBase64 t of
 --
 -- __Note:__ This is not RFC 4648-compliant.
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64Lenient "U3Vu"
+-- "Sun"
+--
+-- >>> decodeBase64Lenient "U3V"
+-- "Su"
+--
+-- >>> decodebase64Lenient "U3V="
+-- "Su"
+--
 decodeBase64Lenient :: ShortText -> ShortText
 decodeBase64Lenient = fromText . B64T.decodeBase64Lenient . toText
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ShortText' value is Base64-encoded.
+--
+-- === __Examples__:
+--
+-- >>> isBase64 "U3Vu"
+-- True
+--
+-- >>> isBase64 "U3V"
+-- False
+--
+-- >>> isBase64 "U3V="
+-- False
 --
 isBase64 :: ShortText -> Bool
 isBase64 = B64.isBase64 . toByteString
@@ -102,6 +143,20 @@ isBase64 = B64.isBase64 . toByteString
 -- This will not tell you whether or not this is a correct Base64 representation,
 -- only that it conforms to the correct shape. To check whether it is a true
 -- Base64 encoded 'ShortText' value, use 'isBase64'.
+--
+-- === __Examples__:
+--
+-- >>> isValidBase64 "U3Vu"
+-- True
+--
+-- >>> isValidBase64 "U3V"
+-- True
+--
+-- >>> isValidBase64 "U3V="
+-- True
+--
+-- >>> isValidBase64 "%"
+-- False
 --
 isValidBase64 :: ShortText -> Bool
 isValidBase64 = B64.isValidBase64 . toByteString

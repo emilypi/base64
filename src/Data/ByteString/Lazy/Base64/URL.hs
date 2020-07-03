@@ -16,14 +16,17 @@
 -- decoding variants, as well as internal and external validation for canonicity.
 --
 module Data.ByteString.Lazy.Base64.URL
-( encodeBase64
+( -- * Encoding
+  encodeBase64
 , encodeBase64'
 , encodeBase64Unpadded
 , encodeBase64Unpadded'
+  -- * Decoding
 , decodeBase64
-, decodeBase64Padded
 , decodeBase64Unpadded
+, decodeBase64Padded
 , decodeBase64Lenient
+  -- * Validation
 , isBase64Url
 , isValidBase64Url
 ) where
@@ -46,6 +49,11 @@ import qualified Data.Text.Lazy.Encoding as TL
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
 --
+-- === __Examples__:
+--
+-- >>> encodeBase64 "<<?>>"
+-- "PDw_Pj4="
+--
 encodeBase64 :: ByteString -> TL.Text
 encodeBase64 = TL.decodeUtf8 . encodeBase64'
 {-# INLINE encodeBase64 #-}
@@ -53,6 +61,11 @@ encodeBase64 = TL.decodeUtf8 . encodeBase64'
 -- | Encode a 'ByteString' as a Base64url 'ByteString' value with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
+--
+-- === __Examples__:
+--
+-- >>> encodeBase64' "<<?>>"
+-- "PDw_Pj4="
 --
 encodeBase64' :: ByteString -> ByteString
 encodeBase64' = fromChunks
@@ -68,6 +81,20 @@ encodeBase64' = fromChunks
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64 "PDw_Pj4="
+-- Right "<<?>>"
+--
+-- >>> decodeBase64 "PDw_Pj4"
+-- Right "<<?>>"
+--
+-- >>> decodeBase64 "PDw-Pg="
+-- Left "Base64-encoded bytestring has invalid padding"
+--
+-- >>> decodeBase64 "PDw-Pg"
+-- Right "<<>>"
+--
 decodeBase64 :: ByteString -> Either T.Text ByteString
 decodeBase64 = fmap (fromChunks . (:[]))
   . B64U.decodeBase64
@@ -81,6 +108,11 @@ decodeBase64 = fmap (fromChunks . (:[]))
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
+-- === __Examples__:
+--
+-- >>> encodeBase64Unpadded "<<?>>"
+-- "PDw_Pj4"
+--
 encodeBase64Unpadded :: ByteString -> TL.Text
 encodeBase64Unpadded = TL.decodeUtf8 . encodeBase64Unpadded'
 {-# INLINE encodeBase64Unpadded #-}
@@ -90,6 +122,11 @@ encodeBase64Unpadded = TL.decodeUtf8 . encodeBase64Unpadded'
 -- as Base64url and stripping padding chars from the output.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
+--
+-- === __Examples__:
+--
+-- >>> encodeBase64Unpadded' "<<?>>"
+-- "PDw_Pj4"
 --
 encodeBase64Unpadded' :: ByteString -> ByteString
 encodeBase64Unpadded' = fromChunks
@@ -105,6 +142,14 @@ encodeBase64Unpadded' = fromChunks
 -- safer to call 'decodeBase64'.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+-- === __Examples__:
+--
+-- >>> decodeBase64Unpadded "PDw_Pj4"
+-- Right "<<?>>"
+--
+-- >>> decodeBase64Unpadded "PDw_Pj4="
+-- Left "Base64-encoded bytestring has invalid padding"
 --
 decodeBase64Unpadded :: ByteString -> Either T.Text ByteString
 decodeBase64Unpadded = fmap (fromChunks . (:[]))
@@ -122,6 +167,14 @@ decodeBase64Unpadded = fmap (fromChunks . (:[]))
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64Padded "PDw_Pj4="
+-- Right "<<?>>"
+--
+-- >>> decodeBase64Padded "PDw_Pj4"
+-- Left "Base64-encoded bytestring requires padding"
+--
 decodeBase64Padded :: ByteString -> Either T.Text ByteString
 decodeBase64Padded = fmap (fromChunks . (:[]))
   . B64U.decodeBase64Padded
@@ -135,6 +188,14 @@ decodeBase64Padded = fmap (fromChunks . (:[]))
 --
 -- __Note:__ This is not RFC 4648-compliant.
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64Lenient "PDw_Pj4="
+-- "<<?>>"
+--
+-- >>> decodeBase64Lenient "PDw_%%%$}Pj4"
+-- "<<?>>"
+--
 decodeBase64Lenient :: ByteString -> ByteString
 decodeBase64Lenient = fromChunks
     . fmap B64U.decodeBase64Lenient
@@ -145,6 +206,17 @@ decodeBase64Lenient = fromChunks
 
 -- | Tell whether a 'ByteString' is Base64url-encoded.
 --
+-- === __Examples__:
+--
+-- >>> isBase64Url "PDw_Pj4="
+-- True
+--
+-- >>> isBase64Url "PDw_Pj4"
+-- True
+--
+-- >>> isBase64Url "PDw_Pj"
+-- False
+--
 isBase64Url :: ByteString -> Bool
 isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 bs)
 {-# INLINE isBase64Url #-}
@@ -154,6 +226,17 @@ isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 bs)
 -- This will not tell you whether or not this is a correct Base64url representation,
 -- only that it conforms to the correct shape. To check whether it is a true
 -- Base64 encoded 'ByteString' value, use 'isBase64Url'.
+--
+-- === __Examples__:
+--
+-- >>> isBaseValid64Url "PDw_Pj4="
+-- True
+--
+-- >>> isValidBase64Url "PDw_Pj"
+-- True
+--
+-- >>> isValidBase64Url "%"
+-- False
 --
 isValidBase64Url :: ByteString -> Bool
 isValidBase64Url = go . toChunks

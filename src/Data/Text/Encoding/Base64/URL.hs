@@ -14,15 +14,18 @@
 -- variants, as well as internal and external validation for canonicity.
 --
 module Data.Text.Encoding.Base64.URL
-( encodeBase64
+( -- * Encoding
+  encodeBase64
+, encodeBase64Unpadded
+  -- * Decoding
 , decodeBase64
 , decodeBase64With
-, encodeBase64Unpadded
 , decodeBase64Unpadded
 , decodeBase64UnpaddedWith
 , decodeBase64Padded
 , decodeBase64PaddedWith
 , decodeBase64Lenient
+  -- * Validation
 , isBase64Url
 , isValidBase64Url
 ) where
@@ -39,6 +42,11 @@ import Data.Text.Encoding.Base64.Error
 -- | Encode a 'Text' value in Base64url with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
+--
+-- === __Examples__:
+--
+-- >>> encodeBase64 "<<?>>"
+-- "PDw_Pj4="
 --
 encodeBase64 :: Text -> Text
 encodeBase64 = B64U.encodeBase64 . T.encodeUtf8
@@ -58,6 +66,20 @@ encodeBase64 = B64U.encodeBase64 . T.encodeUtf8
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64 "PDw_Pj4="
+-- Right "<<?>>"
+--
+-- >>> decodeBase64 "PDw_Pj4"
+-- Right "<<?>>"
+--
+-- >>> decodeBase64 "PDw-Pg="
+-- Left "Base64-encoded bytestring has invalid padding"
+--
+-- >>> decodeBase64 "PDw-Pg"
+-- Right "<<>>"
+--
 decodeBase64 :: Text -> Either Text Text
 decodeBase64 = fmap T.decodeLatin1 . B64U.decodeBase64 . T.encodeUtf8
 {-# INLINE decodeBase64 #-}
@@ -68,7 +90,7 @@ decodeBase64 = fmap T.decodeLatin1 . B64U.decodeBase64 . T.encodeUtf8
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
--- Example:
+-- === __Examples__:
 --
 -- @
 -- 'decodeBase64With' 'T.decodeUtf8''
@@ -92,6 +114,11 @@ decodeBase64With f t = case B64U.decodeBase64 t of
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
+-- === __Examples__:
+--
+-- >>> encodeBase64Unpadded "<<?>>"
+-- "PDw_Pj4"
+--
 encodeBase64Unpadded :: Text -> Text
 encodeBase64Unpadded = B64U.encodeBase64Unpadded . T.encodeUtf8
 {-# INLINE encodeBase64Unpadded #-}
@@ -106,6 +133,14 @@ encodeBase64Unpadded = B64U.encodeBase64Unpadded . T.encodeUtf8
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64Unpadded "PDw_Pj4"
+-- Right "<<?>>"
+--
+-- >>> decodeBase64Unpadded "PDw_Pj4="
+-- Left "Base64-encoded bytestring has invalid padding"
+--
 decodeBase64Unpadded :: Text -> Either Text Text
 decodeBase64Unpadded = fmap T.decodeLatin1
     . B64U.decodeBase64Unpadded
@@ -118,10 +153,10 @@ decodeBase64Unpadded = fmap T.decodeLatin1
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
--- Example:
+-- === __Example__:
 --
 -- @
--- 'decodeBase64With' 'T.decodeUtf8''
+-- 'decodeBase64UnpaddedWith' 'T.decodeUtf8''
 --   :: 'ByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'Text'
 -- @
 --
@@ -146,6 +181,14 @@ decodeBase64UnpaddedWith f t = case B64U.decodeBase64Unpadded t of
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64Padded "PDw_Pj4="
+-- Right "<<?>>"
+--
+-- >>> decodeBase64Padded "PDw_Pj4"
+-- Left "Base64-encoded bytestring requires padding"
+--
 decodeBase64Padded :: Text -> Either Text Text
 decodeBase64Padded = fmap T.decodeLatin1
     . B64U.decodeBase64Padded
@@ -158,10 +201,10 @@ decodeBase64Padded = fmap T.decodeLatin1
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
--- Example:
+-- === __Example__:
 --
 -- @
--- 'decodeBase64With' 'T.decodeUtf8''
+-- 'decodeBase64PaddedWith' 'T.decodeUtf8''
 --   :: 'ByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'Text'
 -- @
 --
@@ -182,6 +225,14 @@ decodeBase64PaddedWith f t = case B64U.decodeBase64Padded t of
 --
 -- __Note:__ This is not RFC 4648-compliant.
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64Lenient "PDw_Pj4="
+-- "<<?>>"
+--
+-- >>> decodeBase64Lenient "PDw_%%%$}Pj4"
+-- "<<?>>"
+--
 decodeBase64Lenient :: Text -> Text
 decodeBase64Lenient = T.decodeLatin1
     . B64U.decodeBase64Lenient
@@ -189,6 +240,17 @@ decodeBase64Lenient = T.decodeLatin1
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'Text' value is Base64url-encoded.
+--
+-- === __Examples__:
+--
+-- >>> isBase64Url "PDw_Pj4="
+-- True
+--
+-- >>> isBase64Url "PDw_Pj4"
+-- True
+--
+-- >>> isBase64Url "PDw_Pj"
+-- False
 --
 isBase64Url :: Text -> Bool
 isBase64Url = B64U.isBase64Url . T.encodeUtf8
@@ -199,6 +261,17 @@ isBase64Url = B64U.isBase64Url . T.encodeUtf8
 -- This will not tell you whether or not this is a correct Base64url representation,
 -- only that it conforms to the correct shape. To check whether it is a true
 -- Base64 encoded 'Text' value, use 'isBase64Url'.
+--
+-- === __Examples__:
+--
+-- >>> isBaseValid64Url "PDw_Pj4="
+-- True
+--
+-- >>> isValidBase64Url "PDw_Pj"
+-- True
+--
+-- >>> isValidBase64Url "%"
+-- False
 --
 isValidBase64Url :: Text -> Bool
 isValidBase64Url = B64U.isValidBase64Url . T.encodeUtf8

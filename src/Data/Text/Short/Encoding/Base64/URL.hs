@@ -14,15 +14,18 @@
 -- decoding variants, and external + internal validations for canonicity.
 --
 module Data.Text.Short.Encoding.Base64.URL
-( encodeBase64
+( -- * Encoding
+  encodeBase64
+, encodeBase64Unpadded
+  -- * Decoding
 , decodeBase64
 , decodeBase64With
-, encodeBase64Unpadded
 , decodeBase64Unpadded
 , decodeBase64UnpaddedWith
 , decodeBase64Padded
 , decodeBase64PaddedWith
 , decodeBase64Lenient
+  -- * Validation
 , isBase64Url
 , isValidBase64Url
 ) where
@@ -41,6 +44,11 @@ import Data.Text.Short.Unsafe
 -- | Encode a 'ShortText' value in Base64url with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
+--
+-- === __Examples__:
+--
+-- >>> encodeBase64 "<<?>>"
+-- "PDw_Pj4="
 --
 encodeBase64 :: ShortText -> ShortText
 encodeBase64 = fromByteStringUnsafe
@@ -62,6 +70,20 @@ encodeBase64 = fromByteStringUnsafe
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64 "PDw_Pj4="
+-- Right "<<?>>"
+--
+-- >>> decodeBase64 "PDw_Pj4"
+-- Right "<<?>>"
+--
+-- >>> decodeBase64 "PDw-Pg="
+-- Left "Base64-encoded bytestring has invalid padding"
+--
+-- >>> decodeBase64 "PDw-Pg"
+-- Right "<<>>"
+--
 decodeBase64 :: ShortText -> Either Text ShortText
 decodeBase64 = fmap fromText . B64TU.decodeBase64 . toText
 {-# INLINE decodeBase64 #-}
@@ -72,7 +94,7 @@ decodeBase64 = fmap fromText . B64TU.decodeBase64 . toText
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
--- Example:
+-- === __Examples__:
 --
 -- @
 -- 'decodeBase64With' 'T.decodeUtf8''
@@ -96,6 +118,11 @@ decodeBase64With f t = case BS64U.decodeBase64 t of
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
+-- === __Examples__:
+--
+-- >>> encodeBase64Unpadded "<<?>>"
+-- "PDw_Pj4"
+--
 encodeBase64Unpadded :: ShortText -> ShortText
 encodeBase64Unpadded = fromByteStringUnsafe
   . B64U.encodeBase64Unpadded'
@@ -112,6 +139,14 @@ encodeBase64Unpadded = fromByteStringUnsafe
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64Unpadded "PDw_Pj4"
+-- Right "<<?>>"
+--
+-- >>> decodeBase64Unpadded "PDw_Pj4="
+-- Left "Base64-encoded bytestring has invalid padding"
+--
 decodeBase64Unpadded :: ShortText -> Either Text ShortText
 decodeBase64Unpadded = fmap fromText . B64TU.decodeBase64Unpadded . toText
 {-# INLINE decodeBase64Unpadded #-}
@@ -122,10 +157,10 @@ decodeBase64Unpadded = fmap fromText . B64TU.decodeBase64Unpadded . toText
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
--- Example:
+-- === __Examples__:
 --
 -- @
--- 'decodeBase64With' 'T.decodeUtf8''
+-- 'decodeBase64UnpaddedWith' 'T.decodeUtf8''
 --   :: 'ShortByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
 -- @
 --
@@ -150,6 +185,14 @@ decodeBase64UnpaddedWith f t = case BS64U.decodeBase64Unpadded t of
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64Padded "PDw_Pj4="
+-- Right "<<?>>"
+--
+-- >>> decodeBase64Padded "PDw_Pj4"
+-- Left "Base64-encoded bytestring requires padding"
+--
 decodeBase64Padded :: ShortText -> Either Text ShortText
 decodeBase64Padded = fmap fromText . B64TU.decodeBase64Padded . toText
 {-# INLINE decodeBase64Padded #-}
@@ -160,7 +203,7 @@ decodeBase64Padded = fmap fromText . B64TU.decodeBase64Padded . toText
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
--- Example:
+-- === __Examples__:
 --
 -- @
 -- 'decodeBase64With' 'T.decodeUtf8''
@@ -184,11 +227,30 @@ decodeBase64PaddedWith f t = case BS64U.decodeBase64Padded t of
 --
 -- __Note:__ This is not RFC 4648-compliant.
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64Lenient "PDw_Pj4="
+-- "<<?>>"
+--
+-- >>> decodeBase64Lenient "PDw_%%%$}Pj4"
+-- "<<?>>"
+--
 decodeBase64Lenient :: ShortText -> ShortText
 decodeBase64Lenient = fromText . B64TU.decodeBase64Lenient . toText
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ShortText' value is Base64url-encoded.
+--
+-- === __Examples__:
+--
+-- >>> isBase64Url "PDw_Pj4="
+-- True
+--
+-- >>> isBase64Url "PDw_Pj4"
+-- True
+--
+-- >>> isBase64Url "PDw_Pj"
+-- False
 --
 isBase64Url :: ShortText -> Bool
 isBase64Url = B64U.isBase64Url . toByteString
@@ -199,6 +261,17 @@ isBase64Url = B64U.isBase64Url . toByteString
 -- This will not tell you whether or not this is a correct Base64url representation,
 -- only that it conforms to the correct shape. To check whether it is a true
 -- Base64 encoded 'ShortText' value, use 'isBase64Url'.
+--
+-- === __Examples__:
+--
+-- >>> isBaseValid64Url "PDw_Pj4="
+-- True
+--
+-- >>> isValidBase64Url "PDw_Pj"
+-- True
+--
+-- >>> isValidBase64Url "%"
+-- False
 --
 isValidBase64Url :: ShortText -> Bool
 isValidBase64Url = B64U.isValidBase64Url . toByteString
