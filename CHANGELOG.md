@@ -1,5 +1,11 @@
 # Revision history for base64
 
+## 0.4.2.2
+
+* Add `NFData`, `Exception`, and `Generic` instances for `Base64Error` + `@since` annotations for new instances.
+* Doc improvements and add `-XTrustworty` and `-XSafe` annotations where needed. ([#27](https://github.com/emilypi/base64/pull/27))
+* Improve URL canonicity validation and correctness checking (now supports correct checking for unpadded Base64url) ([#26](https://github.com/emilypi/base64/pull/26))
+
 ## 0.4.2.1
 
 * Security fix: reject non-canonical base64 encoded values - ([#25](https://github.com/emilypi/base64/pull/25))

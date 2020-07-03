@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE Safe #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.Error
@@ -16,7 +17,12 @@ module Data.Text.Encoding.Base64.Error
 ) where
 
 
+import Control.DeepSeq (NFData(..))
+import Control.Exception (Exception(..))
+
 import Data.Text (Text)
+
+import GHC.Generics
 
 -- | This data type represents the type of decoding errors of
 -- various kinds as they pertain to decoding 'Text' values.
@@ -30,4 +36,21 @@ data Base64Error e
   | ConversionError e
     -- ^ The error associated with the decoding failure
     -- as a result of the conversion process
-  deriving (Eq, Show)
+  deriving
+    ( Eq, Show
+    , Generic
+      -- ^ @since 4.2.2
+    )
+
+-- |
+--
+-- @since 4.2.2
+--
+instance Exception e => Exception (Base64Error e)
+
+
+-- |
+--
+-- @since 4.2.2
+--
+instance NFData e => NFData (Base64Error e)
