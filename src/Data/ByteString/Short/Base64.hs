@@ -29,7 +29,7 @@ import Data.Text (Text)
 import Data.Text.Short (ShortText)
 import Data.Text.Short.Unsafe (fromShortByteStringUnsafe)
 
--- | Encode a 'ShortByteString' value as Base64 'Text' with padding.
+-- | Encode a 'ShortByteString' value as Base64 'ShortText' with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
