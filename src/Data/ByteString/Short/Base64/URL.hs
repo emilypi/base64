@@ -10,8 +10,8 @@
 --
 -- This module contains 'Data.ByteString.Short.ShortByteString'-valued combinators for
 -- implementing the RFC 4648 specification of the Base64url
--- encoding format. This includes unpadded and lenient variants, as well as
--- internal and external validation for canonicity.
+-- encoding format. This includes strictly padded/unpadded and lenient decoding
+-- variants, as well as internal and external validation for canonicity.
 --
 module Data.ByteString.Short.Base64.URL
 ( encodeBase64
