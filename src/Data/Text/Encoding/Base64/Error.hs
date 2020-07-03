@@ -1,11 +1,12 @@
+{-# LANGUAGE Safe #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.Error
--- Copyright 	: (c) 2019-2020 Emily Pillmore
--- License	: BSD-style
+-- Copyright    : (c) 2019-2020 Emily Pillmore
+-- License      : BSD-style
 --
--- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
--- Stability	: Experimental
--- Portability	: non-portable
+-- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
+-- Stability    : stable
+-- Portability  : non-portable
 --
 -- This module contains the error types raised (not as exceptions!)
 -- in the decoding process.
