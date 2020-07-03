@@ -6,6 +6,7 @@
 * Doc improvements and add `-XTrustworty` and `-XSafe` annotations where needed. ([#27](https://github.com/emilypi/base64/pull/27))
 * Improve URL canonicity validation and correctness checking (now supports correct checking for unpadded Base64url) ([#26](https://github.com/emilypi/base64/pull/26))
 * Fixed perf regressions in decode
+* Test coverage is at 98%
 
 ## 0.4.2.1
 
