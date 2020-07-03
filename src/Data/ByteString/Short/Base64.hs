@@ -14,10 +14,13 @@
 -- internal and external validation for canonicity.
 --
 module Data.ByteString.Short.Base64
-( encodeBase64
+( -- * Encoding
+  encodeBase64
 , encodeBase64'
+  -- * Decoding
 , decodeBase64
 , decodeBase64Lenient
+  -- * Validation
 , isBase64
 , isValidBase64
 ) where
@@ -33,6 +36,11 @@ import Data.Text.Short.Unsafe (fromShortByteStringUnsafe)
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> encodeBase64 "Sun"
+-- "U3Vu"
+--
 encodeBase64 :: ShortByteString -> ShortText
 encodeBase64 = fromShortByteStringUnsafe . encodeBase64'
 {-# INLINE encodeBase64 #-}
@@ -41,6 +49,11 @@ encodeBase64 = fromShortByteStringUnsafe . encodeBase64'
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> encodeBase64' "Sun"
+-- "U3Vu"
+--
 encodeBase64' :: ShortByteString -> ShortByteString
 encodeBase64' = toShort . B64.encodeBase64' . fromShort
 {-# INLINE encodeBase64' #-}
@@ -48,6 +61,17 @@ encodeBase64' = toShort . B64.encodeBase64' . fromShort
 -- | Decode a padded Base64-encoded 'ShortByteString' value.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+-- === __Examples__:
+--
+-- >>> decodeBase64 "U3Vu"
+-- Right "Sun"
+--
+-- >>> decodeBase64 "U3V"
+-- Left "Base64-encoded bytestring requires padding"
+--
+-- >>> decodebase64 "U3V="
+-- Left "non-canonical encoding detected at offset: 2"
 --
 decodeBase64 :: ShortByteString -> Either Text ShortByteString
 decodeBase64 = fmap toShort . B64.decodeBase64 . fromShort
@@ -59,11 +83,33 @@ decodeBase64 = fmap toShort . B64.decodeBase64 . fromShort
 --
 -- __Note:__ This is not RFC 4648-compliant.
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64Lenient "U3Vu"
+-- "Sun"
+--
+-- >>> decodeBase64Lenient "U3V"
+-- "Su"
+--
+-- >>> decodebase64Lenient "U3V="
+-- "Su"
+--
 decodeBase64Lenient :: ShortByteString -> ShortByteString
 decodeBase64Lenient = toShort . B64.decodeBase64Lenient . fromShort
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ShortByteString' value is base64 encoded.
+--
+-- === __Examples__:
+--
+-- >>> isBase64 "U3Vu"
+-- True
+--
+-- >>> isBase64 "U3V"
+-- False
+--
+-- >>> isBase64 "U3V="
+-- False
 --
 isBase64 :: ShortByteString -> Bool
 isBase64 = B64.isBase64 . fromShort
@@ -74,6 +120,20 @@ isBase64 = B64.isBase64 . fromShort
 -- This will not tell you whether or not this is a correct Base64url representation,
 -- only that it conforms to the correct shape. To check whether it is a true
 -- Base64 encoded 'ShortByteString' value, use 'isBase64'.
+--
+-- === __Examples__:
+--
+-- >>> isValidBase64 "U3Vu"
+-- True
+--
+-- >>> isValidBase64 "U3V"
+-- True
+--
+-- >>> isValidBase64 "U3V="
+-- True
+--
+-- >>> isValidBase64 "%"
+-- False
 --
 isValidBase64 :: ShortByteString -> Bool
 isValidBase64 = B64.isValidBase64 . fromShort

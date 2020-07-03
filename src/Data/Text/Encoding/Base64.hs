@@ -14,10 +14,13 @@
 -- internal and external validation for canonicity.
 --
 module Data.Text.Encoding.Base64
-( encodeBase64
+( -- * Encoding
+  encodeBase64
+  -- * Decoding
 , decodeBase64
 , decodeBase64With
 , decodeBase64Lenient
+  -- * Validation
 , isBase64
 , isValidBase64
 ) where
@@ -35,6 +38,11 @@ import Data.Text.Encoding.Base64.Error
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> encodeBase64 "Sun"
+-- "U3Vu"
+--
 encodeBase64 :: Text -> Text
 encodeBase64 = B64.encodeBase64 . T.encodeUtf8
 {-# INLINE encodeBase64 #-}
@@ -49,6 +57,17 @@ encodeBase64 = B64.encodeBase64 . T.encodeUtf8
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64 "U3Vu"
+-- Right "Sun"
+--
+-- >>> decodeBase64 "U3V"
+-- Left "Base64-encoded bytestring requires padding"
+--
+-- >>> decodebase64 "U3V="
+-- Left "non-canonical encoding detected at offset: 2"
+--
 decodeBase64 :: Text -> Either Text Text
 decodeBase64 = fmap T.decodeLatin1 . B64.decodeBase64 . T.encodeUtf8
 {-# INLINE decodeBase64 #-}
@@ -59,7 +78,7 @@ decodeBase64 = fmap T.decodeLatin1 . B64.decodeBase64 . T.encodeUtf8
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
--- Example:
+-- === __Example__:
 --
 -- @
 -- 'decodeBase64With' 'T.decodeUtf8''
@@ -83,6 +102,17 @@ decodeBase64With f t = case B64.decodeBase64 t of
 --
 -- __Note:__ This is not RFC 4648-compliant.
 --
+-- === __Examples__:
+--
+-- >>> decodeBase64Lenient "U3Vu"
+-- "Sun"
+--
+-- >>> decodeBase64Lenient "U3V"
+-- "Su"
+--
+-- >>> decodebase64Lenient "U3V="
+-- "Su"
+--
 decodeBase64Lenient :: Text -> Text
 decodeBase64Lenient = T.decodeLatin1
     . B64.decodeBase64Lenient
@@ -90,6 +120,17 @@ decodeBase64Lenient = T.decodeLatin1
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'Text' value is Base64-encoded.
+--
+-- === __Examples__:
+--
+-- >>> isBase64 "U3Vu"
+-- True
+--
+-- >>> isBase64 "U3V"
+-- False
+--
+-- >>> isBase64 "U3V="
+-- False
 --
 isBase64 :: Text -> Bool
 isBase64 = B64.isBase64 . T.encodeUtf8
@@ -100,6 +141,20 @@ isBase64 = B64.isBase64 . T.encodeUtf8
 -- This will not tell you whether or not this is a correct Base64 representation,
 -- only that it conforms to the correct shape. To check whether it is a true
 -- Base64 encoded 'Text' value, use 'isBase64'.
+--
+-- === __Examples__:
+--
+-- >>> isValidBase64 "U3Vu"
+-- True
+--
+-- >>> isValidBase64 "U3V"
+-- True
+--
+-- >>> isValidBase64 "U3V="
+-- True
+--
+-- >>> isValidBase64 "%"
+-- False
 --
 isValidBase64 :: Text -> Bool
 isValidBase64 = B64.isValidBase64 . T.encodeUtf8
