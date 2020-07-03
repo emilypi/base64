@@ -1,20 +1,20 @@
-cabal-version:      2.0
-name:               base64
-version:            0.4.2.2
-synopsis:           Fast RFC 4648-compliant Base64 encoding
+cabal-version:   2.0
+name:            base64
+version:         0.4.2.2
+synopsis:        Fast RFC 4648-compliant Base64 encoding
 description:
   RFC 4648-compliant padded and unpadded base64 and base64url encoding and decoding. This library provides
   performant encoding and decoding primitives, as well as support for textual values.
 
-homepage:           https://github.com/emilypi/base64
-bug-reports:        https://github.com/emilypi/base64/issues
-license:            BSD3
-license-file:       LICENSE
-author:             Emily Pillmore
-maintainer:         emilypi@cohomolo.gy
-copyright:          (c) 2019-2020 Emily Pillmore
-category:           Data
-build-type:         Simple
+homepage:        https://github.com/emilypi/base64
+bug-reports:     https://github.com/emilypi/base64/issues
+license:         BSD3
+license-file:    LICENSE
+author:          Emily Pillmore
+maintainer:      emilypi@cohomolo.gy
+copyright:       (c) 2019-2020 Emily Pillmore
+category:        Data
+build-type:      Simple
 extra-doc-files:
   CHANGELOG.md
   README.md
@@ -77,7 +77,7 @@ test-suite tasty
   other-modules:    Internal
   main-is:          Main.hs
   build-depends:
-      base                  >=4.10 && <5
+      base               >=4.10 && <5
     , base64
     , base64-bytestring
     , bytestring
