@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 -- |
@@ -41,7 +42,7 @@ import System.IO.Unsafe
 --
 encodeBase64 :: ByteString -> Text
 encodeBase64 = T.decodeUtf8 . encodeBase64'
-{-# INLINE encodeBase64 #-}
+{-# inline encodeBase64 #-}
 
 -- | Encode a 'ByteString' value as a Base64 'ByteString'  value with padding.
 --
@@ -49,23 +50,23 @@ encodeBase64 = T.decodeUtf8 . encodeBase64'
 --
 encodeBase64' :: ByteString -> ByteString
 encodeBase64' = encodeBase64_ base64Table
-{-# INLINE encodeBase64' #-}
+{-# inline encodeBase64' #-}
 
 -- | Decode a padded Base64-encoded 'ByteString' value.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 bs@(PS _ _ l)
+decodeBase64 bs@(PS _ _ !l)
     | l == 0 = Right bs
     | r == 1 = Left "Base64-encoded bytestring has invalid size"
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
     | otherwise = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64Table bs
   where
-    q = l `quot` 4
-    r = l `rem` 4
-    dlen = q * 3
-{-# INLINE decodeBase64 #-}
+    !q = l `quot` 4
+    !r = l `rem` 4
+    !dlen = q * 3
+{-# inline decodeBase64 #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ByteString' value. This function
 -- will not generate parse errors. If input data contains padding chars,
@@ -75,7 +76,7 @@ decodeBase64 bs@(PS _ _ l)
 --
 decodeBase64Lenient :: ByteString -> ByteString
 decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
-{-# INLINE decodeBase64Lenient #-}
+{-# inline decodeBase64Lenient #-}
 
 -- | Tell whether a 'ByteString' value is base64 encoded.
 --
@@ -85,7 +86,7 @@ decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 --
 isBase64 :: ByteString -> Bool
 isBase64 bs = isValidBase64 bs && isRight (decodeBase64 bs)
-{-# INLINE isBase64 #-}
+{-# inline isBase64 #-}
 
 -- | Tell whether a 'ByteString' value is a valid Base64 format.
 --
@@ -95,4 +96,4 @@ isBase64 bs = isValidBase64 bs && isRight (decodeBase64 bs)
 --
 isValidBase64 :: ByteString -> Bool
 isValidBase64 = validateBase64 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-{-# INLINE isValidBase64 #-}
+{-# inline isValidBase64 #-}

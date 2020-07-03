@@ -44,13 +44,13 @@ import System.IO.Unsafe
 
 
 encodeBase64_ :: EncodingTable -> ByteString -> ByteString
-encodeBase64_ (EncodingTable aptr efp) (PS sfp soff slen) =
+encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
     unsafeDupablePerformIO $ do
       dfp <- mallocPlainForeignPtrBytes dlen
       withForeignPtr dfp $ \dptr ->
         withForeignPtr sfp $ \sptr ->
         withForeignPtr efp $ \eptr -> do
-          let end = plusPtr sptr (soff + slen)
+          let !end = plusPtr sptr (soff + slen)
           innerLoop
             eptr
             (castPtr (plusPtr sptr soff))
@@ -58,7 +58,7 @@ encodeBase64_ (EncodingTable aptr efp) (PS sfp soff slen) =
             end
             (loopTail dfp aptr dptr (castPtr end))
   where
-    dlen = 4 * ((slen + 2) `div` 3)
+    !dlen = 4 * ((slen + 2) `div` 3)
 
 encodeBase64Nopad_ :: EncodingTable -> ByteString -> ByteString
 encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
@@ -92,17 +92,16 @@ decodeBase64_
     -> ForeignPtr Word8
     -> ByteString
     -> IO (Either Text ByteString)
-decodeBase64_ dlen dtfp (PS sfp soff slen) =
+decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen) =
     withForeignPtr dtfp $ \dtable ->
     withForeignPtr sfp $ \sptr -> do
       dfp <- mallocPlainForeignPtrBytes dlen
-      withForeignPtr dfp $ \dptr ->
-        decodeLoop
-          dtable
+      withForeignPtr dfp $ \dptr -> do
+        let !end = plusPtr sptr (soff + slen)
+        decodeLoop dtable
           (plusPtr sptr soff)
-          dptr
-          (plusPtr sptr (soff + slen))
-          dfp
+          dptr end dfp
+{-# inline decodeBase64_ #-}
 
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
 decodeBase64Lenient_ !dtfp (PS !sfp !soff !slen) = unsafeDupablePerformIO $
