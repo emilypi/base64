@@ -74,7 +74,7 @@ decodeLoop
     -> Ptr Word8
     -> ForeignPtr Word8
     -> IO (Either Text ByteString)
-decodeLoop !dtable !sptr !dptr !end dfp = go dptr sptr
+decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
   where
     err :: Ptr Word8 -> IO (Either Text ByteString)
     err p = return . Left . T.pack
