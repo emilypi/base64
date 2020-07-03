@@ -1,15 +1,17 @@
+{-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Short.Base64
 -- Copyright    : (c) 2019-2020 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
--- Stability    : Experimental
+-- Stability    : stable
 -- Portability  : non-portable
 --
--- This module contains the combinators implementing the
--- RFC 4648 specification for the Base64 encoding including
--- unpadded and lenient variants
+-- This module contains 'Data.ByteString.Short.ShortByteString'-valued combinators for
+-- implementing the RFC 4648 specification of the Base64
+-- encoding format. This includes lenient decoding variants, as well as
+-- internal and external validation for canonicity.
 --
 module Data.ByteString.Short.Base64
 ( encodeBase64
@@ -27,7 +29,7 @@ import Data.Text (Text)
 import Data.Text.Short (ShortText)
 import Data.Text.Short.Unsafe (fromShortByteStringUnsafe)
 
--- | Encode a 'ShortByteString' value as Base64 'Text' with padding.
+-- | Encode a 'ShortByteString' value as Base64 'ShortText' with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --

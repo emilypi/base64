@@ -1,16 +1,17 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Safe #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.URL
--- Copyright 	: (c) 2019-2020 Emily Pillmore
--- License	: BSD-style
+-- Copyright    : (c) 2019-2020 Emily Pillmore
+-- License      : BSD-style
 --
--- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
--- Stability	: Experimental
--- Portability	: non-portable
+-- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
+-- Stability    : stable
+-- Portability  : non-portable
 --
--- This module contains the combinators implementing the
--- RFC 4648 specification for the Base64url encoding including
--- unpadded and lenient variants
+-- This module contains 'Data.Text.Text'-valued combinators for
+-- implementing the RFC 4648 specification of the Base64url
+-- encoding format. This includes strictly padded/unpadded and lenient decoding
+-- variants, as well as internal and external validation for canonicity.
 --
 module Data.Text.Encoding.Base64.URL
 ( encodeBase64

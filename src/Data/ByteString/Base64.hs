@@ -1,17 +1,18 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Base64
 -- Copyright    : (c) 2019-2020 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
--- Stability    : Experimental
+-- Stability    : stable
 -- Portability  : non-portable
 --
--- This module contains the combinators implementing the
--- RFC 4648 specification for the Base64 encoding including
--- unpadded and lenient variants
+-- This module contains 'Data.ByteString.ByteString'-valued combinators for
+-- implementing the RFC 4648 specification of the Base64
+-- encoding format. This includes lenient decoding variants, as well as
+-- internal and external validation for canonicity.
 --
 module Data.ByteString.Base64
 ( encodeBase64
