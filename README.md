@@ -25,4 +25,4 @@ Additionally this library has
 - Checks for both validity and correctness of Base64 and Base64url encodings
 - Rejects non-canonical encodings that do not roundtrip in other base64 libraries like `ZE==`.
 
-There are no dependencies aside from those bundled with GHC, and the `ghc-byteorder` re-export.
+There are no dependencies aside from those bundled with GHC, `text-short`, and the `ghc-byteorder` re-export.
