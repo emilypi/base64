@@ -264,7 +264,7 @@ isBase64Url = B64U.isBase64Url . toByteString
 --
 -- === __Examples__:
 --
--- >>> isBaseValid64Url "PDw_Pj4="
+-- >>> isValidBase64Url "PDw_Pj4="
 -- True
 --
 -- >>> isValidBase64Url "PDw_Pj"

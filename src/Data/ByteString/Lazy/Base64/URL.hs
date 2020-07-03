@@ -229,7 +229,7 @@ isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 bs)
 --
 -- === __Examples__:
 --
--- >>> isBaseValid64Url "PDw_Pj4="
+-- >>> isValidBase64Url "PDw_Pj4="
 -- True
 --
 -- >>> isValidBase64Url "PDw_Pj"

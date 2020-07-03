@@ -265,7 +265,7 @@ isBase64Url = BL64U.isBase64Url . TL.encodeUtf8
 --
 -- === __Examples__:
 --
--- >>> isBaseValid64Url "PDw_Pj4="
+-- >>> isValidBase64Url "PDw_Pj4="
 -- True
 --
 -- >>> isValidBase64Url "PDw_Pj"
