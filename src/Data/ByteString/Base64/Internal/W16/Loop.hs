@@ -53,9 +53,9 @@ innerLoop !etable !sptr !dptr !end finish = go sptr dptr
         !j <- w32 <$> peek (plusPtr src 1)
         !k <- w32 <$> peek (plusPtr src 2)
 
-        let !w = (shiftL i 16) .|. (shiftL j 8) .|. k
+        let !w = (unsafeShiftL i 16) .|. (unsafeShiftL j 8) .|. k
 
-        !x <- peekElemOff etable (fromIntegral (shiftR w 12))
+        !x <- peekElemOff etable (fromIntegral (unsafeShiftR w 12))
         !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
 
         poke dst x
@@ -74,24 +74,27 @@ decodeLoop
     -> Ptr Word8
     -> ForeignPtr Word8
     -> IO (Either Text ByteString)
-decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
+decodeLoop !dtable !sptr !dptr !end dfp = go dptr sptr
   where
+    err :: Ptr Word8 -> IO (Either Text ByteString)
     err p = return . Left . T.pack
       $ "invalid character at offset: "
       ++ show (p `minusPtr` sptr)
 
+    padErr :: Ptr Word8 -> IO (Either Text ByteString)
     padErr p =  return . Left . T.pack
       $ "invalid padding at offset: "
       ++ show (p `minusPtr` sptr)
 
+    canonErr :: Ptr Word8 -> IO (Either Text ByteString)
     canonErr p = return . Left . T.pack
       $ "non-canonical encoding detected at offset: "
       ++ show (p `minusPtr` sptr)
 
     look :: Ptr Word8 -> IO Word32
     look !p = do
-      i <- peekByteOff @Word8 p 0
-      v <- peekByteOff @Word8 dtable (fromIntegral i)
+      !i <- peekByteOff @Word8 p 0
+      !v <- peekByteOff @Word8 dtable (fromIntegral i)
       return (fromIntegral v)
 
     go !dst !src
@@ -103,17 +106,17 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
         finalChunk dst src a b c d
 
       | otherwise = do
-        !a <- look src
-        !b <- look (src `plusPtr` 1)
-        !c <- look (src `plusPtr` 2)
-        !d <- look (src `plusPtr` 3)
+        a <- look src
+        b <- look (src `plusPtr` 1)
+        c <- look (src `plusPtr` 2)
+        d <- look (src `plusPtr` 3)
         decodeChunk dst src a b c d
 
     -- | Decodes chunks of 4 bytes at a time, recombining into
     -- 3 bytes. Note that in the inner loop stage, no padding
     -- characters are admissible.
     --
-    decodeChunk !dst !src !a !b !c !d
+    decodeChunk !dst !src a b c d
      | a == 0x63 = padErr src
      | b == 0x63 = padErr (plusPtr src 1)
      | c == 0x63 = padErr (plusPtr src 2)
@@ -138,7 +141,7 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
     -- 3 bytes. Note that in this stage, we can have padding chars
     -- but only in the final 2 positions.
     --
-    finalChunk !dst !src !a !b !c !d
+    finalChunk !dst !src a b c d
       | a == 0x63 = padErr src
       | b == 0x63 = padErr (plusPtr src 1)
       | c == 0x63 && d /= 0x63 = err (plusPtr src 3) -- make sure padding is coherent.
