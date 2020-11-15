@@ -1,10 +1,9 @@
 cabal-version:   2.0
 name:            base64
 version:         0.4.2.2
-synopsis:        Fast RFC 4648-compliant Base64 encoding
+synopsis:        A modern RFC 4648-compliant Base64 library
 description:
-  RFC 4648-compliant padded and unpadded base64 and base64url encoding and decoding. This library provides
-  performant encoding and decoding primitives, as well as support for textual values.
+  RFC 4648-compliant Base64 with an eye towards performance and modernity (additional support for RFC 7049 standards)
 
 homepage:        https://github.com/emilypi/base64
 bug-reports:     https://github.com/emilypi/base64/issues
@@ -19,14 +18,7 @@ extra-doc-files:
   CHANGELOG.md
   README.md
 
-tested-with:
-  GHC ==8.2.2
-   || ==8.4.3
-   || ==8.4.4
-   || ==8.6.3
-   || ==8.6.5
-   || ==8.8.1
-   || ==8.10.1
+tested-with:     GHC ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.3 || ==8.10.2
 
 source-repository head
   type:     git
@@ -60,7 +52,7 @@ library
 
   build-depends:
       base           >=4.10     && <5
-    , bytestring     ^>=0.10
+    , bytestring     >=0.10     && <0.12
     , deepseq        >=1.4.3.0  && <1.4.5.0
     , ghc-byteorder  ^>=4.11.0.0
     , text           ^>=1.2
