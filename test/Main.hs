@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
@@ -44,6 +45,8 @@ import Internal
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck (testProperty)
+import Data.String (IsString)
+import Test.QuickCheck hiding (label)
 
 
 main :: IO ()
@@ -67,18 +70,18 @@ tests = testGroup "Base64 Tests"
   , mkTree t64
     [ mkPropTree
     , mkUnitTree (c2w . T.last) T.length
-    , mkDecodeTree T.decodeUtf8' b64
+    , mkDecodeTree T.decodeUtf8' tt64 b64
     ]
   , mkTree tl64
     [ mkPropTree
     , mkUnitTree (c2w . TL.last) (fromIntegral . TL.length)
-    , mkDecodeTree TL.decodeUtf8' lb64
+    , mkDecodeTree TL.decodeUtf8' ttl64 lb64
     ]
   , mkTree ts64
     [ mkPropTree
     , mkUnitTree (c2w . T.last . TS.toText) TS.length
     , mkDecodeTree
-      (second TS.fromText . T.decodeUtf8' . SBS.fromShort) sb64
+      (second TS.fromText . T.decodeUtf8' . SBS.fromShort) tts64 sb64
     ]
   ]
 
@@ -88,28 +91,26 @@ tests = testGroup "Base64 Tests"
 -- | Make a test tree for a given label
 --
 mkTree
-  :: forall a b proxy
-  . Harness a b
-  => proxy a
-  -> [proxy a -> TestTree]
+  :: (Arbitrary a, IsString a, Eq a, Show a)
+  => Harness a
+  -> [Harness a -> TestTree]
   -> TestTree
-mkTree a = testGroup (label @a) . fmap ($ a)
+mkTree a = testGroup (label a) . fmap ($ a)
 
 -- | Make a test group with some name, lifting a test tree up to the correct
 -- type information via some Harness
 --
 mkTests
-  :: forall a b proxy
-  . Harness a b
+  :: (Arbitrary a, IsString a, Eq a, Show a)
   => String
-  -> [proxy a -> TestTree]
-  -> proxy a
+  -> [Harness a -> TestTree]
+  -> Harness a
   -> TestTree
 mkTests context ts = testGroup context . (<*>) ts . pure
 
 -- | Make property tests for a given harness instance
 --
-mkPropTree :: forall a b proxy. Harness a b => proxy a -> TestTree
+mkPropTree :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
 mkPropTree = mkTests "Property Tests"
   [ prop_roundtrip
   , prop_correctness
@@ -120,11 +121,10 @@ mkPropTree = mkTests "Property Tests"
 -- | Make unit tests for a given harness instance
 --
 mkUnitTree
-  :: forall a b proxy
-  . Harness a b
-  => (b -> Word8)
-  -> (b -> Int)
-  -> proxy a
+  :: (Arbitrary a, IsString a, Eq a, Show a)
+  => (a -> Word8)
+  -> (a -> Int)
+  -> Harness a
   -> TestTree
 mkUnitTree last_ length_ = mkTests "Unit tests"
   [ paddingTests last_ length_
@@ -137,24 +137,20 @@ mkUnitTree last_ length_ = mkTests "Unit tests"
 -- | Make unit tests for textual 'decode*With' functions
 --
 mkDecodeTree
-  :: forall t a b c e proxy
-  . ( TextHarness a b c
-    , Harness t c
-    , Show e
-    )
-  => (c -> Either e b)
-  -> proxy t
-  -> proxy a
+  :: (Arbitrary t, Eq t, IsString t, Show t, IsString a, Show e) => (a -> Either e t)
+  -> TextHarness a t
+  -> Harness a
+  -> Harness t
   -> TestTree
-mkDecodeTree utf8 t = mkTests "Decoding tests"
-  [ decodeWithVectors utf8 t
+mkDecodeTree utf8 t a = mkTests "Decoding tests"
+  [ decodeWithVectors utf8 t a
   ]
 
 -- ---------------------------------------------------------------- --
 -- Property tests
 
-prop_roundtrip :: forall a b proxy. Harness a b => proxy a -> TestTree
-prop_roundtrip _ = testGroup "prop_roundtrip"
+prop_roundtrip :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
+prop_roundtrip Harness{..} = testGroup "prop_roundtrip"
   [ testProperty "prop_std_roundtrip" $ \(bs :: b) ->
       Right (encode bs) == decode (encode (encode bs))
   , testProperty "prop_url_roundtrip" $ \(bs :: b) ->
@@ -168,8 +164,8 @@ prop_roundtrip _ = testGroup "prop_roundtrip"
       encodeUrl bs == lenientUrl (encodeUrl (encodeUrl bs))
   ]
 
-prop_correctness :: forall a b proxy. Harness a b => proxy a -> TestTree
-prop_correctness _ = testGroup "prop_validity"
+prop_correctness :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
+prop_correctness Harness{..} = testGroup "prop_validity"
   [ testProperty "prop_std_valid" $ \(bs :: b) ->
     validate (encode bs)
   , testProperty "prop_url_valid" $ \(bs :: b) ->
@@ -180,8 +176,8 @@ prop_correctness _ = testGroup "prop_validity"
     correctUrl (encodeUrl bs)
   ]
 
-prop_url_padding :: forall a b proxy. Harness a b => proxy a -> TestTree
-prop_url_padding _ = testGroup "prop_url_padding"
+prop_url_padding :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
+prop_url_padding Harness{..}  = testGroup "prop_url_padding"
   [ testProperty "prop_url_nopad_roundtrip" $ \(bs :: b) ->
       Right (encodeUrlNopad bs)
         == decodeUrlNopad (encodeUrlNopad (encodeUrlNopad bs))
@@ -226,8 +222,8 @@ prop_bos_coherence = testGroup "prop_bos_coherence"
 
 -- | RFC 4648 test vectors
 --
-rfcVectors :: forall a b proxy. Harness a b => proxy a -> TestTree
-rfcVectors _ = testGroup "RFC 4648 Test Vectors"
+rfcVectors :: (IsString a, Eq a, Show a) => Harness a -> TestTree
+rfcVectors Harness{..} = testGroup "RFC 4648 Test Vectors"
     [ testGroup "std alphabet"
       [ testCaseStd "" ""
       , testCaseStd "f" "Zg=="
@@ -252,7 +248,7 @@ rfcVectors _ = testGroup "RFC 4648 Test Vectors"
     testCaseStd s t =
       testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
         step "encode is sound"
-        t @=? encode @a s
+        t @=? encode s
 
         step "decode is sound"
         Right s @=? decode (encode s)
@@ -260,7 +256,7 @@ rfcVectors _ = testGroup "RFC 4648 Test Vectors"
     testCaseUrl s t =
       testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
         step "encode is sound"
-        t @=? encodeUrl @a s
+        t @=? encodeUrl s
 
         step "decode is sound"
         Right s @=? decodeUrlPad t
@@ -268,13 +264,12 @@ rfcVectors _ = testGroup "RFC 4648 Test Vectors"
 -- | Url-safe padding unit tests (stresses entire alphabet)
 --
 paddingTests
-  :: forall a b proxy
-  . Harness a b
-  => (b -> Word8)
-  -> (b -> Int)
-  -> proxy a
+  :: (IsString a, Eq a, Show a)
+  => (a -> Word8)
+  -> (a -> Int)
+  -> Harness a
   -> TestTree
-paddingTests last_ length_ _ = testGroup "Padding tests"
+paddingTests last_ length_ Harness{..} = testGroup "Padding tests"
     [ testGroup "URL decodePadding coherence"
       [ ptest "<" "PA=="
       , ptest "<<" "PDw="
@@ -293,20 +288,20 @@ paddingTests last_ length_ _ = testGroup "Padding tests"
       ]
     , testGroup "url-safe padding case unit tests"
       [ testCase "stress arbitarily padded URL strings" $ do
-        decodeUrl @a "P" @=? Left "Base64-encoded bytestring has invalid size"
-        decodeUrl @a "PA" @=? Right "<"
-        decodeUrl @a "PDw" @=? Right "<<"
-        decodeUrl @a "PDw_" @=? Right "<<?"
+        decodeUrl "P" @=? Left "Base64-encoded bytestring has invalid size"
+        decodeUrl "PA" @=? Right "<"
+        decodeUrl "PDw" @=? Right "<<"
+        decodeUrl "PDw_" @=? Right "<<?"
       , testCase "stress padded URL strings" $ do
-        decodeUrlPad @a "=" @=? Left "Base64-encoded bytestring has invalid size"
-        decodeUrlPad @a "PA==" @=? Right "<"
-        decodeUrlPad @a "PDw=" @=? Right "<<"
-        decodeUrlPad @a "PDw_" @=? Right "<<?"
+        decodeUrlPad "=" @=? Left "Base64-encoded bytestring has invalid size"
+        decodeUrlPad "PA==" @=? Right "<"
+        decodeUrlPad "PDw=" @=? Right "<<"
+        decodeUrlPad "PDw_" @=? Right "<<?"
       , testCase "stress unpadded URL strings" $ do
-        decodeUrlNopad @a "P" @=? Left "Base64-encoded bytestring has invalid size"
-        decodeUrlNopad @a "PA" @=? Right "<"
-        decodeUrlNopad @a "PDw" @=? Right "<<"
-        decodeUrlNopad @a "PDw_" @=? Right "<<?"
+        decodeUrlNopad "P" @=? Left "Base64-encoded bytestring has invalid size"
+        decodeUrlNopad "PA" @=? Right "<"
+        decodeUrlNopad "PDw" @=? Right "<<"
+        decodeUrlNopad "PDw_" @=? Right "<<?"
       ]
     ]
   where
@@ -347,179 +342,176 @@ paddingTests last_ length_ _ = testGroup "Padding tests"
 -- | Offset test vectors. This stresses the invalid char + incorrect padding
 -- offset error messages
 --
-offsetVectors :: forall a b proxy. Harness a b => proxy a -> TestTree
-offsetVectors _ = testGroup "Offset tests"
+offsetVectors :: (IsString a, Eq a, Show a) => Harness a -> TestTree
+offsetVectors Harness{..} = testGroup "Offset tests"
   [ testGroup "Invalid padding"
     [ testCase "Invalid staggered padding" $ do
-      decodeUrl @a "=A==" @=? Left "invalid padding at offset: 0"
-      decodeUrl @a "P===" @=? Left "invalid padding at offset: 1"
+      decodeUrl "=A==" @=? Left "invalid padding at offset: 0"
+      decodeUrl "P===" @=? Left "invalid padding at offset: 1"
     , testCase "Invalid character coverage - final chunk" $ do
-      decodeUrl @a "%D==" @=? Left "invalid character at offset: 0"
-      decodeUrl @a "P%==" @=? Left "invalid character at offset: 1"
-      decodeUrl @a "PD%=" @=? Left "invalid character at offset: 2"
-      decodeUrl @a "PA=%" @=? Left "invalid character at offset: 3"
-      decodeUrl @a "PDw%" @=? Left "invalid character at offset: 3"
+      decodeUrl "%D==" @=? Left "invalid character at offset: 0"
+      decodeUrl "P%==" @=? Left "invalid character at offset: 1"
+      decodeUrl "PD%=" @=? Left "invalid character at offset: 2"
+      decodeUrl "PA=%" @=? Left "invalid character at offset: 3"
+      decodeUrl "PDw%" @=? Left "invalid character at offset: 3"
     , testCase "Invalid character coverage - decode chunk" $ do
-      decodeUrl @a "%Dw_PDw_" @=? Left "invalid character at offset: 0"
-      decodeUrl @a "P%w_PDw_" @=? Left "invalid character at offset: 1"
-      decodeUrl @a "PD%_PDw_" @=? Left "invalid character at offset: 2"
-      decodeUrl @a "PDw%PDw_" @=? Left "invalid character at offset: 3"
+      decodeUrl "%Dw_PDw_" @=? Left "invalid character at offset: 0"
+      decodeUrl "P%w_PDw_" @=? Left "invalid character at offset: 1"
+      decodeUrl "PD%_PDw_" @=? Left "invalid character at offset: 2"
+      decodeUrl "PDw%PDw_" @=? Left "invalid character at offset: 3"
     , testCase "Invalid padding in body" $ do
-      decodeUrl @a "PD=_PDw_" @=? Left "invalid padding at offset: 2"
-      decodeUrl @a "PDw=PDw_" @=? Left "invalid padding at offset: 3"
+      decodeUrl "PD=_PDw_" @=? Left "invalid padding at offset: 2"
+      decodeUrl "PDw=PDw_" @=? Left "invalid padding at offset: 3"
     , testCase "Padding fails everywhere but end" $ do
-      decode @a "=eAoeAo=" @=? Left "invalid padding at offset: 0"
-      decode @a "e=AoeAo=" @=? Left "invalid padding at offset: 1"
-      decode @a "eA=oeAo=" @=? Left "invalid padding at offset: 2"
-      decode @a "eAo=eAo=" @=? Left "invalid padding at offset: 3"
-      decode @a "eAoe=Ao=" @=? Left "invalid padding at offset: 4"
-      decode @a "eAoeA=o=" @=? Left "invalid padding at offset: 5"
+      decode "=eAoeAo=" @=? Left "invalid padding at offset: 0"
+      decode "e=AoeAo=" @=? Left "invalid padding at offset: 1"
+      decode "eA=oeAo=" @=? Left "invalid padding at offset: 2"
+      decode "eAo=eAo=" @=? Left "invalid padding at offset: 3"
+      decode "eAoe=Ao=" @=? Left "invalid padding at offset: 4"
+      decode "eAoeA=o=" @=? Left "invalid padding at offset: 5"
     ]
   ]
 
-canonicityTests :: forall a b proxy. Harness a b => proxy a -> TestTree
-canonicityTests _ =  testGroup "Canonicity unit tests"
+canonicityTests :: (IsString a, Eq a, Show a) => Harness a -> TestTree
+canonicityTests Harness{..} =  testGroup "Canonicity unit tests"
     [ testCase "roundtrip for d ~ ZA==" $ do
-      decode @a "ZE==" @=? Left "non-canonical encoding detected at offset: 1"
-      decode @a "ZK==" @=? Left "non-canonical encoding detected at offset: 1"
-      decode @a "ZA==" @=? Right "d"
+      decode "ZE==" @=? Left "non-canonical encoding detected at offset: 1"
+      decode "ZK==" @=? Left "non-canonical encoding detected at offset: 1"
+      decode "ZA==" @=? Right "d"
     , testCase "roundtrip for f` ~ ZmA=" $ do
-      decode @a "ZmC=" @=? Left "non-canonical encoding detected at offset: 2"
-      decode @a "ZmD=" @=? Left "non-canonical encoding detected at offset: 2"
-      decode @a "ZmA=" @=? Right "f`"
+      decode "ZmC=" @=? Left "non-canonical encoding detected at offset: 2"
+      decode "ZmD=" @=? Left "non-canonical encoding detected at offset: 2"
+      decode "ZmA=" @=? Right "f`"
 
     , testCase "roundtrip for foo` ~ Zm9vYA==" $ do
-      decode @a "Zm9vYE==" @=? Left "non-canonical encoding detected at offset: 5"
-      decode @a "Zm9vYK==" @=? Left "non-canonical encoding detected at offset: 5"
-      decode @a "Zm9vYA==" @=? Right "foo`"
+      decode "Zm9vYE==" @=? Left "non-canonical encoding detected at offset: 5"
+      decode "Zm9vYK==" @=? Left "non-canonical encoding detected at offset: 5"
+      decode "Zm9vYA==" @=? Right "foo`"
 
     , testCase "roundtrip for foob` ~ Zm9vYmA=" $ do
-      decode @a "Zm9vYmC=" @=? Left "non-canonical encoding detected at offset: 6"
-      decode @a "Zm9vYmD=" @=? Left "non-canonical encoding detected at offset: 6"
-      decode @a "Zm9vYmA=" @=? Right "foob`"
+      decode "Zm9vYmC=" @=? Left "non-canonical encoding detected at offset: 6"
+      decode "Zm9vYmD=" @=? Left "non-canonical encoding detected at offset: 6"
+      decode "Zm9vYmA=" @=? Right "foob`"
     ]
 
 -- | Unit test trees for the `decode*With` family of text-valued functions
 --
 decodeWithVectors
-  :: forall t a b c e proxy
-  . ( TextHarness a c b
-    , Harness t b
-    , Show e
-    )
-  => (b -> Either e c)
+  :: (IsString a, IsString t, Eq t, Show e, Show t)
+  => (a -> Either e t)
     -- ^ utf8
-  -> proxy t
+  -> TextHarness a t
     -- ^ witness to the bytestring-ey dictionaries
-  -> proxy a
+  -> Harness a
     -- ^ witness to the text dictionaries
+  -> Harness t
   -> TestTree
-decodeWithVectors utf8 _ _ = testGroup "DecodeWith* unit tests"
+decodeWithVectors utf8 TextHarness{..} h t = testGroup "DecodeWith* unit tests"
   [ testGroup "decodeWith negative tests"
     [ testCase "decodeWith non-utf8 inputs on decodeUtf8" $ do
-      case decodeWith_ @a utf8 "\1079743" of
+      case decodeWith_ utf8 "\1079743" of
         Left (DecodeError _) -> return ()
         _ -> assertFailure "decoding phase"
     , testCase "decodeWith valid utf8 inputs on decodeUtf8" $ do
-      case decodeWith_ @a utf8 (encode @t "\1079743") of
+      case decodeWith_ utf8 (encode h "\1079743") of
         Left (ConversionError _) -> return ()
         _ -> assertFailure "conversion phase"
     , testCase "decodeUrlWith non-utf8 inputs on decodeUtf8" $ do
-      case decodeUrlWith_ @a utf8 "\1079743" of
+      case decodeUrlWith_ utf8 "\1079743" of
         Left (DecodeError _) -> return ()
         _ -> assertFailure "decoding phase"
     , testCase "decodeUrlWith valid utf8 inputs on decodeUtf8" $ do
-      case decodeUrlWith_ @a utf8 (encodeUrl @t "\1079743") of
+      case decodeUrlWith_ utf8 (encodeUrl h "\1079743") of
         Left (ConversionError _) -> return ()
         _ -> assertFailure "conversion phase"
     , testCase "decodeUrlPaddedWith non-utf8 inputs on decodeUtf8" $ do
-      case decodeUrlPaddedWith_ @a utf8 "\1079743" of
+      case decodeUrlPaddedWith_ utf8 "\1079743" of
         Left (DecodeError _) -> return ()
         _ -> assertFailure "decoding phase"
     , testCase "decodePaddedWith valid utf8 inputs on decodeUtf8" $ do
-      case decodeUrlPaddedWith_ @a utf8 (encodeUrl @t "\1079743") of
+      case decodeUrlPaddedWith_ utf8 (encodeUrl h "\1079743") of
         Left (ConversionError _) -> return ()
         _ -> assertFailure "conversion phase"
     , testCase "decodeUnpaddedWith non-utf8 inputs on decodeUtf8" $ do
-      case decodeUrlUnpaddedWith_ @a utf8 "\1079743" of
+      case decodeUrlUnpaddedWith_ utf8 "\1079743" of
         Left (DecodeError _) -> return ()
         _ -> assertFailure "decoding phase"
     , testCase "decodeUnpaddedWith valid utf8 inputs on decodeUtf8" $ do
-      case decodeUrlUnpaddedWith_ @a utf8 (encodeUrlNopad @t "\1079743") of
+      case decodeUrlUnpaddedWith_ utf8 (encodeUrlNopad h "\1079743") of
         Left (ConversionError _) -> return ()
         _ -> assertFailure "conversion phase"
     ]
   , testGroup "decodeWith positive tests"
     [ testCase "decodeWith utf8 inputs on decodeUtf8" $ do
-      a <- either (assertFailure . show) pure $ decode @a "Zm9vYmFy"
-      b <- either (assertFailure . show) pure $ decodeWith_ @a utf8 "Zm9vYmFy"
+      a <- either (assertFailure . show) pure $ decode t "Zm9vYmFy"
+      b <- either (assertFailure . show) pure $ decodeWith_ utf8 "Zm9vYmFy"
       a @=? b
     , testCase "decodeUrlWith utf8 inputs on decodeUtf8" $ do
-      a <- either (assertFailure . show) pure $ decodeUrl @a "PDw_Pz4-"
-      b <- either (assertFailure . show) pure $ decodeUrlWith_ @a utf8 "PDw_Pz4-"
+      a <- either (assertFailure . show) pure $ decodeUrl t "PDw_Pz4-"
+      b <- either (assertFailure . show) pure $ decodeUrlWith_ utf8 "PDw_Pz4-"
       a @=? b
     , testCase "decodeUrlPaddedWith utf8 inputs on decodeUtf8" $ do
-      a <- either (assertFailure . show) pure $ decodeUrlPad @a "PDw_Pz4-"
-      b <- either (assertFailure . show) pure $ decodeUrlPaddedWith_ @a utf8 "PDw_Pz4-"
+      a <- either (assertFailure . show) pure $ decodeUrlPad t "PDw_Pz4-"
+      b <- either (assertFailure . show) pure $ decodeUrlPaddedWith_ utf8 "PDw_Pz4-"
       a @=? b
     , testCase "decodeUrlUnpaddedWith utf8 inputs on decodeUtf8" $ do
-      a <- either (assertFailure . show) pure $ decodeUrlNopad @a "PDw_Pz4-"
-      b <- either (assertFailure . show) pure $ decodeUrlUnpaddedWith_ @a utf8 "PDw_Pz4-"
+      a <- either (assertFailure . show) pure $ decodeUrlNopad t "PDw_Pz4-"
+      b <- either (assertFailure . show) pure $ decodeUrlUnpaddedWith_ utf8 "PDw_Pz4-"
       a @=? b
     ]
   ]
 
 -- | Validity unit tests for the URL workflow
 --
-validityTests :: forall a b proxy. Harness a b => proxy a -> TestTree
-validityTests _ = testGroup "Validity and correctness unit tests"
+validityTests :: IsString a => Harness a -> TestTree
+validityTests Harness{..} = testGroup "Validity and correctness unit tests"
   [ testGroup "Validity unit tests"
     [ testCase "Padding tests" $ do
-      not (validateUrl @a "P") @? "P"
-      validateUrl @a "PA" @? "PA"
-      validateUrl @a "PDw" @? "PDw"
-      validateUrl @a "PDw_" @? "PDw_"
-      validateUrl @a "PA==" @? "PA=="
-      validateUrl @a "PDw=" @? "PDw="
-      validateUrl @a "PDw_" @? "PDw_"
+      not (validateUrl "P") @? "P"
+      validateUrl "PA" @? "PA"
+      validateUrl "PDw" @? "PDw"
+      validateUrl "PDw_" @? "PDw_"
+      validateUrl "PA==" @? "PA=="
+      validateUrl "PDw=" @? "PDw="
+      validateUrl "PDw_" @? "PDw_"
 
     , testCase "Canonicity tests" $ do
-      validateUrl @a "ZK==" @? "ZK=="
-      validateUrl @a "ZE==" @? "ZE=="
+      validateUrl "ZK==" @? "ZK=="
+      validateUrl "ZE==" @? "ZE=="
 
-      validateUrl @a "ZA==" @? "ZA=="
-      validateUrl @a "ZK==" @? "ZK=="
-      validateUrl @a "ZK" @? "ZK"
+      validateUrl "ZA==" @? "ZA=="
+      validateUrl "ZK==" @? "ZK=="
+      validateUrl "ZK" @? "ZK"
 
-      validateUrl @a "ZmA=" @? "ZmA="
-      validateUrl @a "ZmC=" @? "ZmC="
-      validateUrl @a "ZmE" @? "ZmE"
+      validateUrl "ZmA=" @? "ZmA="
+      validateUrl "ZmC=" @? "ZmC="
+      validateUrl "ZmE" @? "ZmE"
 
-      validateUrl @a "Zm9vYmA=" @? "Zm9vYmA="
-      validateUrl @a "Zm9vYmC=" @? "Zm9vYmC="
-      validateUrl @a "Zm9vYmC" @? "Zm9vYmC"
+      validateUrl "Zm9vYmA=" @? "Zm9vYmA="
+      validateUrl "Zm9vYmC=" @? "Zm9vYmC="
+      validateUrl "Zm9vYmC" @? "Zm9vYmC"
     ]
   , testGroup "Correctness unit tests"
     [ testCase "Padding tests" $ do
-      not (validateUrl @a "P") @? "P"
-      correctUrl @a "PA" @? "PA"
-      correctUrl @a "PDw" @? "PDw"
-      correctUrl @a "PDw_" @? "PDw_"
-      correctUrl @a "PA==" @? "PA=="
-      correctUrl @a "PDw=" @? "PDw="
-      correctUrl @a "PDw_" @? "PDw_"
+      not (validateUrl "P") @? "P"
+      correctUrl "PA" @? "PA"
+      correctUrl "PDw" @? "PDw"
+      correctUrl "PDw_" @? "PDw_"
+      correctUrl "PA==" @? "PA=="
+      correctUrl "PDw=" @? "PDw="
+      correctUrl "PDw_" @? "PDw_"
 
     , testCase "Canonicity tests" $ do
-      not (correctUrl @a "ZK==") @? "ZK=="
-      not (correctUrl @a "ZE==") @? "ZE=="
-      correctUrl @a "ZA==" @? "ZA=="
+      not (correctUrl "ZK==") @? "ZK=="
+      not (correctUrl "ZE==") @? "ZE=="
+      correctUrl "ZA==" @? "ZA=="
 
-      correctUrl @a "ZmA=" @? "ZmA="
-      not (correctUrl @a "ZmC=") @? "ZmC="
-      not (correctUrl @a "ZmD") @? "ZmD"
+      correctUrl "ZmA=" @? "ZmA="
+      not (correctUrl "ZmC=") @? "ZmC="
+      not (correctUrl "ZmD") @? "ZmD"
 
-      correctUrl @a "Zm9vYmA=" @? "Zm9vYmA="
-      not (correctUrl @a "Zm9vYmC=") @? "Zm9vYmC="
-      not (correctUrl @a "Zm9vYmC") @? "Zm9vYmC"
+      correctUrl "Zm9vYmA=" @? "Zm9vYmA="
+      not (correctUrl "Zm9vYmC=") @? "Zm9vYmC="
+      not (correctUrl "Zm9vYmC") @? "Zm9vYmC"
     ]
   ]
