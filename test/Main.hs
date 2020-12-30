@@ -1,10 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 -- |
 -- Module       : Main
 -- Copyright    : (c) 2019-2020 Emily Pillmore
@@ -91,7 +88,11 @@ tests = testGroup "Base64 Tests"
 -- | Make a test tree for a given label
 --
 mkTree
-  :: (Arbitrary a, IsString a, Eq a, Show a)
+  :: ( Arbitrary a
+     , IsString a
+     , Eq a
+     , Show a
+     )
   => Harness a
   -> [Harness a -> TestTree]
   -> TestTree
@@ -101,7 +102,11 @@ mkTree a = testGroup (label a) . fmap ($ a)
 -- type information via some Harness
 --
 mkTests
-  :: (Arbitrary a, IsString a, Eq a, Show a)
+  :: ( Arbitrary a
+     , IsString a
+     , Eq a
+     , Show a
+     )
   => String
   -> [Harness a -> TestTree]
   -> Harness a
@@ -137,7 +142,14 @@ mkUnitTree last_ length_ = mkTests "Unit tests"
 -- | Make unit tests for textual 'decode*With' functions
 --
 mkDecodeTree
-  :: (Arbitrary t, Eq t, IsString t, Show t, IsString a, Show e) => (a -> Either e t)
+  :: ( Arbitrary t
+     , Eq t
+     , IsString t
+     , Show t
+     , IsString a
+     , Show e
+     )
+  => (a -> Either e t)
   -> TextHarness a t
   -> Harness a
   -> Harness t
@@ -264,7 +276,10 @@ rfcVectors Harness{..} = testGroup "RFC 4648 Test Vectors"
 -- | Url-safe padding unit tests (stresses entire alphabet)
 --
 paddingTests
-  :: (IsString a, Eq a, Show a)
+  :: ( IsString a
+     , Eq a
+     , Show a
+     )
   => (a -> Word8)
   -> (a -> Int)
   -> Harness a
@@ -397,7 +412,12 @@ canonicityTests Harness{..} =  testGroup "Canonicity unit tests"
 -- | Unit test trees for the `decode*With` family of text-valued functions
 --
 decodeWithVectors
-  :: (IsString a, IsString t, Eq t, Show e, Show t)
+  :: ( IsString a
+     , IsString t
+     , Eq t
+     , Show e
+     , Show t
+     )
   => (a -> Either e t)
     -- ^ utf8
   -> TextHarness a t
