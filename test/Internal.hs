@@ -1,10 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE EmptyDataDecls #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE PackageImports #-}
+{-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- |
 -- Module       : Main
@@ -17,7 +12,19 @@
 --
 -- This module contains internal test harnesses for `base64`
 --
-module Internal where
+module Internal
+( Harness(..)
+, b64
+, lb64
+, sb64
+, t64
+, tl64
+, ts64
+, TextHarness(..)
+, tt64
+, ttl64
+, tts64
+) where
 
 
 import qualified Data.ByteString as BS
@@ -29,8 +36,6 @@ import "base64" Data.ByteString.Lazy.Base64 as LB64
 import "base64" Data.ByteString.Lazy.Base64.URL as LB64U
 import "base64" Data.ByteString.Short.Base64 as SB64
 import "base64" Data.ByteString.Short.Base64.URL as SB64U
-import Data.Proxy
-import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import "base64" Data.Text.Encoding.Base64 as T64
@@ -48,190 +53,168 @@ import Test.QuickCheck hiding (label)
 -- ------------------------------------------------------------------ --
 -- Test Harnesses
 
-data Impl
-  = B64
-  | LB64
-  | SB64
-  | T64
-  | TL64
-  | TS64
-
-b64 :: Proxy 'B64
-b64 = Proxy
-
-lb64 :: Proxy 'LB64
-lb64 = Proxy
-
-sb64 :: Proxy 'SB64
-sb64 = Proxy
-
-t64 :: Proxy 'T64
-t64 = Proxy
-
-tl64 :: Proxy 'TL64
-tl64 = Proxy
-
-ts64 :: Proxy 'TS64
-ts64 = Proxy
-
--- | This class provides the generic API definition for
+-- | This dictionary provides the generic API definition for
 -- the base64 std alphabet
 --
-class
-  ( Eq bs
-  , Show bs
-  , Arbitrary bs
-  , CoArbitrary bs
-  , IsString bs
-  ) => Harness (a :: Impl) bs | a -> bs, bs -> a
-  where
-
-  label :: String
-  encode :: bs -> bs
-  encodeUrl :: bs -> bs
-  encodeUrlNopad :: bs -> bs
-
-  decode :: bs -> Either Text bs
-  decodeUrl :: bs -> Either Text bs
-  decodeUrlPad :: bs -> Either Text bs
-  decodeUrlNopad :: bs -> Either Text bs
-
-  lenientUrl :: bs -> bs
-  lenient :: bs -> bs
-
-  correct :: bs -> Bool
-  correctUrl :: bs -> Bool
-  validate :: bs -> Bool
-  validateUrl :: bs -> Bool
+data Harness bs = Harness
+  { label :: String
+  , encode :: bs -> bs
+  , encodeUrl :: bs -> bs
+  , encodeUrlNopad :: bs -> bs
+  , decode :: bs -> Either Text bs
+  , decodeUrl :: bs -> Either Text bs
+  , decodeUrlPad :: bs -> Either Text bs
+  , decodeUrlNopad :: bs -> Either Text bs
+  , lenientUrl :: bs -> bs
+  , lenient :: bs -> bs
+  , correct :: bs -> Bool
+  , correctUrl :: bs -> Bool
+  , validate :: bs -> Bool
+  , validateUrl :: bs -> Bool
+  }
 
 
-instance Harness 'B64 BS.ByteString where
-  label = "ByteString"
+b64 :: Harness BS.ByteString
+b64 = Harness
+  { label = "ByteString"
+  , encode = B64.encodeBase64'
+  , decode = B64.decodeBase64
+  , lenient = B64.decodeBase64Lenient
+  , correct = B64.isBase64
+  , validate = B64.isValidBase64
+  , encodeUrl = B64U.encodeBase64'
+  , encodeUrlNopad = B64U.encodeBase64Unpadded'
+  , decodeUrl = B64U.decodeBase64
+  , decodeUrlPad = B64U.decodeBase64Padded
+  , decodeUrlNopad = B64U.decodeBase64Unpadded
+  , lenientUrl = B64U.decodeBase64Lenient
+  , correctUrl = B64U.isBase64Url
+  , validateUrl = B64U.isValidBase64Url
+  }
 
-  encode = B64.encodeBase64'
-  decode = B64.decodeBase64
-  lenient = B64.decodeBase64Lenient
-  correct = B64.isBase64
-  validate = B64.isValidBase64
-  encodeUrl = B64U.encodeBase64'
-  encodeUrlNopad = B64U.encodeBase64Unpadded'
-  decodeUrl = B64U.decodeBase64
-  decodeUrlPad = B64U.decodeBase64Padded
-  decodeUrlNopad = B64U.decodeBase64Unpadded
-  lenientUrl = B64U.decodeBase64Lenient
-  correctUrl = B64U.isBase64Url
-  validateUrl = B64U.isValidBase64Url
+lb64 :: Harness LBS.ByteString
+lb64 = Harness
+  { label = "Lazy ByteString"
+  , encode = LB64.encodeBase64'
+  , decode = LB64.decodeBase64
+  , lenient = LB64.decodeBase64Lenient
+  , correct = LB64.isBase64
+  , validate = LB64.isValidBase64
+  , encodeUrl = LB64U.encodeBase64'
+  , encodeUrlNopad = LB64U.encodeBase64Unpadded'
+  , decodeUrl = LB64U.decodeBase64
+  , decodeUrlPad = LB64U.decodeBase64Padded
+  , decodeUrlNopad = LB64U.decodeBase64Unpadded
+  , lenientUrl = LB64U.decodeBase64Lenient
+  , correctUrl = LB64U.isBase64Url
+  , validateUrl = LB64U.isValidBase64Url
+  }
 
-instance Harness 'LB64 LBS.ByteString where
-  label = "Lazy ByteString"
+sb64 :: Harness SBS.ShortByteString
+sb64 = Harness
+  { label = "Short ByteString"
+  , encode = SB64.encodeBase64'
+  , decode = SB64.decodeBase64
+  , lenient = SB64.decodeBase64Lenient
+  , correct = SB64.isBase64
+  , validate = SB64.isValidBase64
+  , encodeUrl = SB64U.encodeBase64'
+  , encodeUrlNopad = SB64U.encodeBase64Unpadded'
+  , decodeUrl = SB64U.decodeBase64
+  , decodeUrlPad = SB64U.decodeBase64Padded
+  , decodeUrlNopad = SB64U.decodeBase64Unpadded
+  , lenientUrl = SB64U.decodeBase64Lenient
+  , correctUrl = SB64U.isBase64Url
+  , validateUrl = SB64U.isValidBase64Url
+  }
 
-  encode = LB64.encodeBase64'
-  decode = LB64.decodeBase64
-  lenient = LB64.decodeBase64Lenient
-  correct = LB64.isBase64
-  validate = LB64.isValidBase64
-  encodeUrl = LB64U.encodeBase64'
-  encodeUrlNopad = LB64U.encodeBase64Unpadded'
-  decodeUrl = LB64U.decodeBase64
-  decodeUrlPad = LB64U.decodeBase64Padded
-  decodeUrlNopad = LB64U.decodeBase64Unpadded
-  lenientUrl = LB64U.decodeBase64Lenient
-  correctUrl = LB64U.isBase64Url
-  validateUrl = LB64U.isValidBase64Url
+t64 :: Harness Text
+t64 = Harness
+  { label = "Text"
+  , encode = T64.encodeBase64
+  , decode = T64.decodeBase64
+  , lenient = T64.decodeBase64Lenient
+  , correct = T64.isBase64
+  , validate = T64.isValidBase64
+  , encodeUrl = T64U.encodeBase64
+  , encodeUrlNopad = T64U.encodeBase64Unpadded
+  , decodeUrl = T64U.decodeBase64
+  , decodeUrlPad = T64U.decodeBase64Padded
+  , decodeUrlNopad = T64U.decodeBase64Unpadded
+  , lenientUrl = T64U.decodeBase64Lenient
+  , correctUrl = T64U.isBase64Url
+  , validateUrl = T64U.isValidBase64Url
+  }
 
-instance Harness 'SB64 SBS.ShortByteString where
-  label = "Short ByteString"
+tl64 :: Harness TL.Text
+tl64 = Harness
+  { label = "Lazy Text"
+  , encode = TL64.encodeBase64
+  , decode = TL64.decodeBase64
+  , lenient = TL64.decodeBase64Lenient
+  , correct = TL64.isBase64
+  , validate = TL64.isValidBase64
+  , encodeUrl = TL64U.encodeBase64
+  , encodeUrlNopad = TL64U.encodeBase64Unpadded
+  , decodeUrl = TL64U.decodeBase64
+  , decodeUrlPad = TL64U.decodeBase64Padded
+  , decodeUrlNopad = TL64U.decodeBase64Unpadded
+  , lenientUrl = TL64U.decodeBase64Lenient
+  , correctUrl = TL64U.isBase64Url
+  , validateUrl = TL64U.isValidBase64Url
+  }
 
-  encode = SB64.encodeBase64'
-  decode = SB64.decodeBase64
-  lenient = SB64.decodeBase64Lenient
-  correct = SB64.isBase64
-  validate = SB64.isValidBase64
-  encodeUrl = SB64U.encodeBase64'
-  encodeUrlNopad = SB64U.encodeBase64Unpadded'
-  decodeUrl = SB64U.decodeBase64
-  decodeUrlPad = SB64U.decodeBase64Padded
-  decodeUrlNopad = SB64U.decodeBase64Unpadded
-  lenientUrl = SB64U.decodeBase64Lenient
-  correctUrl = SB64U.isBase64Url
-  validateUrl = SB64U.isValidBase64Url
+ts64 :: Harness TS.ShortText
+ts64 = Harness
+  { label = "Short Text"
+  , encode = TS64.encodeBase64
+  , decode = TS64.decodeBase64
+  , lenient = TS64.decodeBase64Lenient
+  , correct = TS64.isBase64
+  , validate = TS64.isValidBase64
+  , encodeUrl = TS64U.encodeBase64
+  , encodeUrlNopad = TS64U.encodeBase64Unpadded
+  , decodeUrl = TS64U.decodeBase64
+  , decodeUrlPad = TS64U.decodeBase64Padded
+  , decodeUrlNopad = TS64U.decodeBase64Unpadded
+  , lenientUrl = TS64U.decodeBase64Lenient
+  , correctUrl = TS64U.isBase64Url
+  , validateUrl = TS64U.isValidBase64Url
+  }
 
-instance Harness 'T64 Text where
-  label = "Text"
+-- -------------------------------------------------------------------- --
+-- Text-specific harness
 
-  encode = T64.encodeBase64
-  decode = T64.decodeBase64
-  lenient = T64.decodeBase64Lenient
-  correct = T64.isBase64
-  encodeUrl = T64U.encodeBase64
-  encodeUrlNopad = T64U.encodeBase64Unpadded
-  decodeUrl = T64U.decodeBase64
-  decodeUrlPad = T64U.decodeBase64Padded
-  decodeUrlNopad = T64U.decodeBase64Unpadded
-  lenientUrl = T64U.decodeBase64Lenient
-  correctUrl = T64U.isBase64Url
-  validateUrl = T64U.isValidBase64Url
-  validate = T64.isValidBase64
+data TextHarness bs cs = TextHarness
+  { decodeWith_ :: forall err. (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
+  , decodeUrlWith_ :: forall err. (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
+  , decodeUrlPaddedWith_ :: forall err. (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
+  , decodeUrlUnpaddedWith_ :: forall err. (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
+  }
 
-instance Harness 'TL64 TL.Text where
-  label = "Lazy Text"
+tt64 :: TextHarness BS.ByteString Text
+tt64 = TextHarness
+  { decodeWith_ = T64.decodeBase64With
+  , decodeUrlWith_ = T64U.decodeBase64With
+  , decodeUrlPaddedWith_ = T64U.decodeBase64PaddedWith
+  , decodeUrlUnpaddedWith_ = T64U.decodeBase64UnpaddedWith
+  }
 
-  encode = TL64.encodeBase64
-  decode = TL64.decodeBase64
-  lenient = TL64.decodeBase64Lenient
-  correct = TL64.isBase64
-  encodeUrl = TL64U.encodeBase64
-  encodeUrlNopad = TL64U.encodeBase64Unpadded
-  decodeUrl = TL64U.decodeBase64
-  decodeUrlPad = TL64U.decodeBase64Padded
-  decodeUrlNopad = TL64U.decodeBase64Unpadded
-  lenientUrl = TL64U.decodeBase64Lenient
-  correctUrl = TL64U.isBase64Url
-  validateUrl = TL64U.isValidBase64Url
-  validate = TL64.isValidBase64
+ttl64 :: TextHarness LBS.ByteString TL.Text
+ttl64 = TextHarness
+  { decodeWith_ = TL64.decodeBase64With
+  , decodeUrlWith_ = TL64U.decodeBase64With
+  , decodeUrlPaddedWith_ = TL64U.decodeBase64PaddedWith
+  , decodeUrlUnpaddedWith_ = TL64U.decodeBase64UnpaddedWith
+  }
 
-instance Harness 'TS64 TS.ShortText where
-  label = "Short Text"
-
-  encode = TS64.encodeBase64
-  decode = TS64.decodeBase64
-  lenient = TS64.decodeBase64Lenient
-  correct = TS64.isBase64
-  encodeUrl = TS64U.encodeBase64
-  encodeUrlNopad = TS64U.encodeBase64Unpadded
-  decodeUrl = TS64U.decodeBase64
-  decodeUrlPad = TS64U.decodeBase64Padded
-  decodeUrlNopad = TS64U.decodeBase64Unpadded
-  lenientUrl = TS64U.decodeBase64Lenient
-  correctUrl = TS64U.isBase64Url
-  validateUrl = TS64U.isValidBase64Url
-  validate = TS64.isValidBase64
-
-class Harness a cs
-  => TextHarness (a :: Impl) cs bs
-  | a -> cs, bs -> cs, cs -> a, cs -> bs where
-  decodeWith_ :: (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
-  decodeUrlWith_ :: (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
-  decodeUrlPaddedWith_ :: (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
-  decodeUrlUnpaddedWith_ :: (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
-
-instance TextHarness 'T64 Text BS.ByteString where
-  decodeWith_ = T64.decodeBase64With
-  decodeUrlWith_ = T64U.decodeBase64With
-  decodeUrlPaddedWith_ = T64U.decodeBase64PaddedWith
-  decodeUrlUnpaddedWith_ = T64U.decodeBase64UnpaddedWith
-
-instance TextHarness 'TL64 TL.Text LBS.ByteString where
-  decodeWith_ = TL64.decodeBase64With
-  decodeUrlWith_ = TL64U.decodeBase64With
-  decodeUrlPaddedWith_ = TL64U.decodeBase64PaddedWith
-  decodeUrlUnpaddedWith_ = TL64U.decodeBase64UnpaddedWith
-
-instance TextHarness 'TS64 TS.ShortText SBS.ShortByteString where
-  decodeWith_ = TS64.decodeBase64With
-  decodeUrlWith_ = TS64U.decodeBase64With
-  decodeUrlPaddedWith_ = TS64U.decodeBase64PaddedWith
-  decodeUrlUnpaddedWith_ = TS64U.decodeBase64UnpaddedWith
+tts64 :: TextHarness SBS.ShortByteString TS.ShortText
+tts64 = TextHarness
+  { decodeWith_ = TS64.decodeBase64With
+  , decodeUrlWith_ = TS64U.decodeBase64With
+  , decodeUrlPaddedWith_ = TS64U.decodeBase64PaddedWith
+  , decodeUrlUnpaddedWith_ = TS64U.decodeBase64UnpaddedWith
+  }
 
 -- ------------------------------------------------------------------ --
 -- Quickcheck instances
