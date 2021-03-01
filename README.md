@@ -1,6 +1,6 @@
 # Base64
 
-[![Build Status](https://travis-ci.com/emilypi/base64.svg?branch=master)](https://travis-ci.com/emilypi/base64)
+![Build Status](https://github.com/emilypi/base64/workflows/Haskell-CI/badge.svg)
 [![Hackage](https://img.shields.io/hackage/v/base64.svg)](https://hackage.haskell.org/package/base64)
 
 Base64 encoding and decodings.
