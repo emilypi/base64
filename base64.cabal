@@ -53,7 +53,7 @@ library
   build-depends:
       base           >=4.10     && <5
     , bytestring     >=0.10     && <0.12
-    , deepseq        >=1.4.3.0  && <1.4.5.0
+    , deepseq        >=1.4.3.0  && <1.5
     , ghc-byteorder  ^>=4.11.0.0
     , text           ^>=1.2
     , text-short     ^>=0.1
