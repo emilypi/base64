@@ -39,7 +39,7 @@ loopTail
     -> Ptr Word8
     -> Ptr Word8
     -> IO ByteString
-loopTail !dfp (Ptr !alpha) !dptr !end !src !dst
+loopTail !dfp !(Ptr alpha) !dptr !end !src !dst
     | src == end = return (PS dfp 0 (minusPtr dst dptr))
     | plusPtr src 1 == end = do
       !x <- peek @Word8  src
@@ -81,7 +81,7 @@ loopTailNoPad
     -> Ptr Word8
     -> Ptr Word8
     -> IO ByteString
-loopTailNoPad !dfp (Ptr !alpha) !dptr !end !src !dst
+loopTailNoPad !dfp !(Ptr alpha) !dptr !end !src !dst
     | src == end = return (PS dfp 0 (minusPtr dst dptr))
     | plusPtr src 1 == end = do
       !x <- peek @Word8 src
