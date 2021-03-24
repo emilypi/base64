@@ -12,6 +12,7 @@
 --
 -- 'Word8' fallback loop
 --
+{-# LANGUAGE ScopedTypeVariables #-}
 module Data.ByteString.Base64.Internal.W16.Loop
 ( innerLoop
 , decodeLoop
@@ -53,7 +54,7 @@ innerLoop !etable !sptr !dptr !end finish = go sptr dptr
         !j <- w32 <$> peek (plusPtr src 1)
         !k <- w32 <$> peek (plusPtr src 2)
 
-        let !w = (unsafeShiftL i 16) .|. (unsafeShiftL j 8) .|. k
+        let !w = unsafeShiftL i 16 .|. unsafeShiftL j 8 .|. k
 
         !x <- peekElemOff etable (fromIntegral (unsafeShiftR w 12))
         !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
@@ -76,47 +77,43 @@ decodeLoop
     -> IO (Either Text ByteString)
 decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
   where
-    err :: Ptr Word8 -> IO (Either Text ByteString)
     err p = return . Left . T.pack
       $ "invalid character at offset: "
       ++ show (p `minusPtr` sptr)
 
-    padErr :: Ptr Word8 -> IO (Either Text ByteString)
     padErr p =  return . Left . T.pack
       $ "invalid padding at offset: "
       ++ show (p `minusPtr` sptr)
 
-    canonErr :: Ptr Word8 -> IO (Either Text ByteString)
     canonErr p = return . Left . T.pack
       $ "non-canonical encoding detected at offset: "
       ++ show (p `minusPtr` sptr)
 
-    look :: Ptr Word8 -> IO Word32
     look !p = do
       !i <- peekByteOff @Word8 p 0
       !v <- peekByteOff @Word8 dtable (fromIntegral i)
-      return (fromIntegral v)
+      return (fromIntegral v :: Word32)
 
     go !dst !src
       | plusPtr src 4 >= end = do
-        a <- look src
-        b <- look (src `plusPtr` 1)
-        c <- look (src `plusPtr` 2)
-        d <- look (src `plusPtr` 3)
+        !a <- look src
+        !b <- look (src `plusPtr` 1)
+        !c <- look (src `plusPtr` 2)
+        !d <- look (src `plusPtr` 3)
         finalChunk dst src a b c d
 
       | otherwise = do
-        a <- look src
-        b <- look (src `plusPtr` 1)
-        c <- look (src `plusPtr` 2)
-        d <- look (src `plusPtr` 3)
+        !a <- look src
+        !b <- look (src `plusPtr` 1)
+        !c <- look (src `plusPtr` 2)
+        !d <- look (src `plusPtr` 3)
         decodeChunk dst src a b c d
 
     -- | Decodes chunks of 4 bytes at a time, recombining into
     -- 3 bytes. Note that in the inner loop stage, no padding
     -- characters are admissible.
     --
-    decodeChunk !dst !src a b c d
+    decodeChunk !dst !src !a !b !c !d
      | a == 0x63 = padErr src
      | b == 0x63 = padErr (plusPtr src 1)
      | c == 0x63 = padErr (plusPtr src 2)
@@ -127,10 +124,10 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
      | d == 0xff = err (plusPtr src 3)
      | otherwise = do
 
-       let !w = ((unsafeShiftL a 18)
-             .|. (unsafeShiftL b 12)
-             .|. (unsafeShiftL c 6)
-             .|. d) :: Word32
+       let !(w :: Word32) = unsafeShiftL a 18
+             .|. unsafeShiftL b 12
+             .|. unsafeShiftL c 6
+             .|. d :: Word32
 
        poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
        poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
@@ -150,10 +147,10 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
       | c == 0xff = err (plusPtr src 2)
       | d == 0xff = err (plusPtr src 3)
       | otherwise = do
-        let !w = ((unsafeShiftL a 18)
-              .|. (unsafeShiftL b 12)
-              .|. (unsafeShiftL c 6)
-              .|. d) :: Word32
+        let !(w  :: Word32) = unsafeShiftL a 18
+              .|. unsafeShiftL b 12
+              .|. unsafeShiftL c 6
+              .|. d
 
         poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
 

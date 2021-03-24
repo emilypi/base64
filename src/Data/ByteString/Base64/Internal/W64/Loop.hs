@@ -51,10 +51,10 @@ innerLoop !etable !sptr !dptr !end finish = go sptr dptr
       | otherwise = do
         !t <- peekWord64BE src
 
-        let !a = (unsafeShiftR t 52) .&. 0xfff
-            !b = (unsafeShiftR t 40) .&. 0xfff
-            !c = (unsafeShiftR t 28) .&. 0xfff
-            !d = (unsafeShiftR t 16) .&. 0xfff
+        let !a = unsafeShiftR t 52 .&. 0xfff
+            !b = unsafeShiftR t 40 .&. 0xfff
+            !c = unsafeShiftR t 28 .&. 0xfff
+            !d = unsafeShiftR t 16 .&. 0xfff
 
         !w <- w64_16 <$> peekElemOff etable (fromIntegral a)
         !x <- w64_16 <$> peekElemOff etable (fromIntegral b)
@@ -62,9 +62,9 @@ innerLoop !etable !sptr !dptr !end finish = go sptr dptr
         !z <- w64_16 <$> peekElemOff etable (fromIntegral d)
 
         let !xx = w
-               .|. (unsafeShiftL x 16)
-               .|. (unsafeShiftL y 32)
-               .|. (unsafeShiftL z 48)
+               .|. unsafeShiftL x 16
+               .|. unsafeShiftL y 32
+               .|. unsafeShiftL z 48
 
         poke dst (fromIntegral xx)
 
