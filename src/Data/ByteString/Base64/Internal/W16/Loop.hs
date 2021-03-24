@@ -12,6 +12,7 @@
 --
 -- 'Word8' fallback loop
 --
+{-# LANGUAGE ScopedTypeVariables #-}
 module Data.ByteString.Base64.Internal.W16.Loop
 ( innerLoop
 , decodeLoop
@@ -53,7 +54,7 @@ innerLoop !etable !sptr !dptr !end finish = go sptr dptr
         !j <- w32 <$> peek (plusPtr src 1)
         !k <- w32 <$> peek (plusPtr src 2)
 
-        let !w = (unsafeShiftL i 16) .|. (unsafeShiftL j 8) .|. k
+        let !w = unsafeShiftL i 16 .|. unsafeShiftL j 8 .|. k
 
         !x <- peekElemOff etable (fromIntegral (unsafeShiftR w 12))
         !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
@@ -123,10 +124,10 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
      | d == 0xff = err (plusPtr src 3)
      | otherwise = do
 
-       let !w = ((unsafeShiftL a 18)
-             .|. (unsafeShiftL b 12)
-             .|. (unsafeShiftL c 6)
-             .|. d) :: Word32
+       let !(w :: Word32) = unsafeShiftL a 18
+             .|. unsafeShiftL b 12
+             .|. unsafeShiftL c 6
+             .|. d :: Word32
 
        poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
        poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
@@ -146,10 +147,10 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
       | c == 0xff = err (plusPtr src 2)
       | d == 0xff = err (plusPtr src 3)
       | otherwise = do
-        let !w = ((unsafeShiftL a 18)
-              .|. (unsafeShiftL b 12)
-              .|. (unsafeShiftL c 6)
-              .|. d) :: Word32
+        let !(w  :: Word32) = unsafeShiftL a 18
+              .|. unsafeShiftL b 12
+              .|. unsafeShiftL c 6
+              .|. d
 
         poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
 

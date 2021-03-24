@@ -37,70 +37,63 @@ import Data.Text (Text)
 import Foreign.ForeignPtr
 import Foreign.Ptr
 
-import GHC.ForeignPtr
 import GHC.Word
 
 import System.IO.Unsafe
 
 
 encodeBase64_ :: EncodingTable -> ByteString -> ByteString
-encodeBase64_ !(EncodingTable !aptr !efp) !(PS !sfp _ !slen) =
+encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
     unsafeDupablePerformIO $ do
-      dfp <- mallocPlainForeignPtrBytes dlen
+      dfp <- mallocByteString dlen
       withForeignPtr dfp $ \dptr ->
         withForeignPtr sfp $ \sptr ->
         withForeignPtr efp $ \eptr -> do
+          let !end = plusPtr sptr (slen + soff)
           innerLoop
             eptr
-            (castPtr sptr)
+            (castPtr (plusPtr sptr soff))
             (castPtr dptr)
-            (plusPtr sptr slen)
-            (loopTail dfp aptr dptr (castPtr (plusPtr sptr slen)))
+            end
+            (loopTail dfp aptr dptr (castPtr end))
   where
     !dlen = 4 * ((slen + 2) `div` 3)
 
 encodeBase64Nopad_ :: EncodingTable -> ByteString -> ByteString
-encodeBase64Nopad_ !(EncodingTable !aptr !efp) !(PS !sfp _ !slen) =
+encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
     unsafeDupablePerformIO $ do
-      dfp <- mallocPlainForeignPtrBytes dlen
+      dfp <- mallocByteString dlen
       withForeignPtr dfp $ \dptr ->
         withForeignPtr efp $ \etable ->
         withForeignPtr sfp $ \sptr -> do
+          let end = plusPtr sptr (slen + soff)
           innerLoop
-            etable (castPtr sptr) (castPtr dptr) (plusPtr sptr slen)
-            (loopTailNoPad dfp aptr dptr (castPtr (plusPtr sptr slen)))
+            etable (castPtr (plusPtr sptr soff)) (castPtr dptr) end
+            (loopTailNoPad dfp aptr dptr (castPtr end))
   where
     !dlen = 4 * ((slen + 2) `div` 3)
 
--- | The main decode function. Takes a padding flag, a decoding table, and
--- the input value, producing either an error string on the left, or a
--- decoded value.
---
--- Note: If 'Padding' ~ 'Don\'tCare', then we pad out the input to a multiple of 4.
--- If 'Padding' ~ 'Padded', then we do not, and fail if the input is not
--- a multiple of 4 in length. If 'Padding' ~ 'Unpadded', then we validate
--- correctness of length and the absence of padding and then treat as a std
--- padded string.
---
 decodeBase64_
     :: Int
     -> ForeignPtr Word8
     -> ByteString
     -> IO (Either Text ByteString)
-decodeBase64_ !dlen !dtfp !(PS !sfp _ !slen) =
-    withForeignPtr dtfp $ \ !dtable ->
+decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen) = do
     withForeignPtr sfp $ \sptr -> do
-      dfp <- mallocPlainForeignPtrBytes dlen
-      withForeignPtr dfp $ \dptr ->
-        decodeLoop dtable sptr dptr (plusPtr sptr slen) dfp
+      dfp <- mallocByteString dlen
+      withForeignPtr dtfp $ \ !dtable ->
+        withForeignPtr dfp $ \dptr -> decodeLoop
+          dtable (plusPtr sptr soff)
+          dptr (plusPtr sptr (slen + soff)) dfp
 {-# inline decodeBase64_ #-}
 
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
-decodeBase64Lenient_ !dtfp !(PS !sfp _ !slen) = unsafeDupablePerformIO $
+decodeBase64Lenient_ !dtfp (PS !sfp !soff !slen) = unsafeDupablePerformIO $
     withForeignPtr dtfp $ \dtable ->
     withForeignPtr sfp $ \sptr -> do
-      dfp <- mallocPlainForeignPtrBytes dlen
-      withForeignPtr dfp $ \dptr ->
-        lenientLoop dtable sptr dptr (plusPtr sptr slen) dfp
+      dfp <- mallocByteString dlen
+      withForeignPtr dfp $ \dptr -> lenientLoop
+        dtable (plusPtr sptr soff) dptr
+        (plusPtr sptr (slen + soff)) dfp
   where
     !dlen = ((slen + 3) `div` 4) * 3
