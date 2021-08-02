@@ -85,11 +85,9 @@ decodeBase64 bs@(PS _ _ !l)
     | l == 0 = Right bs
     | r == 1 = Left "Base64-encoded bytestring has invalid size"
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
-    | otherwise = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64Table bs
+    | otherwise = unsafeDupablePerformIO $ decodeBase64_ decodeB64Table bs
   where
-    !q = l `quot` 4
     !r = l `rem` 4
-    !dlen = q * 3
 {-# inline decodeBase64 #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ByteString' value. This function
