@@ -94,14 +94,12 @@ encodeBase64' = encodeBase64_ base64UrlTable
 decodeBase64 :: ByteString -> Either Text ByteString
 decodeBase64 bs@(PS _ _ !l)
     | l == 0 = Right bs
-    | r == 0 = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64UrlTable bs
-    | r == 2 = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "==")
-    | r == 3 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
+    | r == 0 = unsafeDupablePerformIO $ decodeBase64_ decodeB64UrlTable bs
+    | r == 2 = unsafeDupablePerformIO $ decodeBase64_ decodeB64UrlTable (BS.append bs "==")
+    | r == 3 = validateLastPad bs $ decodeBase64_ decodeB64UrlTable (BS.append bs "=")
     | otherwise = Left "Base64-encoded bytestring has invalid size"
   where
-    !q = l `quot` 4
     !r = l `rem` 4
-    !dlen = q * 3
 {-# INLINE decodeBase64 #-}
 
 -- | Encode a 'ByteString' value as Base64url 'Text' without padding. Note that for Base64url,
@@ -153,14 +151,12 @@ encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
 decodeBase64Unpadded :: ByteString -> Either Text ByteString
 decodeBase64Unpadded bs@(PS _ _ !l)
     | l == 0 = Right bs
-    | r == 0 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable bs
-    | r == 2 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "==")
-    | r == 3 = validateLastPad bs $ decodeBase64_ dlen decodeB64UrlTable (BS.append bs "=")
+    | r == 0 = validateLastPad bs $ decodeBase64_ decodeB64UrlTable bs
+    | r == 2 = validateLastPad bs $ decodeBase64_ decodeB64UrlTable (BS.append bs "==")
+    | r == 3 = validateLastPad bs $ decodeBase64_ decodeB64UrlTable (BS.append bs "=")
     | otherwise = Left "Base64-encoded bytestring has invalid size"
   where
-    !q = l `quot` 4
     !r = l `rem` 4
-    !dlen = q * 3
 {-# INLINE decodeBase64Unpadded #-}
 
 -- | Decode a padded Base64url-encoded 'ByteString' value. Input strings are
@@ -185,11 +181,9 @@ decodeBase64Padded bs@(PS _ _ !l)
     | l == 0 = Right bs
     | r == 1 = Left "Base64-encoded bytestring has invalid size"
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
-    | otherwise = unsafeDupablePerformIO $ decodeBase64_ dlen decodeB64UrlTable bs
+    | otherwise = unsafeDupablePerformIO $ decodeBase64_ decodeB64UrlTable bs
   where
-    !q = l `quot` 4
     !r = l `rem` 4
-    !dlen = q * 3
 {-# INLINE decodeBase64Padded #-}
 
 -- | Leniently decode an unpadded Base64url-encoded 'ByteString'. This function

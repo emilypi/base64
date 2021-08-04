@@ -1,6 +1,6 @@
 cabal-version:   2.0
 name:            base64
-version:         0.4.2.2
+version:         0.4.2.3
 synopsis:        A modern RFC 4648-compliant Base64 library
 description:
   RFC 4648-compliant Base64 with an eye towards performance and modernity (additional support for RFC 7049 standards)
@@ -18,7 +18,7 @@ extra-doc-files:
   CHANGELOG.md
   README.md
 
-tested-with:     GHC ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.3
+tested-with:     GHC ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.5
 
 source-repository head
   type:     git

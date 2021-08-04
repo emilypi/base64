@@ -88,11 +88,10 @@ encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
 -- padded string.
 --
 decodeBase64_
-    :: Int
-    -> ForeignPtr Word8
+    :: ForeignPtr Word8
     -> ByteString
     -> IO (Either Text ByteString)
-decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen) =
+decodeBase64_ !dtfp (PS !sfp !soff !slen) =
     withForeignPtr dtfp $ \dtable ->
     withForeignPtr sfp $ \sptr -> do
       dfp <- mallocPlainForeignPtrBytes dlen
@@ -101,6 +100,8 @@ decodeBase64_ !dlen !dtfp (PS !sfp !soff !slen) =
         decodeLoop dtable
           (plusPtr sptr soff)
           dptr end dfp
+  where
+    !dlen = (slen `quot` 4) * 3
 {-# inline decodeBase64_ #-}
 
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
