@@ -1,5 +1,16 @@
 # Revision history for base64
 
+## 0.4.2.4
+
+* Support for GHC 9.2.x
+* Remove dependency on `ghc-byteorder`
+* Bump base lower bound to GHC 8.10.x to make sure endianness is properly support
+  (see: https://gitlab.haskell.org/ghc/ghc/-/issues/20338)
+
+## 0.4.2.3
+
+* Tighter length calculations in unpadded base64url [#35](https://github.com/emilypi/base64/pull/35)
+
 ## 0.4.2.2
 
 * Add `NFData`, `Exception`, and `Generic` instances for `Base64Error` + `@since` annotations for new instances. ([#28](https://github.com/emilypi/base64/pull/28))
