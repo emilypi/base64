@@ -2,7 +2,7 @@
 {-# LANGUAGE MagicHash #-}
 -- |
 -- Module       : Data.ByteString.Base64.Internal
--- Copyright    : (c) 2019-2020 Emily Pillmore
+-- Copyright    : (c) 2019-2022 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -157,11 +157,11 @@ reChunkN n = go
 peekWord32BE :: Ptr Word32 -> IO Word32
 peekWord32BE p = case targetByteOrder of
   LittleEndian -> byteSwap32 <$> peek p
-  BigEndian    -> peek p
+  BigEndian -> peek p
 {-# inline peekWord32BE #-}
 
 peekWord64BE :: Ptr Word64 -> IO Word64
 peekWord64BE p = case targetByteOrder of
   LittleEndian -> byteSwap64 <$> peek p
-  BigEndian    -> peek p
+  BigEndian -> peek p
 {-# inline peekWord64BE #-}
