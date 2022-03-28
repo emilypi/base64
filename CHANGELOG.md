@@ -4,7 +4,8 @@
 
 * Support for GHC 9.2.x
 * Remove dependency on `ghc-byteorder`
-* Bump base lower bound to GHC 8.4.4
+* Bump base lower bound to GHC 8.10.x to make sure endianness is properly support
+  (see: https://gitlab.haskell.org/ghc/ghc/-/issues/20338)
 
 ## 0.4.2.3
 
