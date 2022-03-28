@@ -3,6 +3,8 @@
 ## 0.4.2.4
 
 * Support for GHC 9.2.x
+* Remove dependency on `ghc-byteorder`
+* Bump base lower bound to GHC 8.4.4
 
 ## 0.4.2.3
 
