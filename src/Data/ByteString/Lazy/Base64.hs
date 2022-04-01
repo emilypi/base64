@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Lazy.Base64
@@ -29,6 +30,8 @@ module Data.ByteString.Lazy.Base64
 
 import Prelude hiding (all, elem)
 
+import Data.Base64
+import Data.Base64.Internal
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Base64.Internal.Utils (reChunkN)
@@ -48,8 +51,8 @@ import qualified Data.Text.Lazy.Encoding as TL
 -- >>> encodeBase64 "Sun"
 -- "U3Vu"
 --
-encodeBase64 :: ByteString -> TL.Text
-encodeBase64 = TL.decodeUtf8 . encodeBase64'
+encodeBase64 :: ByteString -> Base64 'StdPadded TL.Text
+encodeBase64 = mapBase64 TL.decodeUtf8 . encodeBase64'
 {-# INLINE encodeBase64 #-}
 
 -- | Encode a 'ByteString' value as a Base64 'ByteString'  value with padding.
@@ -61,8 +64,10 @@ encodeBase64 = TL.decodeUtf8 . encodeBase64'
 -- >>> encodeBase64' "Sun"
 -- "U3Vu"
 --
-encodeBase64' :: ByteString -> ByteString
-encodeBase64' = fromChunks
+encodeBase64' :: ByteString -> Base64 'StdPadded ByteString
+encodeBase64' = assertBase64
+  . fromChunks
+  . fmap extractBase64
   . fmap B64.encodeBase64'
   . reChunkN 3
   . toChunks
@@ -83,11 +88,13 @@ encodeBase64' = fromChunks
 -- >>> decodebase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
-decodeBase64 :: ByteString -> Either T.Text ByteString
+decodeBase64 :: Base64 'StdPadded ByteString -> Either T.Text ByteString
 decodeBase64 = fmap (fromChunks . (:[]))
   . B64.decodeBase64
+  . assertBase64
   . BS.concat
   . toChunks
+  . extractBase64
 {-# INLINE decodeBase64 #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ByteString' value. This function
@@ -107,12 +114,14 @@ decodeBase64 = fmap (fromChunks . (:[]))
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: ByteString -> ByteString
+decodeBase64Lenient :: Base64 'StdUnpadded ByteString -> ByteString
 decodeBase64Lenient = fromChunks
     . fmap B64.decodeBase64Lenient
+    . fmap assertBase64
     . reChunkN 4
     . fmap (BS.filter (flip elem "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="))
     . toChunks
+    . extractBase64
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ByteString' value is base64 encoded.
@@ -133,7 +142,7 @@ decodeBase64Lenient = fromChunks
 -- False
 --
 isBase64 :: ByteString -> Bool
-isBase64 bs = isValidBase64 bs && isRight (decodeBase64 bs)
+isBase64 bs = isValidBase64 bs && isRight (decodeBase64 (assertBase64 bs))
 {-# INLINE isBase64 #-}
 
 -- | Tell whether a 'ByteString' value is a valid Base64 format.

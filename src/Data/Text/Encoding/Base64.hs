@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE Safe #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64
@@ -25,6 +26,8 @@ module Data.Text.Encoding.Base64
 , isValidBase64
 ) where
 
+import Data.Base64
+import Data.Base64.Internal
 
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
@@ -43,7 +46,7 @@ import Data.Text.Encoding.Base64.Error
 -- >>> encodeBase64 "Sun"
 -- "U3Vu"
 --
-encodeBase64 :: Text -> Text
+encodeBase64 :: Text -> Base64 'StdPadded Text
 encodeBase64 = B64.encodeBase64 . T.encodeUtf8
 {-# INLINE encodeBase64 #-}
 
@@ -68,8 +71,8 @@ encodeBase64 = B64.encodeBase64 . T.encodeUtf8
 -- >>> decodebase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
-decodeBase64 :: Text -> Either Text Text
-decodeBase64 = fmap T.decodeLatin1 . B64.decodeBase64 . T.encodeUtf8
+decodeBase64 :: Base64 'StdPadded Text -> Either Text Text
+decodeBase64 = fmap T.decodeLatin1 . B64.decodeBase64 . mapBase64 T.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
 -- | Attempt to decode a 'Text' value as Base64, converting from
@@ -88,7 +91,7 @@ decodeBase64 = fmap T.decodeLatin1 . B64.decodeBase64 . T.encodeUtf8
 decodeBase64With
     :: (ByteString -> Either err Text)
       -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
-    -> ByteString
+    -> Base64 'StdPadded ByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) Text
 decodeBase64With f t = case B64.decodeBase64 t of
@@ -113,10 +116,10 @@ decodeBase64With f t = case B64.decodeBase64 t of
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: Text -> Text
+decodeBase64Lenient :: Base64 'StdUnpadded Text -> Text
 decodeBase64Lenient = T.decodeLatin1
     . B64.decodeBase64Lenient
-    . T.encodeUtf8
+    . mapBase64 T.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'Text' value is Base64-encoded.

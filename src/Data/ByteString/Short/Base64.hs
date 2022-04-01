@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Short.Base64
@@ -25,7 +26,8 @@ module Data.ByteString.Short.Base64
 , isValidBase64
 ) where
 
-
+import Data.Base64
+import Data.Base64.Internal
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Short (ShortByteString, fromShort, toShort)
 import Data.Text (Text)
@@ -41,8 +43,8 @@ import Data.Text.Short.Unsafe (fromShortByteStringUnsafe)
 -- >>> encodeBase64 "Sun"
 -- "U3Vu"
 --
-encodeBase64 :: ShortByteString -> ShortText
-encodeBase64 = fromShortByteStringUnsafe . encodeBase64'
+encodeBase64 :: ShortByteString -> Base64 'StdPadded ShortText
+encodeBase64 = mapBase64 fromShortByteStringUnsafe . encodeBase64'
 {-# INLINE encodeBase64 #-}
 
 -- | Encode a 'ShortByteString' value as a Base64 'ShortByteString'  value with padding.
@@ -54,8 +56,8 @@ encodeBase64 = fromShortByteStringUnsafe . encodeBase64'
 -- >>> encodeBase64' "Sun"
 -- "U3Vu"
 --
-encodeBase64' :: ShortByteString -> ShortByteString
-encodeBase64' = toShort . B64.encodeBase64' . fromShort
+encodeBase64' :: ShortByteString -> Base64 'StdPadded ShortByteString
+encodeBase64' = mapBase64 toShort . B64.encodeBase64' . fromShort
 {-# INLINE encodeBase64' #-}
 
 -- | Decode a padded Base64-encoded 'ShortByteString' value.
@@ -73,8 +75,8 @@ encodeBase64' = toShort . B64.encodeBase64' . fromShort
 -- >>> decodebase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
-decodeBase64 :: ShortByteString -> Either Text ShortByteString
-decodeBase64 = fmap toShort . B64.decodeBase64 . fromShort
+decodeBase64 :: Base64 'StdPadded ShortByteString -> Either Text ShortByteString
+decodeBase64 = fmap toShort . B64.decodeBase64 . mapBase64 fromShort
 {-# INLINE decodeBase64 #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ShortByteString' value. This function
@@ -94,8 +96,8 @@ decodeBase64 = fmap toShort . B64.decodeBase64 . fromShort
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: ShortByteString -> ShortByteString
-decodeBase64Lenient = toShort . B64.decodeBase64Lenient . fromShort
+decodeBase64Lenient :: Base64 'StdUnpadded ShortByteString -> ShortByteString
+decodeBase64Lenient = toShort . B64.decodeBase64Lenient . mapBase64 fromShort
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ShortByteString' value is base64 encoded.
