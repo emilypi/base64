@@ -42,6 +42,7 @@ library
     Data.Text.Short.Encoding.Base64.URL
 
   other-modules:
+    Data.Base64.Internal
     Data.ByteString.Base64.Internal
     Data.ByteString.Base64.Internal.Head
     Data.ByteString.Base64.Internal.Tables

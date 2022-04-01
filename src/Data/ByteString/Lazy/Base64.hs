@@ -31,7 +31,6 @@ module Data.ByteString.Lazy.Base64
 import Prelude hiding (all, elem)
 
 import Data.Base64
-import Data.Base64.Internal
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Base64.Internal.Utils (reChunkN)
@@ -52,7 +51,7 @@ import qualified Data.Text.Lazy.Encoding as TL
 -- "U3Vu"
 --
 encodeBase64 :: ByteString -> Base64 'StdPadded TL.Text
-encodeBase64 = mapBase64 TL.decodeUtf8 . encodeBase64'
+encodeBase64 = fmap TL.decodeUtf8 . encodeBase64'
 {-# INLINE encodeBase64 #-}
 
 -- | Encode a 'ByteString' value as a Base64 'ByteString'  value with padding.
@@ -67,8 +66,7 @@ encodeBase64 = mapBase64 TL.decodeUtf8 . encodeBase64'
 encodeBase64' :: ByteString -> Base64 'StdPadded ByteString
 encodeBase64' = assertBase64
   . fromChunks
-  . fmap extractBase64
-  . fmap B64.encodeBase64'
+  . fmap (extractBase64 . B64.encodeBase64')
   . reChunkN 3
   . toChunks
 {-# INLINE encodeBase64' #-}
@@ -114,12 +112,12 @@ decodeBase64 = fmap (fromChunks . (:[]))
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: Base64 'StdUnpadded ByteString -> ByteString
+decodeBase64Lenient :: Base64 k ByteString -> ByteString
 decodeBase64Lenient = fromChunks
     . fmap B64.decodeBase64Lenient
     . fmap assertBase64
     . reChunkN 4
-    . fmap (BS.filter (flip elem "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="))
+    . fmap (BS.filter (`elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="))
     . toChunks
     . extractBase64
 {-# INLINE decodeBase64Lenient #-}
@@ -171,6 +169,6 @@ isValidBase64 = go . toChunks
     go [] = True
     go [c] = B64.isValidBase64 c
     go (c:cs) = -- note the lack of padding char
-      BS.all (flip elem "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/") c
+      BS.all (`elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/") c
       && go cs
 {-# INLINE isValidBase64 #-}

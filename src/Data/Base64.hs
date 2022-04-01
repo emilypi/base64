@@ -1,8 +1,13 @@
-{-# LANGUAGE RankNTypes #-}
+{-# language RankNTypes #-}
+{-# language Safe #-}
+module Data.Base64
+( Alphabet(..)
+, Base64
+, assertBase64
+, extractBase64
+) where
 
-module Data.Base64(Alphabet(..), Base64, assertBase64, extractBase64) where
-
-import Data.Base64.Internal(Alphabet(..), Base64(..))
+import Data.Base64.Internal (Alphabet(..), Base64(..))
 
 -- | Assert a value to be encoded in a specific way
 --

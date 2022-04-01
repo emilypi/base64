@@ -32,7 +32,6 @@ module Data.Text.Short.Encoding.Base64.URL
 ) where
 
 import Data.Base64
-import Data.Base64.Internal
 
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Base64.URL as B64U
@@ -54,7 +53,7 @@ import Data.Text.Short.Unsafe
 -- "PDw_Pj4="
 --
 encodeBase64 :: ShortText -> Base64 'UrlPadded ShortText
-encodeBase64 = mapBase64 fromByteStringUnsafe
+encodeBase64 = fmap fromByteStringUnsafe
   . B64U.encodeBase64'
   . toByteString
 {-# INLINE encodeBase64 #-}
@@ -88,7 +87,7 @@ encodeBase64 = mapBase64 fromByteStringUnsafe
 -- Right "<<>>"
 --
 decodeBase64 :: Base64 'UrlPadded ShortText -> Either Text ShortText
-decodeBase64 = fmap fromText . B64TU.decodeBase64 . mapBase64 toText
+decodeBase64 = fmap fromText . B64TU.decodeBase64 . fmap toText
 {-# INLINE decodeBase64 #-}
 
 -- | Attempt to decode a 'ShortByteString' value as Base64url, converting from
@@ -127,7 +126,7 @@ decodeBase64With f t = case BS64U.decodeBase64 t of
 -- "PDw_Pj4"
 --
 encodeBase64Unpadded :: ShortText -> Base64 'UrlUnpadded ShortText
-encodeBase64Unpadded = mapBase64 fromByteStringUnsafe
+encodeBase64Unpadded = fmap fromByteStringUnsafe
   . B64U.encodeBase64Unpadded'
   . toByteString
 {-# INLINE encodeBase64Unpadded #-}
@@ -151,7 +150,7 @@ encodeBase64Unpadded = mapBase64 fromByteStringUnsafe
 -- Left "Base64-encoded bytestring has invalid padding"
 --
 decodeBase64Unpadded :: Base64 'UrlUnpadded ShortText -> Either Text ShortText
-decodeBase64Unpadded = fmap fromText . B64TU.decodeBase64Unpadded . mapBase64 toText
+decodeBase64Unpadded = fmap fromText . B64TU.decodeBase64Unpadded . fmap toText
 {-# INLINE decodeBase64Unpadded #-}
 
 -- | Attempt to decode an unpadded 'ShortByteString' value as Base64url, converting from
@@ -197,7 +196,7 @@ decodeBase64UnpaddedWith f t = case BS64U.decodeBase64Unpadded t of
 -- Left "Base64-encoded bytestring requires padding"
 --
 decodeBase64Padded :: Base64 'UrlPadded ShortText -> Either Text ShortText
-decodeBase64Padded = fmap fromText . B64TU.decodeBase64Padded . mapBase64 toText
+decodeBase64Padded = fmap fromText . B64TU.decodeBase64Padded . fmap toText
 {-# INLINE decodeBase64Padded #-}
 
 -- | Attempt to decode a padded 'ShortByteString' value as Base64url, converting from
@@ -238,8 +237,8 @@ decodeBase64PaddedWith f t = case BS64U.decodeBase64Padded t of
 -- >>> decodeBase64Lenient "PDw_%%%$}Pj4"
 -- "<<?>>"
 --
-decodeBase64Lenient :: Base64 'UrlUnpadded ShortText -> ShortText
-decodeBase64Lenient = fromText . B64TU.decodeBase64Lenient . mapBase64 toText
+decodeBase64Lenient :: Base64 k ShortText -> ShortText
+decodeBase64Lenient = fromText . B64TU.decodeBase64Lenient . fmap toText
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ShortText' value is Base64url-encoded.

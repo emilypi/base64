@@ -52,7 +52,7 @@ import System.IO.Unsafe
 -- "U3Vu"
 --
 encodeBase64 :: ByteString -> Base64 'StdPadded Text
-encodeBase64 = mapBase64 T.decodeUtf8 . encodeBase64'
+encodeBase64 = fmap T.decodeUtf8 . encodeBase64'
 {-# inline encodeBase64 #-}
 
 -- | Encode a 'ByteString' value as a Base64 'ByteString'  value with padding.
@@ -110,7 +110,7 @@ decodeBase64 (Base64 bs@(PS _ _ !l))
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: Base64 'StdUnpadded ByteString -> ByteString
+decodeBase64Lenient :: Base64 k ByteString -> ByteString
 decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table . extractBase64
 {-# inline decodeBase64Lenient #-}
 

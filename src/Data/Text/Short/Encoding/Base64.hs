@@ -27,7 +27,6 @@ module Data.Text.Short.Encoding.Base64
 ) where
 
 import Data.Base64
-import Data.Base64.Internal
 
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Base64 as B64
@@ -49,7 +48,7 @@ import Data.Text.Short.Unsafe
 -- "U3Vu"
 --
 encodeBase64 :: ShortText -> Base64 'StdPadded ShortText
-encodeBase64 = mapBase64 fromByteStringUnsafe
+encodeBase64 = fmap fromByteStringUnsafe
   . B64.encodeBase64'
   . toByteString
 {-# INLINE encodeBase64 #-}
@@ -76,7 +75,7 @@ encodeBase64 = mapBase64 fromByteStringUnsafe
 -- Left "non-canonical encoding detected at offset: 2"
 --
 decodeBase64 :: Base64 'StdPadded ShortText -> Either Text ShortText
-decodeBase64 = fmap fromText . B64T.decodeBase64 . mapBase64 toText
+decodeBase64 = fmap fromText . B64T.decodeBase64 . fmap toText
 {-# INLINE decodeBase64 #-}
 
 -- | Attempt to decode a 'ShortByteString' value as Base64, converting from
@@ -120,8 +119,8 @@ decodeBase64With f t = case BS64.decodeBase64 t of
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: Base64 'StdUnpadded ShortText -> ShortText
-decodeBase64Lenient = fromText . B64T.decodeBase64Lenient . mapBase64 toText
+decodeBase64Lenient :: Base64 k ShortText -> ShortText
+decodeBase64Lenient = fromText . B64T.decodeBase64Lenient . fmap toText
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ShortText' value is Base64-encoded.

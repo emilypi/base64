@@ -56,7 +56,7 @@ import System.IO.Unsafe
 -- "PDw_Pj4="
 --
 encodeBase64 :: ByteString -> Base64 'UrlPadded Text
-encodeBase64 = mapBase64 T.decodeUtf8 . encodeBase64'
+encodeBase64 = fmap T.decodeUtf8 . encodeBase64'
 {-# INLINE encodeBase64 #-}
 
 -- | Encode a 'ByteString' as a Base64url 'ByteString' value with padding.
@@ -116,7 +116,7 @@ decodeBase64 (Base64 bs@(PS _ _ !l))
 -- "PDw_Pj4"
 --
 encodeBase64Unpadded :: ByteString -> Base64 'UrlUnpadded Text
-encodeBase64Unpadded = mapBase64 T.decodeUtf8 . encodeBase64Unpadded'
+encodeBase64Unpadded = fmap T.decodeUtf8 . encodeBase64Unpadded'
 {-# INLINE encodeBase64Unpadded #-}
 
 -- | Encode a 'ByteString' value as Base64url without padding. Note that for Base64url,
@@ -202,7 +202,7 @@ decodeBase64Padded (Base64 bs@(PS _ _ !l))
 -- >>> decodeBase64Lenient "PDw_%%%$}Pj4"
 -- "<<?>>"
 --
-decodeBase64Lenient :: Base64 'UrlUnpadded ByteString -> ByteString
+decodeBase64Lenient :: Base64 k ByteString -> ByteString
 decodeBase64Lenient = decodeBase64Lenient_ decodeB64UrlTable . extractBase64
 {-# INLINE decodeBase64Lenient #-}
 

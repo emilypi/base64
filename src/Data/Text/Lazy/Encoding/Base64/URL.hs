@@ -32,7 +32,6 @@ module Data.Text.Lazy.Encoding.Base64.URL
 ) where
 
 import Data.Base64
-import Data.Base64.Internal
 
 import Data.Bifunctor (first)
 import Data.ByteString.Lazy (ByteString)
@@ -85,7 +84,7 @@ encodeBase64 = BL64U.encodeBase64 . TL.encodeUtf8
 -- Right "<<>>"
 --
 decodeBase64 :: Base64 'UrlPadded TL.Text -> Either T.Text TL.Text
-decodeBase64 = fmap TL.decodeLatin1 . BL64U.decodeBase64 . mapBase64 TL.encodeUtf8
+decodeBase64 = fmap TL.decodeLatin1 . BL64U.decodeBase64 . fmap TL.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
 -- | Attempt to decode a lazy 'ByteString' value as Base64url, converting from
@@ -148,7 +147,7 @@ encodeBase64Unpadded = BL64U.encodeBase64Unpadded . TL.encodeUtf8
 decodeBase64Unpadded :: Base64 'UrlUnpadded TL.Text -> Either T.Text TL.Text
 decodeBase64Unpadded = fmap TL.decodeLatin1
     . BL64U.decodeBase64Unpadded
-    . mapBase64 TL.encodeUtf8
+    . fmap TL.encodeUtf8
 {-# INLINE decodeBase64Unpadded #-}
 
 -- | Attempt to decode an unpadded lazy 'ByteString' value as Base64url, converting from
@@ -196,7 +195,7 @@ decodeBase64UnpaddedWith f t = case BL64U.decodeBase64Unpadded t of
 decodeBase64Padded :: Base64 'UrlPadded TL.Text -> Either T.Text TL.Text
 decodeBase64Padded = fmap TL.decodeLatin1
     . BL64U.decodeBase64Padded
-    . mapBase64 TL.encodeUtf8
+    . fmap TL.encodeUtf8
 {-# INLINE decodeBase64Padded #-}
 
 -- | Attempt to decode a padded lazy 'ByteString' value as Base64url, converting from
@@ -237,10 +236,10 @@ decodeBase64PaddedWith f t = case BL64U.decodeBase64Padded t of
 -- >>> decodeBase64Lenient "PDw_%%%$}Pj4"
 -- "<<?>>"
 --
-decodeBase64Lenient :: Base64 'UrlUnpadded TL.Text -> TL.Text
+decodeBase64Lenient :: Base64 k TL.Text -> TL.Text
 decodeBase64Lenient = TL.decodeLatin1
     . BL64U.decodeBase64Lenient
-    . mapBase64 TL.encodeUtf8
+    . fmap TL.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'TL.Text' value is Base64url-encoded

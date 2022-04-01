@@ -28,7 +28,6 @@ module Data.Text.Lazy.Encoding.Base64
 
 
 import Data.Base64
-import Data.Base64.Internal
 
 import Data.Bifunctor (first)
 import Data.ByteString.Lazy (ByteString)
@@ -74,7 +73,7 @@ encodeBase64 = BL64.encodeBase64 . TL.encodeUtf8
 -- Left "non-canonical encoding detected at offset: 2"
 --
 decodeBase64 :: Base64 'StdPadded TL.Text -> Either T.Text TL.Text
-decodeBase64 = fmap TL.decodeLatin1 . BL64.decodeBase64 . mapBase64 TL.encodeUtf8
+decodeBase64 = fmap TL.decodeLatin1 . BL64.decodeBase64 . fmap TL.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
 -- | Attempt to decode a 'ByteString' value as Base64, converting from
@@ -118,10 +117,10 @@ decodeBase64With f t = case BL64.decodeBase64 t of
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: Base64 'StdUnpadded TL.Text -> TL.Text
+decodeBase64Lenient :: Base64 k TL.Text -> TL.Text
 decodeBase64Lenient = TL.decodeLatin1
     . BL64.decodeBase64Lenient
-    . mapBase64 TL.encodeUtf8
+    . fmap TL.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'TL.Text' value is Base64-encoded.

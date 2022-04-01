@@ -36,7 +36,7 @@ module Data.ByteString.Lazy.Base64.URL
 import Prelude hiding (all, elem)
 
 import Data.Base64
-import Data.Base64.Internal
+
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Base64.Internal.Utils (reChunkN)
@@ -58,7 +58,7 @@ import qualified Data.Text.Lazy.Encoding as TL
 -- "PDw_Pj4="
 --
 encodeBase64 :: ByteString -> Base64 'UrlPadded TL.Text
-encodeBase64 = mapBase64 TL.decodeUtf8 . encodeBase64'
+encodeBase64 = fmap TL.decodeUtf8 . encodeBase64'
 {-# INLINE encodeBase64 #-}
 
 -- | Encode a 'ByteString' as a Base64url 'ByteString' value with padding.
@@ -119,7 +119,7 @@ decodeBase64 = fmap (fromChunks . (:[]))
 -- "PDw_Pj4"
 --
 encodeBase64Unpadded :: ByteString -> Base64 'UrlUnpadded TL.Text
-encodeBase64Unpadded = mapBase64 TL.decodeUtf8 . encodeBase64Unpadded'
+encodeBase64Unpadded = fmap TL.decodeUtf8 . encodeBase64Unpadded'
 {-# INLINE encodeBase64Unpadded #-}
 
 -- | Encode a 'ByteString' value as Base64url without padding. Note that for Base64url,
@@ -206,7 +206,7 @@ decodeBase64Padded = fmap (fromChunks . (:[]))
 -- >>> decodeBase64Lenient "PDw_%%%$}Pj4"
 -- "<<?>>"
 --
-decodeBase64Lenient :: Base64 'UrlUnpadded ByteString -> ByteString
+decodeBase64Lenient :: Base64 k ByteString -> ByteString
 decodeBase64Lenient = fromChunks
     . fmap (B64U.decodeBase64Lenient . assertBase64)
     . reChunkN 4

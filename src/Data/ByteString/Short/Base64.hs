@@ -27,7 +27,6 @@ module Data.ByteString.Short.Base64
 ) where
 
 import Data.Base64
-import Data.Base64.Internal
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Short (ShortByteString, fromShort, toShort)
 import Data.Text (Text)
@@ -44,7 +43,7 @@ import Data.Text.Short.Unsafe (fromShortByteStringUnsafe)
 -- "U3Vu"
 --
 encodeBase64 :: ShortByteString -> Base64 'StdPadded ShortText
-encodeBase64 = mapBase64 fromShortByteStringUnsafe . encodeBase64'
+encodeBase64 = fmap fromShortByteStringUnsafe . encodeBase64'
 {-# INLINE encodeBase64 #-}
 
 -- | Encode a 'ShortByteString' value as a Base64 'ShortByteString'  value with padding.
@@ -57,7 +56,7 @@ encodeBase64 = mapBase64 fromShortByteStringUnsafe . encodeBase64'
 -- "U3Vu"
 --
 encodeBase64' :: ShortByteString -> Base64 'StdPadded ShortByteString
-encodeBase64' = mapBase64 toShort . B64.encodeBase64' . fromShort
+encodeBase64' = fmap toShort . B64.encodeBase64' . fromShort
 {-# INLINE encodeBase64' #-}
 
 -- | Decode a padded Base64-encoded 'ShortByteString' value.
@@ -76,7 +75,7 @@ encodeBase64' = mapBase64 toShort . B64.encodeBase64' . fromShort
 -- Left "non-canonical encoding detected at offset: 2"
 --
 decodeBase64 :: Base64 'StdPadded ShortByteString -> Either Text ShortByteString
-decodeBase64 = fmap toShort . B64.decodeBase64 . mapBase64 fromShort
+decodeBase64 = fmap toShort . B64.decodeBase64 . fmap fromShort
 {-# INLINE decodeBase64 #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ShortByteString' value. This function
@@ -96,8 +95,8 @@ decodeBase64 = fmap toShort . B64.decodeBase64 . mapBase64 fromShort
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: Base64 'StdUnpadded ShortByteString -> ShortByteString
-decodeBase64Lenient = toShort . B64.decodeBase64Lenient . mapBase64 fromShort
+decodeBase64Lenient :: Base64 k ShortByteString -> ShortByteString
+decodeBase64Lenient = toShort . B64.decodeBase64Lenient . fmap fromShort
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ShortByteString' value is base64 encoded.

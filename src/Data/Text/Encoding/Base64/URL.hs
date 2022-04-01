@@ -33,7 +33,6 @@ module Data.Text.Encoding.Base64.URL
 
 
 import Data.Base64
-import Data.Base64.Internal
 
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
@@ -85,7 +84,7 @@ encodeBase64 = B64U.encodeBase64 . T.encodeUtf8
 -- Right "<<>>"
 --
 decodeBase64 :: Base64 'UrlPadded Text -> Either Text Text
-decodeBase64 = fmap T.decodeLatin1 . B64U.decodeBase64 . mapBase64 T.encodeUtf8
+decodeBase64 = fmap T.decodeLatin1 . B64U.decodeBase64 . fmap T.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
 -- | Attempt to decode a 'ByteString' value as Base64url, converting from
@@ -148,7 +147,7 @@ encodeBase64Unpadded = B64U.encodeBase64Unpadded . T.encodeUtf8
 decodeBase64Unpadded :: Base64 'UrlUnpadded Text -> Either Text Text
 decodeBase64Unpadded = fmap T.decodeLatin1
     . B64U.decodeBase64Unpadded
-    . mapBase64 T.encodeUtf8
+    . fmap T.encodeUtf8
 {-# INLINE decodeBase64Unpadded #-}
 
 -- | Attempt to decode an unpadded 'ByteString' value as Base64url, converting from
@@ -196,7 +195,7 @@ decodeBase64UnpaddedWith f t = case B64U.decodeBase64Unpadded t of
 decodeBase64Padded :: Base64 'UrlPadded Text -> Either Text Text
 decodeBase64Padded = fmap T.decodeLatin1
     . B64U.decodeBase64Padded
-    . mapBase64 T.encodeUtf8
+    . fmap T.encodeUtf8
 {-# INLINE decodeBase64Padded #-}
 
 -- | Attempt to decode a padded 'ByteString' value as Base64url, converting from
@@ -237,10 +236,10 @@ decodeBase64PaddedWith f t = case B64U.decodeBase64Padded t of
 -- >>> decodeBase64Lenient "PDw_%%%$}Pj4"
 -- "<<?>>"
 --
-decodeBase64Lenient :: Base64 'UrlUnpadded Text -> Text
+decodeBase64Lenient :: Base64 k Text -> Text
 decodeBase64Lenient = T.decodeLatin1
     . B64U.decodeBase64Lenient
-    . mapBase64 T.encodeUtf8
+    . fmap T.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'Text' value is Base64url-encoded.
