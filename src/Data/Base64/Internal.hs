@@ -9,6 +9,8 @@ module Data.Base64.Internal
 ) where
 
 
+import Control.DeepSeq (NFData, rnf)
+
 -- | The different kinds of supported Base64 encodings
 data Alphabet
   = StdPadded
@@ -44,3 +46,6 @@ instance forall k. Monad (Base64 k) where
 
 instance forall k a. (Show a) => Show (Base64 k a) where
   show (Base64 a) = show a
+
+instance forall k a. NFData a => NFData (Base64 k a) where
+  rnf (Base64 a) = rnf a
