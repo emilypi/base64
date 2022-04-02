@@ -1,6 +1,7 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Lazy.Base64.URL
@@ -98,13 +99,13 @@ encodeBase64' = assertBase64 . fromChunks
 -- >>> decodeBase64 "PDw-Pg"
 -- Right "<<>>"
 --
-decodeBase64 :: Base64 'UrlPadded ByteString -> Either T.Text ByteString
+decodeBase64
+  :: UrlAlphabet k ~ 'True
+  => Base64 k ByteString
+  -> Either T.Text ByteString
 decodeBase64 = fmap (fromChunks . (:[]))
   . B64U.decodeBase64
-  . assertBase64
-  . BS.concat
-  . toChunks
-  . extractBase64
+  . fmap (BS.concat . toChunks)
 {-# INLINE decodeBase64 #-}
 
 -- | Encode a 'ByteString' value as Base64url 'Text' without padding. Note that for Base64url,
@@ -229,7 +230,9 @@ decodeBase64Lenient = fromChunks
 -- False
 --
 isBase64Url :: ByteString -> Bool
-isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 (assertBase64 bs))
+isBase64Url bs
+  = isValidBase64Url bs
+  && isRight (decodeBase64 $ assertBase64 @'UrlPadded bs)
 {-# INLINE isBase64Url #-}
 
 -- | Tell whether a 'ByteString' is a valid Base64url format.

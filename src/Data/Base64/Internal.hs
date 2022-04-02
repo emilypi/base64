@@ -1,6 +1,7 @@
 {-# language KindSignatures #-}
 {-# language DataKinds #-}
 {-# language RankNTypes #-}
+{-# language TypeFamilies #-}
 {-# language Safe #-}
 module Data.Base64.Internal
 ( Alphabet(..)
@@ -40,3 +41,6 @@ instance forall k. Applicative (Base64 k) where
 instance forall k. Monad (Base64 k) where
   return = pure
   Base64 a >>= k = k a
+
+instance forall k a. (Show a) => Show (Base64 k a) where
+  show (Base64 a) = show a

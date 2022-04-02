@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Lazy.Base64
@@ -140,7 +141,9 @@ decodeBase64Lenient = fromChunks
 -- False
 --
 isBase64 :: ByteString -> Bool
-isBase64 bs = isValidBase64 bs && isRight (decodeBase64 (assertBase64 bs))
+isBase64 bs
+  = isValidBase64 bs
+  && isRight (decodeBase64 $ assertBase64 @'StdPadded bs)
 {-# INLINE isBase64 #-}
 
 -- | Tell whether a 'ByteString' value is a valid Base64 format.

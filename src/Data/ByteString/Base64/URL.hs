@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module       : Data.ByteString.Base64.URL
 -- Copyright    : (c) 2019-2020 Emily Pillmore
@@ -93,7 +95,10 @@ encodeBase64' = assertBase64 . encodeBase64_ base64UrlTable
 -- >>> decodeBase64 "PDw-Pg"
 -- Right "<<>>"
 --
-decodeBase64 :: Base64 'UrlPadded ByteString -> Either Text ByteString
+decodeBase64
+  :: UrlAlphabet k ~ 'True
+  => Base64 k ByteString
+  -> Either Text ByteString
 decodeBase64 (Base64 bs@(PS _ _ !l))
   | l == 0 = Right bs
   | r == 0 = unsafeDupablePerformIO $ decodeBase64_ decodeB64UrlTable bs
@@ -224,7 +229,9 @@ decodeBase64Lenient = decodeBase64Lenient_ decodeB64UrlTable . extractBase64
 -- False
 --
 isBase64Url :: ByteString -> Bool
-isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 (assertBase64 bs))
+isBase64Url bs
+  = isValidBase64Url bs
+  && isRight (decodeBase64 $ assertBase64 @'UrlPadded bs)
 {-# INLINE isBase64Url #-}
 
 -- | Tell whether a 'ByteString' is a valid Base64url format.

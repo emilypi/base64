@@ -1,5 +1,7 @@
 {-# LANGUAGE PackageImports #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- |
 -- Module       : Main
@@ -85,7 +87,7 @@ b64 = Harness
   , validate = B64.isValidBase64
   , encodeUrl = extractBase64 . B64U.encodeBase64'
   , encodeUrlNopad = extractBase64 . B64U.encodeBase64Unpadded'
-  , decodeUrl = B64U.decodeBase64 . assertBase64
+  , decodeUrl = B64U.decodeBase64 . assertBase64 @'UrlPadded
   , decodeUrlPad = B64U.decodeBase64Padded . assertBase64
   , decodeUrlNopad = B64U.decodeBase64Unpadded . assertBase64
   , lenientUrl = B64U.decodeBase64Lenient . assertBase64
@@ -103,7 +105,7 @@ lb64 = Harness
   , validate = LB64.isValidBase64
   , encodeUrl = extractBase64 . LB64U.encodeBase64'
   , encodeUrlNopad = extractBase64 . LB64U.encodeBase64Unpadded'
-  , decodeUrl = LB64U.decodeBase64 . assertBase64
+  , decodeUrl = LB64U.decodeBase64 . assertBase64 @'UrlPadded
   , decodeUrlPad = LB64U.decodeBase64Padded . assertBase64
   , decodeUrlNopad = LB64U.decodeBase64Unpadded . assertBase64
   , lenientUrl = LB64U.decodeBase64Lenient . assertBase64
