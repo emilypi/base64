@@ -11,6 +11,7 @@ module Data.Base64
 , extractBase64
 , coerceBase64
 , UrlAlphabet
+, StdAlphabet
 ) where
 
 
@@ -32,10 +33,20 @@ extractBase64 (Base64 a) = a
 coerceBase64 :: Base64 k a -> Base64 j a
 coerceBase64 = coerce
 
--- | Typelevel alphabet unions
+-- | The type family of Url-safe alphabets
 --
--- This type family defines the union of compatible
+-- This type family defines the union of compatible Url-safe base64 types
+--
 type family UrlAlphabet k :: Bool where
   UrlAlphabet 'UrlPadded = 'True
   UrlAlphabet 'UrlUnpadded = 'True
   UrlAlphabet _ = 'False
+
+-- | The type family of Std alphabets
+--
+-- This type family defines the union of compatible standard
+-- alphabet base64 types
+--
+type family StdAlphabet k :: Bool where
+  StdAlphabet 'StdPadded = 'True
+  StdAlphabet _ = 'False
