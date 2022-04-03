@@ -96,7 +96,7 @@ encodeBase64' = assertBase64 . encodeBase64_ base64UrlTable
 -- Right "<<>>"
 --
 decodeBase64
-  :: UrlAlphabet k ~ 'True
+  :: UrlAlphabet k
   => Base64 k ByteString
   -> Either Text ByteString
 decodeBase64 (Base64 bs@(PS _ _ !l))

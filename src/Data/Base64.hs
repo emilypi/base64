@@ -4,6 +4,7 @@
 {-# language RankNTypes #-}
 {-# language TypeFamilies #-}
 {-# language Trustworthy #-}
+{-# language UndecidableInstances #-}
 module Data.Base64
 ( Alphabet(..)
 , Base64
@@ -17,6 +18,10 @@ module Data.Base64
 
 import Data.Base64.Internal (Alphabet(..), Base64(..))
 import Data.Coerce (coerce)
+import Data.Kind
+
+import GHC.TypeLits
+
 
 -- | Assert a value to be encoded in a specific way
 --
@@ -30,23 +35,31 @@ extractBase64 (Base64 a) = a
 
 -- | Coerce the alphabet of a base64-encoded bytestring
 --
-coerceBase64 :: Base64 k a -> Base64 j a
+coerceBase64 :: forall j k a. Base64 k a -> Base64 j a
 coerceBase64 = coerce
 
 -- | The type family of Url-safe alphabets
 --
 -- This type family defines the union of compatible Url-safe base64 types
 --
-type family UrlAlphabet k :: Bool where
-  UrlAlphabet 'UrlPadded = 'True
-  UrlAlphabet 'UrlUnpadded = 'True
-  UrlAlphabet _ = 'False
+type family UrlAlphabet k :: Constraint where
+  UrlAlphabet 'UrlPadded = ()
+  UrlAlphabet 'UrlUnpadded = ()
+  UrlAlphabet _ = TypeError
+    ( 'Text "Cannot prove base64 value is encoded using the url-safe \
+            \alphabet. Re-encode using the url-safe encoders, or use \
+            \a lenient decoder for the url-safe alphabet."
+    )
 
 -- | The type family of Std alphabets
 --
 -- This type family defines the union of compatible standard
 -- alphabet base64 types
 --
-type family StdAlphabet k :: Bool where
-  StdAlphabet 'StdPadded = 'True
-  StdAlphabet _ = 'False
+type family StdAlphabet k :: Constraint where
+  StdAlphabet 'StdPadded = ()
+  StdAlphabet _ = TypeError
+    ( 'Text "Cannot prove base64 value is encoded using the std \
+            \alphabet. Re-encode using the std encoders, or use \
+            \a lenient decoder for the std alphabet."
+    )

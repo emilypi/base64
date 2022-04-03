@@ -86,7 +86,10 @@ encodeBase64 = fmap fromByteStringUnsafe
 -- >>> decodeBase64 "PDw-Pg"
 -- Right "<<>>"
 --
-decodeBase64 :: Base64 'UrlPadded ShortText -> Either Text ShortText
+decodeBase64
+  :: UrlAlphabet k
+  => Base64 k ShortText
+  -> Either Text ShortText
 decodeBase64 = fmap fromText . B64TU.decodeBase64 . fmap toText
 {-# INLINE decodeBase64 #-}
 
@@ -104,9 +107,10 @@ decodeBase64 = fmap fromText . B64TU.decodeBase64 . fmap toText
 -- @
 --
 decodeBase64With
-    :: (ShortByteString -> Either err ShortText)
+    :: UrlAlphabet k
+    => (ShortByteString -> Either err ShortText)
       -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
-    -> Base64 'UrlPadded ShortByteString
+    -> Base64 k ShortByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) ShortText
 decodeBase64With f t = case BS64U.decodeBase64 t of

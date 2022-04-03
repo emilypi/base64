@@ -72,7 +72,7 @@ encodeBase64 = BL64.encodeBase64 . TL.encodeUtf8
 -- >>> decodebase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
-decodeBase64 :: Base64 'StdPadded TL.Text -> Either T.Text TL.Text
+decodeBase64 :: StdAlphabet k => Base64 k TL.Text -> Either T.Text TL.Text
 decodeBase64 = fmap TL.decodeLatin1 . BL64.decodeBase64 . fmap TL.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
@@ -90,9 +90,10 @@ decodeBase64 = fmap TL.decodeLatin1 . BL64.decodeBase64 . fmap TL.encodeUtf8
 -- @
 --
 decodeBase64With
-    :: (ByteString -> Either err TL.Text)
+    :: StdAlphabet k
+    => (ByteString -> Either err TL.Text)
       -- ^ convert a bytestring to text (e.g. 'TL.decodeUtf8'')
-    -> Base64 'StdPadded ByteString
+    -> Base64 k ByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) TL.Text
 decodeBase64With f t = case BL64.decodeBase64 t of

@@ -100,7 +100,7 @@ encodeBase64' = assertBase64 . fromChunks
 -- Right "<<>>"
 --
 decodeBase64
-  :: UrlAlphabet k ~ 'True
+  :: UrlAlphabet k
   => Base64 k ByteString
   -> Either T.Text ByteString
 decodeBase64 = fmap (fromChunks . (:[]))

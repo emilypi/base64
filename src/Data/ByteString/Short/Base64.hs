@@ -74,7 +74,10 @@ encodeBase64' = fmap toShort . B64.encodeBase64' . fromShort
 -- >>> decodebase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
-decodeBase64 :: Base64 'StdPadded ShortByteString -> Either Text ShortByteString
+decodeBase64
+  :: StdAlphabet k
+  => Base64 k ShortByteString
+  -> Either Text ShortByteString
 decodeBase64 = fmap toShort . B64.decodeBase64 . fmap fromShort
 {-# INLINE decodeBase64 #-}
 

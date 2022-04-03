@@ -83,7 +83,7 @@ encodeBase64 = BL64U.encodeBase64 . TL.encodeUtf8
 -- >>> decodeBase64 "PDw-Pg"
 -- Right "<<>>"
 --
-decodeBase64 :: Base64 'UrlPadded TL.Text -> Either T.Text TL.Text
+decodeBase64 :: UrlAlphabet k => Base64 k TL.Text -> Either T.Text TL.Text
 decodeBase64 = fmap TL.decodeLatin1 . BL64U.decodeBase64 . fmap TL.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
@@ -101,9 +101,10 @@ decodeBase64 = fmap TL.decodeLatin1 . BL64U.decodeBase64 . fmap TL.encodeUtf8
 -- @
 --
 decodeBase64With
-    :: (ByteString -> Either err TL.Text)
+    :: UrlAlphabet k
+    => (ByteString -> Either err TL.Text)
       -- ^ convert a bytestring to text (e.g. 'TL.decodeUtf8'')
-    -> Base64 'UrlPadded ByteString
+    -> Base64 k ByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) TL.Text
 decodeBase64With f t = case BL64U.decodeBase64 t of

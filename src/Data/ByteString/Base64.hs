@@ -1,6 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Base64
@@ -83,7 +84,7 @@ encodeBase64' = assertBase64 . encodeBase64_ base64Table
 -- >>> decodebase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
-decodeBase64 :: Base64 'StdPadded ByteString -> Either Text ByteString
+decodeBase64 :: StdAlphabet k => Base64 k ByteString -> Either Text ByteString
 decodeBase64 (Base64 bs@(PS _ _ !l))
     | l == 0 = Right bs
     | r == 1 = Left "Base64-encoded bytestring has invalid size"
@@ -132,7 +133,9 @@ decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table . extractBase64
 -- False
 --
 isBase64 :: ByteString -> Bool
-isBase64 bs = isValidBase64 bs && isRight (decodeBase64 (assertBase64 bs))
+isBase64 bs
+  = isValidBase64 bs
+  && isRight (decodeBase64 (assertBase64 @'StdPadded bs))
 {-# inline isBase64 #-}
 
 -- | Tell whether a 'ByteString' value is a valid Base64 format.

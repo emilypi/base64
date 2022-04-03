@@ -30,7 +30,9 @@ module Data.ByteString.Short.Base64.URL
 , isValidBase64Url
 ) where
 
-import Data.Base64.Internal
+
+import Data.Base64
+
 import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Short (ShortByteString, fromShort, toShort)
 import Data.Text (Text)
@@ -84,7 +86,10 @@ encodeBase64' = fmap toShort . B64U.encodeBase64' . fromShort
 -- >>> decodeBase64 "PDw-Pg"
 -- Right "<<>>"
 --
-decodeBase64 :: Base64 'UrlPadded ShortByteString -> Either Text ShortByteString
+decodeBase64
+  :: UrlAlphabet k
+  => Base64 k ShortByteString
+  -> Either Text ShortByteString
 decodeBase64 = fmap toShort . B64U.decodeBase64 . fmap fromShort
 
 {-# INLINE decodeBase64 #-}
@@ -174,7 +179,7 @@ decodeBase64Padded = fmap toShort . B64U.decodeBase64Padded . fmap fromShort
 -- >>> decodeBase64Lenient "PDw_%%%$}Pj4"
 -- "<<?>>"
 --
-decodeBase64Lenient :: Base64 'UrlUnpadded ShortByteString -> ShortByteString
+decodeBase64Lenient :: Base64 k ShortByteString -> ShortByteString
 decodeBase64Lenient = toShort . B64U.decodeBase64Lenient . fmap fromShort
 {-# INLINE decodeBase64Lenient #-}
 

@@ -87,13 +87,10 @@ encodeBase64' = assertBase64
 -- >>> decodebase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
-decodeBase64 :: Base64 'StdPadded ByteString -> Either T.Text ByteString
+decodeBase64 :: StdAlphabet k => Base64 k ByteString -> Either T.Text ByteString
 decodeBase64 = fmap (fromChunks . (:[]))
   . B64.decodeBase64
-  . assertBase64
-  . BS.concat
-  . toChunks
-  . extractBase64
+  . fmap (BS.concat . toChunks)
 {-# INLINE decodeBase64 #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ByteString' value. This function

@@ -74,7 +74,7 @@ encodeBase64 = fmap fromByteStringUnsafe
 -- >>> decodebase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
-decodeBase64 :: Base64 'StdPadded ShortText -> Either Text ShortText
+decodeBase64 :: StdAlphabet k => Base64 k ShortText -> Either Text ShortText
 decodeBase64 = fmap fromText . B64T.decodeBase64 . fmap toText
 {-# INLINE decodeBase64 #-}
 
@@ -92,9 +92,10 @@ decodeBase64 = fmap fromText . B64T.decodeBase64 . fmap toText
 -- @
 --
 decodeBase64With
-    :: (ShortByteString -> Either err ShortText)
+    :: StdAlphabet k
+    => (ShortByteString -> Either err ShortText)
       -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
-    -> Base64 'StdPadded ShortByteString
+    -> Base64 k ShortByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) ShortText
 decodeBase64With f t = case BS64.decodeBase64 t of
