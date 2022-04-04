@@ -34,14 +34,13 @@ module Data.ByteString.Lazy.Base64.URL
 ) where
 
 
-import Prelude hiding (all, elem)
-
 import Data.Base64.Types
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Base64.Internal.Utils (reChunkN)
-import Data.ByteString.Lazy (elem, fromChunks, toChunks)
+import Data.ByteString.Lazy (fromChunks, toChunks)
+import qualified Data.ByteString.Lazy as BL
 import Data.ByteString.Lazy.Internal (ByteString(..))
 import Data.Either (isRight)
 import qualified Data.Text as T
@@ -211,7 +210,7 @@ decodeBase64Lenient :: Base64 k ByteString -> ByteString
 decodeBase64Lenient = fromChunks
     . fmap (B64U.decodeBase64Lenient . assertBase64)
     . reChunkN 4
-    . fmap (BS.filter (flip elem "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_="))
+    . fmap (BS.filter (`BL.elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_="))
     . toChunks
     . extractBase64
 {-# INLINE decodeBase64Lenient #-}
@@ -258,6 +257,6 @@ isValidBase64Url = go . toChunks
     go [] = True
     go [c] = B64U.isValidBase64Url c
     go (c:cs) = -- note the lack of padding char
-      BS.all (flip elem "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_") c
+      BS.all (`BL.elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_") c
       && go cs
 {-# INLINE isValidBase64Url #-}

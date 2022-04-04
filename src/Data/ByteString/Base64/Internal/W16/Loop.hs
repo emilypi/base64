@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeApplications #-}
 -- |
 -- Module       : Data.ByteString.Base64.Internal.W16.Loop
--- Copyright    : (c) 2019-2020 Emily Pillmore
+-- Copyright    : (c) 2019-2022 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -53,7 +53,7 @@ innerLoop !etable !sptr !dptr !end finish = go sptr dptr
         !j <- w32 <$> peek (plusPtr src 1)
         !k <- w32 <$> peek (plusPtr src 2)
 
-        let !w = (unsafeShiftL i 16) .|. (unsafeShiftL j 8) .|. k
+        let !w = unsafeShiftL i 16 .|. unsafeShiftL j 8 .|. k
 
         !x <- peekElemOff etable (fromIntegral (unsafeShiftR w 12))
         !y <- peekElemOff etable (fromIntegral (w .&. 0xfff))
@@ -127,9 +127,9 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
      | d == 0xff = err (plusPtr src 3)
      | otherwise = do
 
-       let !w = ((unsafeShiftL a 18)
-             .|. (unsafeShiftL b 12)
-             .|. (unsafeShiftL c 6)
+       let !w = (unsafeShiftL a 18
+             .|. unsafeShiftL b 12
+             .|. unsafeShiftL c 6
              .|. d) :: Word32
 
        poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
@@ -150,9 +150,9 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
       | c == 0xff = err (plusPtr src 2)
       | d == 0xff = err (plusPtr src 3)
       | otherwise = do
-        let !w = ((unsafeShiftL a 18)
-              .|. (unsafeShiftL b 12)
-              .|. (unsafeShiftL c 6)
+        let !w = (unsafeShiftL a 18
+              .|. unsafeShiftL b 12
+              .|. unsafeShiftL c 6
               .|. d) :: Word32
 
         poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
@@ -215,7 +215,7 @@ lenientLoop !dtable !sptr !dptr !end !dfp = go dptr sptr 0
             | otherwise ->
               look False bp $ \cp c ->
               look False cp $ \dp d -> do
-                let !w = (unsafeShiftL a 18) .|. (unsafeShiftL b 12) .|. (unsafeShiftL c 6) .|. d
+                let !w = unsafeShiftL a 18 .|. unsafeShiftL b 12 .|. unsafeShiftL c 6 .|. d
 
                 poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
                 if c == 0x63

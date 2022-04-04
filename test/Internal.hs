@@ -29,7 +29,7 @@ module Internal
 ) where
 
 
-import "base64" Data.Base64
+import "base64" Data.Base64.Types
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Short as SBS

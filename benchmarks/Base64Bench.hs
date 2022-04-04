@@ -1,16 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 module Main
 ( main
@@ -22,7 +18,7 @@ import Criterion.Main
 
 import "base64-bytestring" Data.ByteString.Base64 as Bos
 import "base64" Data.ByteString.Base64 as B64
-import "base64" Data.Base64 as B64
+import "base64" Data.Base64.Types as B64
 import Data.ByteString.Random (random)
 
 
