@@ -2,7 +2,7 @@
 {-# LANGUAGE Safe #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.URL
--- Copyright    : (c) 2019-2020 Emily Pillmore
+-- Copyright    : (c) 2019-2022 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -32,7 +32,7 @@ module Data.Text.Encoding.Base64.URL
 ) where
 
 
-import Data.Base64
+import Data.Base64.Types
 
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)

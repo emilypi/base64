@@ -1,9 +1,21 @@
-{-# language KindSignatures #-}
 {-# language DataKinds #-}
 {-# language RankNTypes #-}
 {-# language TypeFamilies #-}
 {-# language Safe #-}
-module Data.Base64.Internal
+-- |
+-- Module       : Data.ByteString.Base64.Types.Internal
+-- Copyright    : (c) 2019-2022 Emily Pillmore
+-- License      : BSD-style
+--
+-- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>,
+--                sofia-m-a <https://github.com/sofia-m-a>
+-- Stability    : stable
+-- Portability  : non-portable
+--
+-- This module contains the 'Base64' newtype, 'Alphabet'
+-- datatype, and associated instances for 'Base64'.
+--
+module Data.Base64.Types.Internal
 ( Alphabet(..)
 , Base64(..)
 ) where

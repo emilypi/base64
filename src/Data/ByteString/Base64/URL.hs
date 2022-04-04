@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module       : Data.ByteString.Base64.URL
--- Copyright    : (c) 2019-2020 Emily Pillmore
+-- Copyright    : (c) 2019-2022 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -34,8 +34,10 @@ module Data.ByteString.Base64.URL
 , isValidBase64Url
 ) where
 
-import Data.Base64
-import Data.Base64.Internal
+
+import Data.Base64.Types
+import Data.Base64.Types.Internal
+
 import qualified Data.ByteString as BS
 import Data.ByteString.Internal (ByteString(..))
 import Data.ByteString.Base64.Internal

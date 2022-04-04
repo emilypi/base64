@@ -4,7 +4,7 @@
 {-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Lazy.Base64
--- Copyright    : (c) 2019-2020 Emily Pillmore
+-- Copyright    : (c) 2019-2022 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -29,13 +29,12 @@ module Data.ByteString.Lazy.Base64
 ) where
 
 
-import Prelude hiding (all, elem)
-
-import Data.Base64
+import Data.Base64.Types
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Base64.Internal.Utils (reChunkN)
-import Data.ByteString.Lazy (elem, fromChunks, toChunks)
+import Data.ByteString.Lazy (fromChunks, toChunks)
+import qualified Data.ByteString.Lazy as BL
 import Data.ByteString.Lazy.Internal (ByteString(..))
 import Data.Either (isRight)
 import qualified Data.Text as T
@@ -112,10 +111,9 @@ decodeBase64 = fmap (fromChunks . (:[]))
 --
 decodeBase64Lenient :: Base64 k ByteString -> ByteString
 decodeBase64Lenient = fromChunks
-    . fmap B64.decodeBase64Lenient
-    . fmap assertBase64
+    . fmap (B64.decodeBase64Lenient . assertBase64)
     . reChunkN 4
-    . fmap (BS.filter (`elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="))
+    . fmap (BS.filter (`BL.elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="))
     . toChunks
     . extractBase64
 {-# INLINE decodeBase64Lenient #-}
@@ -169,6 +167,6 @@ isValidBase64 = go . toChunks
     go [] = True
     go [c] = B64.isValidBase64 c
     go (c:cs) = -- note the lack of padding char
-      BS.all (`elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/") c
+      BS.all (`BL.elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/") c
       && go cs
 {-# INLINE isValidBase64 #-}

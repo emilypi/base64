@@ -2,7 +2,7 @@
 {-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Short.Base64
--- Copyright    : (c) 2019-2020 Emily Pillmore
+-- Copyright    : (c) 2019-2022 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -26,7 +26,7 @@ module Data.ByteString.Short.Base64
 , isValidBase64
 ) where
 
-import Data.Base64
+import Data.Base64.Types
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Short (ShortByteString, fromShort, toShort)
 import Data.Text (Text)
