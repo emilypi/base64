@@ -1,7 +1,8 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE Safe #-}
 -- |
 -- Module       : Data.Text.Lazy.Encoding.Base64
--- Copyright    : (c) 2019-2020 Emily Pillmore
+-- Copyright    : (c) 2019-2022 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -26,6 +27,8 @@ module Data.Text.Lazy.Encoding.Base64
 ) where
 
 
+import Data.Base64.Types
+
 import Data.Bifunctor (first)
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy.Base64 as BL64
@@ -44,7 +47,7 @@ import qualified Data.Text.Lazy.Encoding as TL
 -- >>> encodeBase64 "Sun"
 -- "U3Vu"
 --
-encodeBase64 :: TL.Text -> TL.Text
+encodeBase64 :: TL.Text -> Base64 'StdPadded TL.Text
 encodeBase64 = BL64.encodeBase64 . TL.encodeUtf8
 {-# INLINE encodeBase64 #-}
 
@@ -69,8 +72,8 @@ encodeBase64 = BL64.encodeBase64 . TL.encodeUtf8
 -- >>> decodebase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
-decodeBase64 :: TL.Text -> Either T.Text TL.Text
-decodeBase64 = fmap TL.decodeLatin1 . BL64.decodeBase64 . TL.encodeUtf8
+decodeBase64 :: StdAlphabet k => Base64 k TL.Text -> Either T.Text TL.Text
+decodeBase64 = fmap TL.decodeLatin1 . BL64.decodeBase64 . fmap TL.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
 -- | Attempt to decode a 'ByteString' value as Base64, converting from
@@ -87,9 +90,10 @@ decodeBase64 = fmap TL.decodeLatin1 . BL64.decodeBase64 . TL.encodeUtf8
 -- @
 --
 decodeBase64With
-    :: (ByteString -> Either err TL.Text)
+    :: StdAlphabet k
+    => (ByteString -> Either err TL.Text)
       -- ^ convert a bytestring to text (e.g. 'TL.decodeUtf8'')
-    -> ByteString
+    -> Base64 k ByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) TL.Text
 decodeBase64With f t = case BL64.decodeBase64 t of
@@ -114,10 +118,10 @@ decodeBase64With f t = case BL64.decodeBase64 t of
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: TL.Text -> TL.Text
+decodeBase64Lenient :: Base64 k TL.Text -> TL.Text
 decodeBase64Lenient = TL.decodeLatin1
     . BL64.decodeBase64Lenient
-    . TL.encodeUtf8
+    . fmap TL.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'TL.Text' value is Base64-encoded.
