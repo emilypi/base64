@@ -1,16 +1,17 @@
 cabal-version:   2.0
 name:            base64
-version:         0.4.2.4
-synopsis:        A modern RFC 4648-compliant Base64 library
+version:         0.5
+synopsis:        A modern Base64 library
 description:
-  RFC 4648-compliant Base64 with an eye towards performance and modernity (additional support for RFC 7049 standards)
+  A performant, featureful RFC 4648 and 7049-compliant Base64 implementation
 
 homepage:        https://github.com/emilypi/base64
 bug-reports:     https://github.com/emilypi/base64/issues
 license:         BSD3
 license-file:    LICENSE
 author:          Emily Pillmore
-maintainer:      emilypi@cohomolo.gy
+maintainer:      Emily Pillmore <emilypi@cohomolo.gy>
+               , Sofia-m-a <https://github.com/sofia-m-a>
 copyright:       (c) 2019-2022 Emily Pillmore
 category:        Data
 build-type:      Simple

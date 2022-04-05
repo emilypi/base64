@@ -30,7 +30,8 @@ data Alphabet
     -- Padding is always inserted when encoding, and required when decoding
   | UrlPadded
     -- ^ Standard base64 according to [RFC 4648 §4](https://datatracker.ietf.org/doc/html/rfc4648#section-4)
-    -- Padding is never inserted when encoding, and optional when decoding
+    -- Padding is never inserted when encoding, and optional when decoding per
+    -- [RFC 7049](https://datatracker.ietf.org/doc/html/rfc7049#section-2.4.4.2).
   | UrlUnpadded
     -- ^ URL-safe base64 according to [RFC 4648 §5](https://datatracker.ietf.org/doc/html/rfc4648#section-5) aka base64url
     -- Padding is never inserted when encoding, and optional when decoding
