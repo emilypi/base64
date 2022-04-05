@@ -1,9 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE TypeApplications #-}
 -- |
 -- Module       : Data.ByteString.Base64.Internal.W32.Loop
--- Copyright    : (c) 2019-2020 Emily Pillmore
+-- Copyright    : (c) 2019-2022 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -57,7 +55,7 @@ innerLoop !etable !sptr !dptr !end finish = go sptr dptr
         !x <- w32_16 <$> peekElemOff etable (fromIntegral a)
         !y <- w32_16 <$> peekElemOff etable (fromIntegral b)
 
-        let !z = x .|. (unsafeShiftL y 16)
+        let !z = x .|. unsafeShiftL y 16
         poke dst (fromIntegral z)
 
         go (plusPtr src 3) (plusPtr dst 4)

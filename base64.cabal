@@ -26,6 +26,7 @@ source-repository head
 
 library
   exposed-modules:
+    Data.Base64.Types
     Data.ByteString.Base64
     Data.ByteString.Base64.URL
     Data.ByteString.Lazy.Base64
@@ -41,6 +42,7 @@ library
     Data.Text.Short.Encoding.Base64.URL
 
   other-modules:
+    Data.Base64.Types.Internal
     Data.ByteString.Base64.Internal
     Data.ByteString.Base64.Internal.Head
     Data.ByteString.Base64.Internal.Tables

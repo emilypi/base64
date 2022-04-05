@@ -1,9 +1,11 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Base64
--- Copyright    : (c) 2019-2020 Emily Pillmore
+-- Copyright    : (c) 2019-2022 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -27,6 +29,8 @@ module Data.ByteString.Base64
 , isValidBase64
 ) where
 
+import Data.Base64.Types
+import Data.Base64.Types.Internal
 
 import Data.ByteString.Internal (ByteString(..))
 import Data.ByteString.Base64.Internal
@@ -48,8 +52,8 @@ import System.IO.Unsafe
 -- >>> encodeBase64 "Sun"
 -- "U3Vu"
 --
-encodeBase64 :: ByteString -> Text
-encodeBase64 = T.decodeUtf8 . encodeBase64'
+encodeBase64 :: ByteString -> Base64 'StdPadded Text
+encodeBase64 = fmap T.decodeUtf8 . encodeBase64'
 {-# inline encodeBase64 #-}
 
 -- | Encode a 'ByteString' value as a Base64 'ByteString'  value with padding.
@@ -61,8 +65,8 @@ encodeBase64 = T.decodeUtf8 . encodeBase64'
 -- >>> encodeBase64' "Sun"
 -- "U3Vu"
 --
-encodeBase64' :: ByteString -> ByteString
-encodeBase64' = encodeBase64_ base64Table
+encodeBase64' :: ByteString -> Base64 'StdPadded ByteString
+encodeBase64' = assertBase64 . encodeBase64_ base64Table
 {-# inline encodeBase64' #-}
 
 -- | Decode a padded Base64-encoded 'ByteString' value.
@@ -80,8 +84,8 @@ encodeBase64' = encodeBase64_ base64Table
 -- >>> decodebase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
-decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 bs@(PS _ _ !l)
+decodeBase64 :: StdAlphabet k => Base64 k ByteString -> Either Text ByteString
+decodeBase64 (Base64 bs@(PS _ _ !l))
     | l == 0 = Right bs
     | r == 1 = Left "Base64-encoded bytestring has invalid size"
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
@@ -107,8 +111,8 @@ decodeBase64 bs@(PS _ _ !l)
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: ByteString -> ByteString
-decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
+decodeBase64Lenient :: Base64 k ByteString -> ByteString
+decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table . extractBase64
 {-# inline decodeBase64Lenient #-}
 
 -- | Tell whether a 'ByteString' value is base64 encoded.
@@ -129,7 +133,9 @@ decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 -- False
 --
 isBase64 :: ByteString -> Bool
-isBase64 bs = isValidBase64 bs && isRight (decodeBase64 bs)
+isBase64 bs
+  = isValidBase64 bs
+  && isRight (decodeBase64 (assertBase64 @'StdPadded bs))
 {-# inline isBase64 #-}
 
 -- | Tell whether a 'ByteString' value is a valid Base64 format.

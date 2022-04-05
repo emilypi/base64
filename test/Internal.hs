@@ -1,5 +1,7 @@
 {-# LANGUAGE PackageImports #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- |
 -- Module       : Main
@@ -27,6 +29,7 @@ module Internal
 ) where
 
 
+import "base64" Data.Base64.Types
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Short as SBS
@@ -77,17 +80,17 @@ data Harness bs = Harness
 b64 :: Harness BS.ByteString
 b64 = Harness
   { label = "ByteString"
-  , encode = B64.encodeBase64'
-  , decode = B64.decodeBase64
-  , lenient = B64.decodeBase64Lenient
+  , encode = extractBase64 . B64.encodeBase64'
+  , decode = B64.decodeBase64 . assertBase64 @'StdPadded
+  , lenient = B64.decodeBase64Lenient . assertBase64
   , correct = B64.isBase64
   , validate = B64.isValidBase64
-  , encodeUrl = B64U.encodeBase64'
-  , encodeUrlNopad = B64U.encodeBase64Unpadded'
-  , decodeUrl = B64U.decodeBase64
-  , decodeUrlPad = B64U.decodeBase64Padded
-  , decodeUrlNopad = B64U.decodeBase64Unpadded
-  , lenientUrl = B64U.decodeBase64Lenient
+  , encodeUrl = extractBase64 . B64U.encodeBase64'
+  , encodeUrlNopad = extractBase64 . B64U.encodeBase64Unpadded'
+  , decodeUrl = B64U.decodeBase64 . assertBase64 @'UrlPadded
+  , decodeUrlPad = B64U.decodeBase64Padded . assertBase64
+  , decodeUrlNopad = B64U.decodeBase64Unpadded . assertBase64
+  , lenientUrl = B64U.decodeBase64Lenient . assertBase64
   , correctUrl = B64U.isBase64Url
   , validateUrl = B64U.isValidBase64Url
   }
@@ -95,17 +98,17 @@ b64 = Harness
 lb64 :: Harness LBS.ByteString
 lb64 = Harness
   { label = "Lazy ByteString"
-  , encode = LB64.encodeBase64'
-  , decode = LB64.decodeBase64
-  , lenient = LB64.decodeBase64Lenient
+  , encode = extractBase64 . LB64.encodeBase64'
+  , decode = LB64.decodeBase64 . assertBase64 @'StdPadded
+  , lenient = LB64.decodeBase64Lenient . assertBase64
   , correct = LB64.isBase64
   , validate = LB64.isValidBase64
-  , encodeUrl = LB64U.encodeBase64'
-  , encodeUrlNopad = LB64U.encodeBase64Unpadded'
-  , decodeUrl = LB64U.decodeBase64
-  , decodeUrlPad = LB64U.decodeBase64Padded
-  , decodeUrlNopad = LB64U.decodeBase64Unpadded
-  , lenientUrl = LB64U.decodeBase64Lenient
+  , encodeUrl = extractBase64 . LB64U.encodeBase64'
+  , encodeUrlNopad = extractBase64 . LB64U.encodeBase64Unpadded'
+  , decodeUrl = LB64U.decodeBase64 . assertBase64 @'UrlPadded
+  , decodeUrlPad = LB64U.decodeBase64Padded . assertBase64
+  , decodeUrlNopad = LB64U.decodeBase64Unpadded . assertBase64
+  , lenientUrl = LB64U.decodeBase64Lenient . assertBase64
   , correctUrl = LB64U.isBase64Url
   , validateUrl = LB64U.isValidBase64Url
   }
@@ -113,17 +116,17 @@ lb64 = Harness
 sb64 :: Harness SBS.ShortByteString
 sb64 = Harness
   { label = "Short ByteString"
-  , encode = SB64.encodeBase64'
-  , decode = SB64.decodeBase64
-  , lenient = SB64.decodeBase64Lenient
+  , encode = extractBase64 . SB64.encodeBase64'
+  , decode = SB64.decodeBase64 . assertBase64 @'StdPadded
+  , lenient = SB64.decodeBase64Lenient . assertBase64
   , correct = SB64.isBase64
   , validate = SB64.isValidBase64
-  , encodeUrl = SB64U.encodeBase64'
-  , encodeUrlNopad = SB64U.encodeBase64Unpadded'
-  , decodeUrl = SB64U.decodeBase64
-  , decodeUrlPad = SB64U.decodeBase64Padded
-  , decodeUrlNopad = SB64U.decodeBase64Unpadded
-  , lenientUrl = SB64U.decodeBase64Lenient
+  , encodeUrl = extractBase64 . SB64U.encodeBase64'
+  , encodeUrlNopad = extractBase64 . SB64U.encodeBase64Unpadded'
+  , decodeUrl = SB64U.decodeBase64 . assertBase64 @'UrlPadded
+  , decodeUrlPad = SB64U.decodeBase64Padded . assertBase64
+  , decodeUrlNopad = SB64U.decodeBase64Unpadded . assertBase64
+  , lenientUrl = SB64U.decodeBase64Lenient . assertBase64
   , correctUrl = SB64U.isBase64Url
   , validateUrl = SB64U.isValidBase64Url
   }
@@ -131,17 +134,17 @@ sb64 = Harness
 t64 :: Harness Text
 t64 = Harness
   { label = "Text"
-  , encode = T64.encodeBase64
-  , decode = T64.decodeBase64
-  , lenient = T64.decodeBase64Lenient
+  , encode = extractBase64 . T64.encodeBase64
+  , decode = T64.decodeBase64 . assertBase64 @'StdPadded
+  , lenient = T64.decodeBase64Lenient . assertBase64
   , correct = T64.isBase64
   , validate = T64.isValidBase64
-  , encodeUrl = T64U.encodeBase64
-  , encodeUrlNopad = T64U.encodeBase64Unpadded
-  , decodeUrl = T64U.decodeBase64
-  , decodeUrlPad = T64U.decodeBase64Padded
-  , decodeUrlNopad = T64U.decodeBase64Unpadded
-  , lenientUrl = T64U.decodeBase64Lenient
+  , encodeUrl = extractBase64 . T64U.encodeBase64
+  , encodeUrlNopad = extractBase64 . T64U.encodeBase64Unpadded
+  , decodeUrl = T64U.decodeBase64 . assertBase64 @'UrlPadded
+  , decodeUrlPad = T64U.decodeBase64Padded . assertBase64
+  , decodeUrlNopad = T64U.decodeBase64Unpadded . assertBase64
+  , lenientUrl = T64U.decodeBase64Lenient . assertBase64
   , correctUrl = T64U.isBase64Url
   , validateUrl = T64U.isValidBase64Url
   }
@@ -149,17 +152,17 @@ t64 = Harness
 tl64 :: Harness TL.Text
 tl64 = Harness
   { label = "Lazy Text"
-  , encode = TL64.encodeBase64
-  , decode = TL64.decodeBase64
-  , lenient = TL64.decodeBase64Lenient
+  , encode = extractBase64 . TL64.encodeBase64
+  , decode = TL64.decodeBase64 . assertBase64 @'StdPadded
+  , lenient = TL64.decodeBase64Lenient . assertBase64
   , correct = TL64.isBase64
   , validate = TL64.isValidBase64
-  , encodeUrl = TL64U.encodeBase64
-  , encodeUrlNopad = TL64U.encodeBase64Unpadded
-  , decodeUrl = TL64U.decodeBase64
-  , decodeUrlPad = TL64U.decodeBase64Padded
-  , decodeUrlNopad = TL64U.decodeBase64Unpadded
-  , lenientUrl = TL64U.decodeBase64Lenient
+  , encodeUrl = extractBase64 . TL64U.encodeBase64
+  , encodeUrlNopad = extractBase64 . TL64U.encodeBase64Unpadded
+  , decodeUrl = TL64U.decodeBase64 . assertBase64 @'UrlPadded
+  , decodeUrlPad = TL64U.decodeBase64Padded . assertBase64
+  , decodeUrlNopad = TL64U.decodeBase64Unpadded . assertBase64
+  , lenientUrl = TL64U.decodeBase64Lenient . assertBase64
   , correctUrl = TL64U.isBase64Url
   , validateUrl = TL64U.isValidBase64Url
   }
@@ -167,17 +170,17 @@ tl64 = Harness
 ts64 :: Harness TS.ShortText
 ts64 = Harness
   { label = "Short Text"
-  , encode = TS64.encodeBase64
-  , decode = TS64.decodeBase64
-  , lenient = TS64.decodeBase64Lenient
+  , encode = extractBase64 . TS64.encodeBase64
+  , decode = TS64.decodeBase64 . assertBase64 @'StdPadded
+  , lenient = TS64.decodeBase64Lenient . assertBase64
   , correct = TS64.isBase64
   , validate = TS64.isValidBase64
-  , encodeUrl = TS64U.encodeBase64
-  , encodeUrlNopad = TS64U.encodeBase64Unpadded
-  , decodeUrl = TS64U.decodeBase64
-  , decodeUrlPad = TS64U.decodeBase64Padded
-  , decodeUrlNopad = TS64U.decodeBase64Unpadded
-  , lenientUrl = TS64U.decodeBase64Lenient
+  , encodeUrl = extractBase64 . TS64U.encodeBase64
+  , encodeUrlNopad = extractBase64 . TS64U.encodeBase64Unpadded
+  , decodeUrl = TS64U.decodeBase64 . assertBase64 @'UrlPadded
+  , decodeUrlPad = TS64U.decodeBase64Padded . assertBase64
+  , decodeUrlNopad = TS64U.decodeBase64Unpadded . assertBase64
+  , lenientUrl = TS64U.decodeBase64Lenient . assertBase64
   , correctUrl = TS64U.isBase64Url
   , validateUrl = TS64U.isValidBase64Url
   }
@@ -192,28 +195,31 @@ data TextHarness bs cs = TextHarness
   , decodeUrlUnpaddedWith_ :: forall err. (bs -> Either err cs) -> bs -> Either (Base64Error err) cs
   }
 
+assertForDecode :: forall k a b c. (b -> Base64 k a -> c) -> b -> a -> c
+assertForDecode k f b = k f (assertBase64 b)
+
 tt64 :: TextHarness BS.ByteString Text
 tt64 = TextHarness
-  { decodeWith_ = T64.decodeBase64With
-  , decodeUrlWith_ = T64U.decodeBase64With
-  , decodeUrlPaddedWith_ = T64U.decodeBase64PaddedWith
-  , decodeUrlUnpaddedWith_ = T64U.decodeBase64UnpaddedWith
+  { decodeWith_ = assertForDecode @'StdPadded T64.decodeBase64With
+  , decodeUrlWith_ = assertForDecode @'UrlPadded T64U.decodeBase64With
+  , decodeUrlPaddedWith_ = assertForDecode T64U.decodeBase64PaddedWith
+  , decodeUrlUnpaddedWith_ = assertForDecode T64U.decodeBase64UnpaddedWith
   }
 
 ttl64 :: TextHarness LBS.ByteString TL.Text
 ttl64 = TextHarness
-  { decodeWith_ = TL64.decodeBase64With
-  , decodeUrlWith_ = TL64U.decodeBase64With
-  , decodeUrlPaddedWith_ = TL64U.decodeBase64PaddedWith
-  , decodeUrlUnpaddedWith_ = TL64U.decodeBase64UnpaddedWith
+  { decodeWith_ = assertForDecode @'StdPadded TL64.decodeBase64With
+  , decodeUrlWith_ = assertForDecode @'UrlPadded TL64U.decodeBase64With
+  , decodeUrlPaddedWith_ = assertForDecode TL64U.decodeBase64PaddedWith
+  , decodeUrlUnpaddedWith_ = assertForDecode TL64U.decodeBase64UnpaddedWith
   }
 
 tts64 :: TextHarness SBS.ShortByteString TS.ShortText
 tts64 = TextHarness
-  { decodeWith_ = TS64.decodeBase64With
-  , decodeUrlWith_ = TS64U.decodeBase64With
-  , decodeUrlPaddedWith_ = TS64U.decodeBase64PaddedWith
-  , decodeUrlUnpaddedWith_ = TS64U.decodeBase64UnpaddedWith
+  { decodeWith_ = assertForDecode @'StdPadded TS64.decodeBase64With
+  , decodeUrlWith_ = assertForDecode @'UrlPadded TS64U.decodeBase64With
+  , decodeUrlPaddedWith_ = assertForDecode TS64U.decodeBase64PaddedWith
+  , decodeUrlUnpaddedWith_ = assertForDecode TS64U.decodeBase64UnpaddedWith
   }
 
 -- ------------------------------------------------------------------ --

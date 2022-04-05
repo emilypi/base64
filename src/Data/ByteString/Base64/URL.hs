@@ -1,9 +1,12 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module       : Data.ByteString.Base64.URL
--- Copyright    : (c) 2019-2020 Emily Pillmore
+-- Copyright    : (c) 2019-2022 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -32,6 +35,9 @@ module Data.ByteString.Base64.URL
 ) where
 
 
+import Data.Base64.Types
+import Data.Base64.Types.Internal
+
 import qualified Data.ByteString as BS
 import Data.ByteString.Internal (ByteString(..))
 import Data.ByteString.Base64.Internal
@@ -53,8 +59,8 @@ import System.IO.Unsafe
 -- >>> encodeBase64 "<<?>>"
 -- "PDw_Pj4="
 --
-encodeBase64 :: ByteString -> Text
-encodeBase64 = T.decodeUtf8 . encodeBase64'
+encodeBase64 :: ByteString -> Base64 'UrlPadded Text
+encodeBase64 = fmap T.decodeUtf8 . encodeBase64'
 {-# INLINE encodeBase64 #-}
 
 -- | Encode a 'ByteString' as a Base64url 'ByteString' value with padding.
@@ -66,8 +72,8 @@ encodeBase64 = T.decodeUtf8 . encodeBase64'
 -- >>> encodeBase64' "<<?>>"
 -- "PDw_Pj4="
 --
-encodeBase64' :: ByteString -> ByteString
-encodeBase64' = encodeBase64_ base64UrlTable
+encodeBase64' :: ByteString -> Base64 'UrlPadded ByteString
+encodeBase64' = assertBase64 . encodeBase64_ base64UrlTable
 
 -- | Decode a padded Base64url encoded 'ByteString' value. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
@@ -91,13 +97,16 @@ encodeBase64' = encodeBase64_ base64UrlTable
 -- >>> decodeBase64 "PDw-Pg"
 -- Right "<<>>"
 --
-decodeBase64 :: ByteString -> Either Text ByteString
-decodeBase64 bs@(PS _ _ !l)
-    | l == 0 = Right bs
-    | r == 0 = unsafeDupablePerformIO $ decodeBase64_ decodeB64UrlTable bs
-    | r == 2 = unsafeDupablePerformIO $ decodeBase64_ decodeB64UrlTable (BS.append bs "==")
-    | r == 3 = validateLastPad bs $ decodeBase64_ decodeB64UrlTable (BS.append bs "=")
-    | otherwise = Left "Base64-encoded bytestring has invalid size"
+decodeBase64
+  :: UrlAlphabet k
+  => Base64 k ByteString
+  -> Either Text ByteString
+decodeBase64 (Base64 bs@(PS _ _ !l))
+  | l == 0 = Right bs
+  | r == 0 = unsafeDupablePerformIO $ decodeBase64_ decodeB64UrlTable bs
+  | r == 2 = unsafeDupablePerformIO $ decodeBase64_ decodeB64UrlTable (BS.append bs "==")
+  | r == 3 = validateLastPad bs $ decodeBase64_ decodeB64UrlTable (BS.append bs "=")
+  | otherwise = Left "Base64-encoded bytestring has invalid size"
   where
     !r = l `rem` 4
 {-# INLINE decodeBase64 #-}
@@ -113,8 +122,8 @@ decodeBase64 bs@(PS _ _ !l)
 -- >>> encodeBase64Unpadded "<<?>>"
 -- "PDw_Pj4"
 --
-encodeBase64Unpadded :: ByteString -> Text
-encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
+encodeBase64Unpadded :: ByteString -> Base64 'UrlUnpadded Text
+encodeBase64Unpadded = fmap T.decodeUtf8 . encodeBase64Unpadded'
 {-# INLINE encodeBase64Unpadded #-}
 
 -- | Encode a 'ByteString' value as Base64url without padding. Note that for Base64url,
@@ -128,8 +137,8 @@ encodeBase64Unpadded = T.decodeUtf8 . encodeBase64Unpadded'
 -- >>> encodeBase64Unpadded' "<<?>>"
 -- "PDw_Pj4"
 --
-encodeBase64Unpadded' :: ByteString -> ByteString
-encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
+encodeBase64Unpadded' :: ByteString -> Base64 'UrlUnpadded ByteString
+encodeBase64Unpadded' = assertBase64 . encodeBase64Nopad_ base64UrlTable
 
 -- | Decode an unpadded Base64url-encoded 'ByteString' value. Input strings are
 -- required to be unpadded, and will undergo validation prior to decoding to
@@ -148,8 +157,8 @@ encodeBase64Unpadded' = encodeBase64Nopad_ base64UrlTable
 -- >>> decodeBase64Unpadded "PDw_Pj4="
 -- Left "Base64-encoded bytestring has invalid padding"
 --
-decodeBase64Unpadded :: ByteString -> Either Text ByteString
-decodeBase64Unpadded bs@(PS _ _ !l)
+decodeBase64Unpadded :: Base64 'UrlUnpadded ByteString -> Either Text ByteString
+decodeBase64Unpadded (Base64 bs@(PS _ _ !l))
     | l == 0 = Right bs
     | r == 0 = validateLastPad bs $ decodeBase64_ decodeB64UrlTable bs
     | r == 2 = validateLastPad bs $ decodeBase64_ decodeB64UrlTable (BS.append bs "==")
@@ -176,8 +185,8 @@ decodeBase64Unpadded bs@(PS _ _ !l)
 -- >>> decodeBase64Padded "PDw_Pj4"
 -- Left "Base64-encoded bytestring requires padding"
 --
-decodeBase64Padded :: ByteString -> Either Text ByteString
-decodeBase64Padded bs@(PS _ _ !l)
+decodeBase64Padded :: Base64 'UrlPadded ByteString -> Either Text ByteString
+decodeBase64Padded (Base64 bs@(PS _ _ !l))
     | l == 0 = Right bs
     | r == 1 = Left "Base64-encoded bytestring has invalid size"
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
@@ -200,8 +209,8 @@ decodeBase64Padded bs@(PS _ _ !l)
 -- >>> decodeBase64Lenient "PDw_%%%$}Pj4"
 -- "<<?>>"
 --
-decodeBase64Lenient :: ByteString -> ByteString
-decodeBase64Lenient = decodeBase64Lenient_ decodeB64UrlTable
+decodeBase64Lenient :: Base64 k ByteString -> ByteString
+decodeBase64Lenient = decodeBase64Lenient_ decodeB64UrlTable . extractBase64
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ByteString' is encoded in padded /or/ unpadded Base64url format.
@@ -222,7 +231,9 @@ decodeBase64Lenient = decodeBase64Lenient_ decodeB64UrlTable
 -- False
 --
 isBase64Url :: ByteString -> Bool
-isBase64Url bs = isValidBase64Url bs && isRight (decodeBase64 bs)
+isBase64Url bs
+  = isValidBase64Url bs
+  && isRight (decodeBase64 $ assertBase64 @'UrlPadded bs)
 {-# INLINE isBase64Url #-}
 
 -- | Tell whether a 'ByteString' is a valid Base64url format.

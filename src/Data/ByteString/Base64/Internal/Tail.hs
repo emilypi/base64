@@ -1,9 +1,8 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
 -- Module       : Data.ByteString.Base64.Internal.W32.Loop
--- Copyright    : (c) 2019-2020 Emily Pillmore
+-- Copyright    : (c) 2019-2022 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -91,7 +90,7 @@ loopTailNoPad !dfp (Ptr !alpha) !dptr !end !src !dst
 
       poke @Word8 dst (aix a alpha)
       poke @Word8 (plusPtr dst 1) (aix b alpha)
-      return (PS dfp 0 (2 + (minusPtr dst dptr)))
+      return (PS dfp 0 (2 + minusPtr dst dptr))
     | otherwise = do
       !x <- peek @Word8 src
       !y <- peek @Word8 (plusPtr src 1)
@@ -105,5 +104,5 @@ loopTailNoPad !dfp (Ptr !alpha) !dptr !end !src !dst
       poke @Word8 dst (aix a alpha)
       poke @Word8 (plusPtr dst 1) (aix c alpha)
       poke @Word8 (plusPtr dst 2) (aix d alpha)
-      return (PS dfp 0 (3 + (minusPtr dst dptr)))
+      return (PS dfp 0 (3 + minusPtr dst dptr))
 {-# inline loopTailNoPad #-}
