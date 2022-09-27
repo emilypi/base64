@@ -85,11 +85,11 @@ encodeBase64' = assertBase64 . encodeBase64_ base64Table
 -- Left "non-canonical encoding detected at offset: 2"
 --
 decodeBase64 :: StdAlphabet k => Base64 k ByteString -> Either Text ByteString
-decodeBase64 (Base64 bs@(PS _ _ !l))
-    | l == 0 = Right bs
+decodeBase64 b64@(Base64 (PS _ _ !l))
+    | l == 0 = Right mempty
     | r == 1 = Left "Base64-encoded bytestring has invalid size"
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
-    | otherwise = unsafeDupablePerformIO $ decodeBase64_ decodeB64Table bs
+    | otherwise = unsafeDupablePerformIO $ decodeBase64Typed_ decodeB64Table b64
   where
     !r = l `rem` 4
 {-# inline decodeBase64 #-}

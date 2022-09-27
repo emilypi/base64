@@ -85,10 +85,10 @@ encodeBase64' = assertBase64 . encodeBase64_ base64UrlTable
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 "PDw_Pj4="
+-- >>> decodeBase64 $ Base64 "PDw_Pj4="
 -- Right "<<?>>"
 --
--- >>> decodeBase64 "PDw_Pj4"
+-- >>> decodeBase64 $ Base64 "PDw_Pj4"
 -- Right "<<?>>"
 --
 -- >>> decodeBase64 "PDw-Pg="
@@ -101,11 +101,11 @@ decodeBase64
   :: UrlAlphabet k
   => Base64 k ByteString
   -> Either Text ByteString
-decodeBase64 (Base64 bs@(PS _ _ !l))
-  | l == 0 = Right bs
-  | r == 0 = unsafeDupablePerformIO $ decodeBase64_ decodeB64UrlTable bs
-  | r == 2 = unsafeDupablePerformIO $ decodeBase64_ decodeB64UrlTable (BS.append bs "==")
-  | r == 3 = validateLastPad bs $ decodeBase64_ decodeB64UrlTable (BS.append bs "=")
+decodeBase64 b64@(Base64 (PS _ _ !l))
+  | l == 0 = Right mempty
+  | r == 0 = unsafeDupablePerformIO $ decodeBase64Typed_ decodeB64UrlTable b64
+  | r == 2 = unsafeDupablePerformIO $ decodeBase64Typed_ decodeB64UrlTable $ (`BS.append` "==") <$> b64
+  | r == 3 = validateLastPad b64 $ decodeBase64Typed_ decodeB64UrlTable $ (`BS.append` "=") <$> b64
   | otherwise = Left "Base64-encoded bytestring has invalid size"
   where
     !r = l `rem` 4
@@ -158,11 +158,11 @@ encodeBase64Unpadded' = assertBase64 . encodeBase64Nopad_ base64UrlTable
 -- Left "Base64-encoded bytestring has invalid padding"
 --
 decodeBase64Unpadded :: Base64 'UrlUnpadded ByteString -> Either Text ByteString
-decodeBase64Unpadded (Base64 bs@(PS _ _ !l))
-    | l == 0 = Right bs
-    | r == 0 = validateLastPad bs $ decodeBase64_ decodeB64UrlTable bs
-    | r == 2 = validateLastPad bs $ decodeBase64_ decodeB64UrlTable (BS.append bs "==")
-    | r == 3 = validateLastPad bs $ decodeBase64_ decodeB64UrlTable (BS.append bs "=")
+decodeBase64Unpadded b64@(Base64 (PS _ _ !l))
+    | l == 0 = Right mempty
+    | r == 0 = validateLastPad b64 $ decodeBase64Typed_ decodeB64UrlTable b64
+    | r == 2 = validateLastPad b64 $ decodeBase64Typed_ decodeB64UrlTable $ (`BS.append` "==") <$> b64
+    | r == 3 = validateLastPad b64 $ decodeBase64Typed_ decodeB64UrlTable $ (`BS.append` "=") <$> b64
     | otherwise = Left "Base64-encoded bytestring has invalid size"
   where
     !r = l `rem` 4
@@ -186,11 +186,11 @@ decodeBase64Unpadded (Base64 bs@(PS _ _ !l))
 -- Left "Base64-encoded bytestring requires padding"
 --
 decodeBase64Padded :: Base64 'UrlPadded ByteString -> Either Text ByteString
-decodeBase64Padded (Base64 bs@(PS _ _ !l))
-    | l == 0 = Right bs
+decodeBase64Padded b64@(Base64 (PS _ _ !l))
+    | l == 0 = Right mempty
     | r == 1 = Left "Base64-encoded bytestring has invalid size"
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
-    | otherwise = unsafeDupablePerformIO $ decodeBase64_ decodeB64UrlTable bs
+    | otherwise = unsafeDupablePerformIO $ decodeBase64Typed_ decodeB64UrlTable b64
   where
     !r = l `rem` 4
 {-# INLINE decodeBase64Padded #-}

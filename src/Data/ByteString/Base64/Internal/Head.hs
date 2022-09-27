@@ -16,11 +16,13 @@ module Data.ByteString.Base64.Internal.Head
 ( encodeBase64_
 , encodeBase64Nopad_
 , decodeBase64_
+, decodeBase64Typed_
 , decodeBase64Lenient_
 ) where
 
 #include "MachDeps.h"
 
+import Data.Base64.Types.Internal
 import Data.ByteString.Base64.Internal.Tail
 import Data.ByteString.Base64.Internal.Utils
 #if WORD_SIZE_IN_BITS == 32
@@ -102,6 +104,30 @@ decodeBase64_ !dtfp (PS !sfp !soff !slen) =
   where
     !dlen = (slen `quot` 4) * 3
 {-# inline decodeBase64_ #-}
+
+-- | The main decode function for typed base64 values.
+--
+-- This loop is separate from 'decodeBase64_' due to the fact that
+-- when taking a 'Base64' value from this library, the existence
+-- of the wrapper is a witness to the well-formedness of the underlying value,
+-- and so we can eschew error checking in the decode loop.
+--
+decodeBase64Typed_
+    :: ForeignPtr Word8
+    -> Base64 k ByteString
+    -> IO (Either Text ByteString)
+decodeBase64Typed_ !dtfp (Base64 (PS !sfp !soff !slen)) =
+    withForeignPtr dtfp $ \dtable ->
+    withForeignPtr sfp $ \sptr -> do
+      dfp <- mallocPlainForeignPtrBytes dlen
+      withForeignPtr dfp $ \dptr -> do
+        let !end = plusPtr sptr (soff + slen)
+        decodeLoopNoError dtable
+          (plusPtr sptr soff)
+          dptr end dfp
+  where
+    !dlen = (slen `quot` 4) * 3
+{-# inline decodeBase64Typed_ #-}
 
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
 decodeBase64Lenient_ !dtfp (PS !sfp !soff !slen) = unsafeDupablePerformIO $

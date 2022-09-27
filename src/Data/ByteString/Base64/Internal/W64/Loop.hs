@@ -1,6 +1,4 @@
 {-# LANGUAGE BangPatterns #-}
-
-
 -- |
 -- Module       : Data.ByteString.Base64.Internal.W64.Loop
 -- Copyright    : (c) 2019-2022 Emily Pillmore
@@ -15,6 +13,7 @@
 module Data.ByteString.Base64.Internal.W64.Loop
 ( innerLoop
 , decodeLoop
+, decodeLoopNoError
 , lenientLoop
 ) where
 
@@ -85,6 +84,21 @@ decodeLoop
     -> IO (Either Text ByteString)
 decodeLoop = W16.decodeLoop
 {-# inline decodeLoop #-}
+
+decodeLoopNoError
+    :: Ptr Word8
+        -- ^ decode lookup table
+    -> Ptr Word8
+        -- ^ src pointer
+    -> Ptr Word8
+        -- ^ dst pointer
+    -> Ptr Word8
+        -- ^ end of src ptr
+    -> ForeignPtr Word8
+        -- ^ dst foreign ptr (for consing bs)
+    -> IO (Either Text ByteString)
+decodeLoopNoError = W16.decodeLoopNoError
+{-# inline decodeLoopNoError #-}
 
 lenientLoop
     :: Ptr Word8
