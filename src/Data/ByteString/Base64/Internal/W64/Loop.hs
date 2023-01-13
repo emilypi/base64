@@ -89,14 +89,12 @@ decodeLoopNoError
     :: Ptr Word8
         -- ^ decode lookup table
     -> Ptr Word8
-        -- ^ src pointer
-    -> Ptr Word8
         -- ^ dst pointer
     -> Ptr Word8
+        -- ^ src pointer
+    -> Ptr Word8
         -- ^ end of src ptr
-    -> ForeignPtr Word8
-        -- ^ dst foreign ptr (for consing bs)
-    -> IO (Either Text ByteString)
+    -> IO ()
 decodeLoopNoError = W16.decodeLoopNoError
 {-# inline decodeLoopNoError #-}
 

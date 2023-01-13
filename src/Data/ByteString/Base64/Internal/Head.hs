@@ -115,16 +115,16 @@ decodeBase64_ !dtfp (PS !sfp !soff !slen) =
 decodeBase64Typed_
     :: ForeignPtr Word8
     -> Base64 k ByteString
-    -> IO (Either Text ByteString)
-decodeBase64Typed_ !dtfp (Base64 (PS !sfp !soff !slen)) =
-    withForeignPtr dtfp $ \dtable ->
-    withForeignPtr sfp $ \sptr -> do
-      dfp <- mallocPlainForeignPtrBytes dlen
-      withForeignPtr dfp $ \dptr -> do
-        let !end = plusPtr sptr (soff + slen)
-        decodeLoopNoError dtable
+    -> ByteString
+decodeBase64Typed_ !dtfp (Base64 (PS sfp soff slen)) =
+    unsafeCreate dlen $ \dptr ->
+      withForeignPtr dtfp $ \dtable ->
+      withForeignPtr sfp $ \sptr -> do
+        decodeLoopNoError
+          dtable
+          dptr
           (plusPtr sptr soff)
-          dptr end dfp
+          (plusPtr sptr $ soff + slen)
   where
     !dlen = (slen `quot` 4) * 3
 {-# inline decodeBase64Typed_ #-}

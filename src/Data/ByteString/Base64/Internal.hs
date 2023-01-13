@@ -101,10 +101,10 @@ validateBase64Url !alphabet bs@(PS _ _ l)
 -- @
 --
 validateLastPad
-    :: Base64 k ByteString
+    :: ByteString
     -> IO (Either Text ByteString)
     -> Either Text ByteString
-validateLastPad (Base64 !bs) io
+validateLastPad bs io
     | BS.last bs == 0x3d = Left "Base64-encoded bytestring has invalid padding"
     | otherwise = unsafeDupablePerformIO io
 {-# INLINE validateLastPad #-}

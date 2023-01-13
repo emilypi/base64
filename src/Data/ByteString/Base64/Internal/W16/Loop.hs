@@ -19,6 +19,7 @@ module Data.ByteString.Base64.Internal.W16.Loop
 , lenientLoop
 ) where
 
+import Control.Monad (unless)
 
 import Data.Bits
 import Data.ByteString.Internal
@@ -183,9 +184,8 @@ decodeLoopNoError
     -> Ptr Word8
         -- ^ dst pointer
     -> Ptr Word8
-    -> ForeignPtr Word8
-    -> IO (Either Text ByteString)
-decodeLoopNoError !dtable !sptr !dptr !end !dfp = go dptr sptr
+    -> IO ()
+decodeLoopNoError !dtable !dptr !sptr !end = go dptr sptr
   where
     look :: Ptr Word8 -> IO Word32
     look !p = do
@@ -207,16 +207,12 @@ decodeLoopNoError !dtable !sptr !dptr !end !dfp = go dptr sptr
 
         poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
 
-        if c == 0x63 && d == 0x63
-        then pure $ Right $ PS dfp 0 (1 + (dst `minusPtr` dptr))
-        else if d == 0x63
-          then do
+        unless (c == 0x63 && d == 0x63) $
+          if d == 0x63 then
             poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
-            pure $ Right $ PS dfp 0 (2 + (dst `minusPtr` dptr))
           else do
             poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
             poke @Word8 (plusPtr dst 2) (fromIntegral w)
-            pure $ Right $ PS dfp 0 (3 + (dst `minusPtr` dptr))
 
       | otherwise = do
         a <- look src
