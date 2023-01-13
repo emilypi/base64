@@ -77,7 +77,7 @@ encodeBase64 = fmap T.decodeUtf8 . encodeBase64'
 encodeBase64' :: ByteString -> Base64 'UrlPadded ByteString
 encodeBase64' = assertBase64 . encodeBase64_ base64UrlTable
 
--- | Decode a padded Base64url encoded 'ByteString' value. If its length is not a multiple
+-- | Decode a Base64url encoded 'ByteString' value. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
 -- 4 for safe decoding as Base64url-encoded values are optionally padded.
 --
@@ -183,9 +183,9 @@ encodeBase64Unpadded' = assertBase64 . encodeBase64Nopad_ base64UrlTable
 --
 decodeBase64Unpadded :: Base64 'UrlUnpadded ByteString -> ByteString
 decodeBase64Unpadded b64@(Base64 (PS _ _ !l))
-    | r == 0 = decodeBase64 $ (`BS.append` "==") <$> b64
-    | r == 2 = decodeBase64 $ (`BS.append` "=") <$> b64
-    | otherwise = decodeBase64 b64
+    | r == 2 = decodeBase64Padded $ coerceBase64 $ (`BS.append` "==") <$> b64
+    | r == 3 = decodeBase64Padded $ coerceBase64 $ (`BS.append` "=") <$> b64
+    | otherwise = decodeBase64Padded $ coerceBase64 b64
   where
     !r = l `rem` 4
 
