@@ -19,7 +19,8 @@ module Data.Text.Encoding.Base64
   encodeBase64
   -- * Decoding
 , decodeBase64
-, decodeBase64With
+, decodeBase64Untyped
+, decodeBase64UntypedWith
 , decodeBase64Lenient
   -- * Validation
 , isBase64
@@ -61,18 +62,33 @@ encodeBase64 = B64.encodeBase64 . T.encodeUtf8
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 "U3Vu"
--- Right "Sun"
+-- >>> decodeBase64 $ assertBase64 "U3Vu"
+-- "Sun"
 --
--- >>> decodeBase64 "U3V"
--- Left "Base64-encoded bytestring requires padding"
---
--- >>> decodebase64 "U3V="
--- Left "non-canonical encoding detected at offset: 2"
---
-decodeBase64 :: StdAlphabet k => Base64 k Text -> Either Text Text
-decodeBase64 = fmap T.decodeLatin1 . B64.decodeBase64 . fmap T.encodeUtf8
+decodeBase64 :: StdAlphabet k => Base64 k Text -> Text
+decodeBase64 = T.decodeLatin1 . B64.decodeBase64 . fmap T.encodeUtf8
 {-# INLINE decodeBase64 #-}
+
+-- | Decode a padded Base64-encoded 'Text' value.
+--
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
+-- and pass in a custom decode function.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+-- === __Examples__:
+--
+-- >>> decodeBase64Untyped "U3Vu"
+-- "Sun"
+--
+decodeBase64Untyped :: Text -> Either Text Text
+decodeBase64Untyped = fmap T.decodeLatin1
+  . B64.decodeBase64Untyped
+  . T.encodeUtf8
+{-# INLINE decodeBase64Untyped #-}
 
 -- | Attempt to decode a 'Text' value as Base64, converting from
 -- 'ByteString' to 'Text' according to some encoding function. In practice,
@@ -87,17 +103,16 @@ decodeBase64 = fmap T.decodeLatin1 . B64.decodeBase64 . fmap T.encodeUtf8
 --   :: 'ByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'Text'
 -- @
 --
-decodeBase64With
-    :: StdAlphabet k
-    => (ByteString -> Either err Text)
+decodeBase64UntypedWith
+    :: (ByteString -> Either err Text)
       -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
-    -> Base64 k ByteString
+    -> ByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) Text
-decodeBase64With f t = case B64.decodeBase64 t of
+decodeBase64UntypedWith f t = case B64.decodeBase64Untyped t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
-{-# INLINE decodeBase64With #-}
+{-# INLINE decodeBase64UntypedWith #-}
 
 -- | Leniently decode a Base64-encoded 'Text' value. This function
 -- will not generate parse errors. If input data contains padding chars,
@@ -116,10 +131,10 @@ decodeBase64With f t = case B64.decodeBase64 t of
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: Base64 k Text -> Text
+decodeBase64Lenient :: Text -> Text
 decodeBase64Lenient = T.decodeLatin1
     . B64.decodeBase64Lenient
-    . fmap T.encodeUtf8
+    . T.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'Text' value is Base64-encoded.

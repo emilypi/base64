@@ -98,11 +98,11 @@ decodeBase64
   => Base64 k ByteString
   -> ByteString
 decodeBase64 b64@(Base64 bs)
-  | BS.last bs == 0x3d = decodeBase64Padded $ coerceBase64 b64
+  | not $ BS.null bs, BS.last bs == 0x3d = decodeBase64Padded $ coerceBase64 b64
   | otherwise = decodeBase64Unpadded $ coerceBase64 b64
 {-# inline decodeBase64 #-}
 
--- | Decode a padded Base64url encoded 'ByteString' value. If its length is not a multiple
+-- | Decode a Base64url encoded 'ByteString' value. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
 -- 4 for safe decoding as Base64url-encoded values are optionally padded.
 --
@@ -177,9 +177,6 @@ encodeBase64Unpadded' = assertBase64 . encodeBase64Nopad_ base64UrlTable
 --
 -- >>> decodeBase64Unpadded $ assertBase64 "PDw_Pj4"
 -- Right "<<?>>"
---
--- >>> decodeBase64Unpadded $ assertBase64 "PDw_Pj4="
--- Left "Base64-encoded bytestring has invalid padding"
 --
 decodeBase64Unpadded :: Base64 'UrlUnpadded ByteString -> ByteString
 decodeBase64Unpadded b64@(Base64 (PS _ _ !l))
@@ -273,8 +270,8 @@ decodeBase64UnpaddedUntyped bs@(PS _ _ !l)
 -- >>> decodeBase64Lenient "PDw_%%%$}Pj4"
 -- "<<?>>"
 --
-decodeBase64Lenient :: Base64 k ByteString -> ByteString
-decodeBase64Lenient = decodeBase64Lenient_ decodeB64UrlTable . extractBase64
+decodeBase64Lenient :: ByteString -> ByteString
+decodeBase64Lenient = decodeBase64Lenient_ decodeB64UrlTable
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ByteString' is encoded in padded /or/ unpadded Base64url format.

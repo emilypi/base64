@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
--- Module       : Data.ByteString.Base64.Internal.W32.Loop
+-- Module       : Data.ByteString.Base64.Internal.Tail
 -- Copyright    : (c) 2019-2022 Emily Pillmore
 -- License      : BSD-style
 --

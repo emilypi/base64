@@ -1,7 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Base64
@@ -42,6 +41,11 @@ import qualified Data.Text.Encoding as T
 
 import System.IO.Unsafe
 
+-- $setup
+--
+-- >>> import Data.Base64.Types
+-- >>> :set -XOverloadedStrings
+--
 
 -- | Encode a 'ByteString' value as Base64 'Text' with padding.
 --
@@ -78,12 +82,6 @@ encodeBase64' = assertBase64 . encodeBase64_ base64Table
 -- >>> decodeBase64 $ assertBase64 "U3Vu"
 -- "Sun"
 --
--- >>> decodeBase64 "U3V"
--- Left "Base64-encoded bytestring requires padding"
---
--- >>> decodebase64 "U3V="
--- Left "non-canonical encoding detected at offset: 2"
---
 decodeBase64 :: StdAlphabet k => Base64 k ByteString -> ByteString
 decodeBase64 = decodeBase64Typed_ decodeB64Table
 {-# inline decodeBase64 #-}
@@ -94,13 +92,13 @@ decodeBase64 = decodeBase64Typed_ decodeB64Table
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 "U3Vu"
+-- >>> decodeBase64Untyped "U3Vu"
 -- Right "Sun"
 --
--- >>> decodeBase64 "U3V"
+-- >>> decodeBase64Untyped "U3V"
 -- Left "Base64-encoded bytestring requires padding"
 --
--- >>> decodebase64 "U3V="
+-- >>> decodebase64Untyped "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
 decodeBase64Untyped :: ByteString -> Either Text ByteString
@@ -130,8 +128,8 @@ decodeBase64Untyped bs@(PS _ _ !l)
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: Base64 k ByteString -> ByteString
-decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table . extractBase64
+decodeBase64Lenient :: ByteString -> ByteString
+decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 {-# inline decodeBase64Lenient #-}
 
 -- | Tell whether a 'ByteString' value is base64 encoded.

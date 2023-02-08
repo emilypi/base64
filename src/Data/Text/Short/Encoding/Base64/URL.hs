@@ -20,11 +20,14 @@ module Data.Text.Short.Encoding.Base64.URL
 , encodeBase64Unpadded
   -- * Decoding
 , decodeBase64
-, decodeBase64With
+, decodeBase64Untyped
+, decodeBase64UntypedWith
 , decodeBase64Unpadded
-, decodeBase64UnpaddedWith
+, decodeBase64UnpaddedUntyped
+, decodeBase64UnpaddedUntypedWith
 , decodeBase64Padded
-, decodeBase64PaddedWith
+, decodeBase64PaddedUntyped
+, decodeBase64PaddedUntypedWith
 , decodeBase64Lenient
   -- * Validation
 , isBase64Url
@@ -74,6 +77,32 @@ encodeBase64 = fmap fromByteStringUnsafe
 --
 -- === __Examples__:
 --
+-- >>> decodeBase64 $ assertBase64 "PDw_Pj4="
+-- "<<?>>"
+--
+-- >>> decodeBase64 $ assertBase64 "PDw_Pj4"
+-- "<<?>>"
+--
+decodeBase64 :: UrlAlphabet k => Base64 k ShortText -> ShortText
+decodeBase64 = fromText . B64TU.decodeBase64 . fmap toText
+{-# INLINE decodeBase64 #-}
+
+-- | Decode a padded Base64url-encoded 'ShortText' value. If its length is not a multiple
+-- of 4, then padding chars will be added to fill out the input to a multiple of
+-- 4 for safe decoding as base64url encodings are optionally padded.
+--
+-- For a decoder that fails on unpadded input, use 'decodeBase64Unpadded'.
+--
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
+-- and pass in a custom decode function.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+-- === __Examples__:
+--
 -- >>> decodeBase64 "PDw_Pj4="
 -- Right "<<?>>"
 --
@@ -86,12 +115,9 @@ encodeBase64 = fmap fromByteStringUnsafe
 -- >>> decodeBase64 "PDw-Pg"
 -- Right "<<>>"
 --
-decodeBase64
-  :: UrlAlphabet k
-  => Base64 k ShortText
-  -> Either Text ShortText
-decodeBase64 = fmap fromText . B64TU.decodeBase64 . fmap toText
-{-# INLINE decodeBase64 #-}
+decodeBase64Untyped :: ShortText -> Either Text ShortText
+decodeBase64Untyped = fmap fromText . B64TU.decodeBase64Untyped . toText
+{-# INLINE decodeBase64Untyped #-}
 
 -- | Attempt to decode a 'ShortByteString' value as Base64url, converting from
 -- 'ByteString' to 'ShortText' according to some encoding function. In practice,
@@ -106,17 +132,16 @@ decodeBase64 = fmap fromText . B64TU.decodeBase64 . fmap toText
 --   :: 'ShortByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
 -- @
 --
-decodeBase64With
-    :: UrlAlphabet k
-    => (ShortByteString -> Either err ShortText)
+decodeBase64UntypedWith
+    :: (ShortByteString -> Either err ShortText)
       -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
-    -> Base64 k ShortByteString
+    -> ShortByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) ShortText
-decodeBase64With f t = case BS64U.decodeBase64 t of
+decodeBase64UntypedWith f t = case BS64U.decodeBase64Untyped t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
-{-# INLINE decodeBase64With #-}
+{-# INLINE decodeBase64UntypedWith #-}
 
 -- | Encode a 'ShortText' value in Base64url without padding. Note that for Base64url,
 -- padding is optional. If you call this function, you will simply be encoding
@@ -147,15 +172,36 @@ encodeBase64Unpadded = fmap fromByteStringUnsafe
 --
 -- === __Examples__:
 --
+-- >>> decodeBase64Unpadded $ assertBase64 "PDw_Pj4"
+-- "<<?>>"
+--
+decodeBase64Unpadded :: Base64 'UrlUnpadded ShortText -> ShortText
+decodeBase64Unpadded = fromText . B64TU.decodeBase64Unpadded . fmap toText
+{-# INLINE decodeBase64Unpadded #-}
+
+-- | Decode an unpadded Base64url encoded 'ShortText' value.
+--
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64UnpaddedWith`
+-- and pass in a custom decode function.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+-- === __Examples__:
+--
 -- >>> decodeBase64Unpadded "PDw_Pj4"
 -- Right "<<?>>"
 --
 -- >>> decodeBase64Unpadded "PDw_Pj4="
 -- Left "Base64-encoded bytestring has invalid padding"
 --
-decodeBase64Unpadded :: Base64 'UrlUnpadded ShortText -> Either Text ShortText
-decodeBase64Unpadded = fmap fromText . B64TU.decodeBase64Unpadded . fmap toText
-{-# INLINE decodeBase64Unpadded #-}
+decodeBase64UnpaddedUntyped :: ShortText -> Either Text ShortText
+decodeBase64UnpaddedUntyped = fmap fromText
+  . B64TU.decodeBase64UnpaddedUntyped
+  . toText
+{-# INLINE decodeBase64UnpaddedUntyped #-}
 
 -- | Attempt to decode an unpadded 'ShortByteString' value as Base64url, converting from
 -- 'ShortByteString' to 'ShortText' according to some encoding function. In practice,
@@ -170,16 +216,35 @@ decodeBase64Unpadded = fmap fromText . B64TU.decodeBase64Unpadded . fmap toText
 --   :: 'ShortByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
 -- @
 --
-decodeBase64UnpaddedWith
+decodeBase64UnpaddedUntypedWith
     :: (ShortByteString -> Either err ShortText)
       -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
-    -> Base64 'UrlUnpadded ShortByteString
+    -> ShortByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) ShortText
-decodeBase64UnpaddedWith f t = case BS64U.decodeBase64Unpadded t of
+decodeBase64UnpaddedUntypedWith f t = case BS64U.decodeBase64UnpaddedUntyped t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
-{-# INLINE decodeBase64UnpaddedWith #-}
+{-# INLINE decodeBase64UnpaddedUntypedWith #-}
+
+-- | Decode an padded Base64url encoded 'ShortText' value
+--
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64PaddedWith`
+-- and pass in a custom decode function.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+-- === __Examples__:
+--
+-- >>> decodeBase64Padded $ assertBase64 "PDw_Pj4="
+-- "<<?>>"
+--
+decodeBase64Padded :: Base64 'UrlPadded ShortText -> ShortText
+decodeBase64Padded = fromText . B64TU.decodeBase64Padded . fmap toText
+{-# INLINE decodeBase64Padded #-}
 
 -- | Decode an padded Base64url encoded 'ShortText' value
 --
@@ -199,9 +264,9 @@ decodeBase64UnpaddedWith f t = case BS64U.decodeBase64Unpadded t of
 -- >>> decodeBase64Padded "PDw_Pj4"
 -- Left "Base64-encoded bytestring requires padding"
 --
-decodeBase64Padded :: Base64 'UrlPadded ShortText -> Either Text ShortText
-decodeBase64Padded = fmap fromText . B64TU.decodeBase64Padded . fmap toText
-{-# INLINE decodeBase64Padded #-}
+decodeBase64PaddedUntyped :: ShortText -> Either Text ShortText
+decodeBase64PaddedUntyped = fmap fromText . B64TU.decodeBase64PaddedUntyped . toText
+{-# INLINE decodeBase64PaddedUntyped #-}
 
 -- | Attempt to decode a padded 'ShortByteString' value as Base64url, converting from
 -- 'ByteString' to 'ShortText' according to some encoding function. In practice,
@@ -216,16 +281,16 @@ decodeBase64Padded = fmap fromText . B64TU.decodeBase64Padded . fmap toText
 --   :: 'ShortByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
 -- @
 --
-decodeBase64PaddedWith
+decodeBase64PaddedUntypedWith
     :: (ShortByteString -> Either err ShortText)
       -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
-    -> Base64 'UrlPadded ShortByteString
+    -> ShortByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) ShortText
-decodeBase64PaddedWith f t = case BS64U.decodeBase64Padded t of
+decodeBase64PaddedUntypedWith f t = case BS64U.decodeBase64PaddedUntyped t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
-{-# INLINE decodeBase64PaddedWith #-}
+{-# INLINE decodeBase64PaddedUntypedWith #-}
 
 -- | Leniently decode an unpadded Base64url-encoded 'ShortText'. This function
 -- will not generate parse errors. If input data contains padding chars,
@@ -241,8 +306,8 @@ decodeBase64PaddedWith f t = case BS64U.decodeBase64Padded t of
 -- >>> decodeBase64Lenient "PDw_%%%$}Pj4"
 -- "<<?>>"
 --
-decodeBase64Lenient :: Base64 k ShortText -> ShortText
-decodeBase64Lenient = fromText . B64TU.decodeBase64Lenient . fmap toText
+decodeBase64Lenient :: ShortText -> ShortText
+decodeBase64Lenient = fromText . B64TU.decodeBase64Lenient . toText
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ShortText' value is Base64url-encoded.

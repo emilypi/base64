@@ -19,7 +19,8 @@ module Data.Text.Short.Encoding.Base64
   encodeBase64
   -- * Decoding
 , decodeBase64
-, decodeBase64With
+, decodeBase64Untyped
+, decodeBase64UntypedWith
 , decodeBase64Lenient
   -- * Validation
 , isBase64
@@ -65,18 +66,37 @@ encodeBase64 = fmap fromByteStringUnsafe
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 "U3Vu"
+-- >>> decodeBase64 $ assertBase64 "U3Vu"
+-- "Sun"
+--
+decodeBase64 :: StdAlphabet k => Base64 k ShortText -> ShortText
+decodeBase64 = fromText . B64T.decodeBase64 . fmap toText
+{-# INLINE decodeBase64 #-}
+
+-- | Decode a padded Base64-encoded 'ShortText' value
+--
+-- /Note:/ This function makes sure that decoding is total by deferring to
+-- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- text value, but it may not round trip for bad inputs. The onus is on the
+-- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
+-- and pass in a custom decode function.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+-- === __Examples__:
+--
+-- >>> decodeBase64Untyped "U3Vu"
 -- Right "Sun"
 --
--- >>> decodeBase64 "U3V"
+-- >>> decodeBase64Untyped "U3V"
 -- Left "Base64-encoded bytestring requires padding"
 --
--- >>> decodebase64 "U3V="
+-- >>> decodebase64Untyped "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
-decodeBase64 :: StdAlphabet k => Base64 k ShortText -> Either Text ShortText
-decodeBase64 = fmap fromText . B64T.decodeBase64 . fmap toText
-{-# INLINE decodeBase64 #-}
+decodeBase64Untyped :: ShortText -> Either Text ShortText
+decodeBase64Untyped = fmap fromText . B64T.decodeBase64Untyped . toText
+{-# INLINE decodeBase64Untyped #-}
 
 -- | Attempt to decode a 'ShortByteString' value as Base64, converting from
 -- 'ByteString' to 'ShortText' according to some encoding function. In practice,
@@ -87,21 +107,20 @@ decodeBase64 = fmap fromText . B64T.decodeBase64 . fmap toText
 -- === __Example__:
 --
 -- @
--- 'decodeBase64With' 'T.decodeUtf8''
+-- 'decodeBase64UntypedWith' 'T.decodeUtf8''
 --   :: 'ShortByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'ShortText'
 -- @
 --
-decodeBase64With
-    :: StdAlphabet k
-    => (ShortByteString -> Either err ShortText)
+decodeBase64UntypedWith
+    :: (ShortByteString -> Either err ShortText)
       -- ^ convert a bytestring to text (e.g. 'T.decodeUtf8'')
-    -> Base64 k ShortByteString
+    -> ShortByteString
       -- ^ Input text to decode
     -> Either (Base64Error err) ShortText
-decodeBase64With f t = case BS64.decodeBase64 t of
+decodeBase64UntypedWith f t = case BS64.decodeBase64Untyped t of
   Left de -> Left $ DecodeError de
   Right a -> first ConversionError (f a)
-{-# INLINE decodeBase64With #-}
+{-# INLINE decodeBase64UntypedWith #-}
 
 -- | Leniently decode a Base64-encoded 'ShortText' value. This function
 -- will not generate parse errors. If input data contains padding chars,
@@ -120,8 +139,8 @@ decodeBase64With f t = case BS64.decodeBase64 t of
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: Base64 k ShortText -> ShortText
-decodeBase64Lenient = fromText . B64T.decodeBase64Lenient . fmap toText
+decodeBase64Lenient :: ShortText -> ShortText
+decodeBase64Lenient = fromText . B64T.decodeBase64Lenient . toText
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ShortText' value is Base64-encoded.

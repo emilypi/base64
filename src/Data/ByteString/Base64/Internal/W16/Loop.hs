@@ -19,8 +19,6 @@ module Data.ByteString.Base64.Internal.W16.Loop
 , lenientLoop
 ) where
 
-import Control.Monad (unless)
-
 import Data.Bits
 import Data.ByteString.Internal
 import Data.ByteString.Base64.Internal.Utils
@@ -184,12 +182,13 @@ decodeLoopNoError
     -> Ptr Word8
         -- ^ dst pointer
     -> Ptr Word8
-    -> IO ()
-decodeLoopNoError !dtable !dptr !sptr !end = go dptr sptr
+    -> ForeignPtr Word8
+    -> IO ByteString
+decodeLoopNoError !dtable !sptr !dptr !end !dfp = go dptr sptr
   where
     look :: Ptr Word8 -> IO Word32
     look !p = do
-      !i <- peekByteOff @Word8 p 0
+      !i <- peek p
       !v <- peekByteOff @Word8 dtable (fromIntegral i)
       pure $ fromIntegral v
 
@@ -207,12 +206,15 @@ decodeLoopNoError !dtable !dptr !sptr !end = go dptr sptr
 
         poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
 
-        unless (c == 0x63 && d == 0x63) $
-          if d == 0x63 then
-            poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
-          else do
-            poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
-            poke @Word8 (plusPtr dst 2) (fromIntegral w)
+        if c == 0x63 && d == 0x63 then
+          pure $ PS dfp 0 (1 + (dst `minusPtr` dptr))
+        else if d == 0x63 then do
+          poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
+          pure $ PS dfp 0 (2 + (dst `minusPtr` dptr))
+        else do
+          poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
+          poke @Word8 (plusPtr dst 2) (fromIntegral w)
+          pure $ PS dfp 0 (3 + (dst `minusPtr` dptr))
 
       | otherwise = do
         a <- look src
@@ -221,9 +223,9 @@ decodeLoopNoError !dtable !dptr !sptr !end = go dptr sptr
         d <- look (src `plusPtr` 3)
 
         let !w = (unsafeShiftL a 18
-                    .|. unsafeShiftL b 12
-                    .|. unsafeShiftL c 6
-                    .|. d) :: Word32
+              .|. unsafeShiftL b 12
+              .|. unsafeShiftL c 6
+              .|. d) :: Word32
 
         poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
         poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))

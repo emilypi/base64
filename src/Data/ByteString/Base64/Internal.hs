@@ -20,7 +20,6 @@ module Data.ByteString.Base64.Internal
 ) where
 
 
-import Data.Base64.Types.Internal
 import qualified Data.ByteString as BS
 import Data.ByteString.Internal
 import Data.Text (Text)
@@ -105,6 +104,6 @@ validateLastPad
     -> IO (Either Text ByteString)
     -> Either Text ByteString
 validateLastPad bs io
-    | BS.last bs == 0x3d = Left "Base64-encoded bytestring has invalid padding"
+    | BS.last bs == 0x3d, bs /= mempty = Left "Base64-encoded bytestring has invalid padding"
     | otherwise = unsafeDupablePerformIO io
 {-# INLINE validateLastPad #-}

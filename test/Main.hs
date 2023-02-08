@@ -20,6 +20,8 @@ module Main
 
 import Prelude hiding (length)
 
+import Data.Base64.Types
+
 import Data.Bifunctor (second)
 import qualified Data.ByteString as BS
 import Data.ByteString.Internal (c2w)
@@ -222,11 +224,13 @@ prop_url_padding Harness{..}  = testGroup "prop_url_padding"
 prop_bos_coherence :: TestTree
 prop_bos_coherence = testGroup "prop_bos_coherence"
   [ testProperty "prop_std_bos_coherence" $ \bs ->
-      Right bs == B64.decodeBase64 (B64.encodeBase64' bs)
+      Right bs == B64.decodeBase64Untyped (extractBase64 $ B64.encodeBase64' bs)
       && Right bs == Bos.decode (Bos.encode bs)
+      && bs == B64.decodeBase64 (B64.encodeBase64' bs)
   , testProperty "prop_url_bos_coherence" $ \bs ->
-      Right bs == B64U.decodeBase64 (B64U.encodeBase64' bs)
+      Right bs == B64U.decodeBase64Untyped (extractBase64 $ B64U.encodeBase64' bs)
       && Right bs == BosU.decode (BosU.encode bs)
+      && bs == B64U.decodeBase64 (B64U.encodeBase64' bs)
   ]
 
 -- ---------------------------------------------------------------- --

@@ -20,18 +20,10 @@ module Data.ByteString.Base64.Internal.Head
 , decodeBase64Lenient_
 ) where
 
-#include "MachDeps.h"
-
 import Data.Base64.Types.Internal
 import Data.ByteString.Base64.Internal.Tail
 import Data.ByteString.Base64.Internal.Utils
-#if WORD_SIZE_IN_BITS == 32
-import Data.ByteString.Base64.Internal.W32.Loop
-#elif WORD_SIZE_IN_BITS >= 64
 import Data.ByteString.Base64.Internal.W64.Loop
-#else
-import Data.ByteString.Base64.Internal.W16.Loop
-#endif
 import Data.ByteString.Internal
 import Data.Text (Text)
 
@@ -116,15 +108,17 @@ decodeBase64Typed_
     :: ForeignPtr Word8
     -> Base64 k ByteString
     -> ByteString
-decodeBase64Typed_ !dtfp (Base64 (PS sfp soff slen)) =
-    unsafeCreate dlen $ \dptr ->
-      withForeignPtr dtfp $ \dtable ->
-      withForeignPtr sfp $ \sptr -> do
-        decodeLoopNoError
-          dtable
-          dptr
+decodeBase64Typed_ !dtfp (Base64 (PS sfp soff slen))
+  | slen == 0 = mempty
+  | otherwise = unsafeDupablePerformIO $
+    withForeignPtr dtfp $ \dtable ->
+    withForeignPtr sfp $ \sptr -> do
+      dfp <- mallocPlainForeignPtrBytes dlen
+      withForeignPtr dfp $ \dptr -> do
+        let !end = plusPtr sptr (soff + slen)
+        decodeLoopNoError dtable
           (plusPtr sptr soff)
-          (plusPtr sptr $ soff + slen)
+          dptr end dfp
   where
     !dlen = (slen `quot` 4) * 3
 {-# inline decodeBase64Typed_ #-}

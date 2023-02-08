@@ -20,6 +20,7 @@ module Data.ByteString.Short.Base64
 , encodeBase64'
   -- * Decoding
 , decodeBase64
+, decodeBase64Untyped
 , decodeBase64Lenient
   -- * Validation
 , isBase64
@@ -65,6 +66,22 @@ encodeBase64' = fmap toShort . B64.encodeBase64' . fromShort
 --
 -- === __Examples__:
 --
+-- >>> decodeBase64 $ assertBase64 "U3Vu"
+-- "Sun"
+--
+decodeBase64
+  :: StdAlphabet k
+  => Base64 k ShortByteString
+  -> ShortByteString
+decodeBase64 = toShort . B64.decodeBase64 . fmap fromShort
+{-# INLINE decodeBase64 #-}
+
+-- | Decode a padded Base64-encoded 'ShortByteString' value.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+-- === __Examples__:
+--
 -- >>> decodeBase64 "U3Vu"
 -- Right "Sun"
 --
@@ -74,12 +91,9 @@ encodeBase64' = fmap toShort . B64.encodeBase64' . fromShort
 -- >>> decodebase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
-decodeBase64
-  :: StdAlphabet k
-  => Base64 k ShortByteString
-  -> Either Text ShortByteString
-decodeBase64 = fmap toShort . B64.decodeBase64 . fmap fromShort
-{-# INLINE decodeBase64 #-}
+decodeBase64Untyped :: ShortByteString -> Either Text ShortByteString
+decodeBase64Untyped = fmap toShort . B64.decodeBase64Untyped . fromShort
+{-# inline decodeBase64Untyped #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ShortByteString' value. This function
 -- will not generate parse errors. If input data contains padding chars,
@@ -98,8 +112,8 @@ decodeBase64 = fmap toShort . B64.decodeBase64 . fmap fromShort
 -- >>> decodebase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: Base64 k ShortByteString -> ShortByteString
-decodeBase64Lenient = toShort . B64.decodeBase64Lenient . fmap fromShort
+decodeBase64Lenient :: ShortByteString -> ShortByteString
+decodeBase64Lenient = toShort . B64.decodeBase64Lenient . fromShort
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ShortByteString' value is base64 encoded.
