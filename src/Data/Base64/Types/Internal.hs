@@ -49,6 +49,9 @@ newtype Base64 (k :: Alphabet) a = Base64 a
 instance forall k. Functor (Base64 k) where
   fmap f (Base64 a) = Base64 (f a)
 
+instance forall k a. (Eq a) => Eq (Base64 k a) where
+  Base64 a == Base64 b = a == b
+
 instance forall k. Applicative (Base64 k) where
   pure = Base64
   Base64 f <*> Base64 a = Base64 (f a)

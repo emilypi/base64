@@ -38,35 +38,25 @@ loopTail
     -> Ptr Word8
     -> Ptr Word8
     -> IO ByteString
-loopTail !dfp (Ptr !alpha) !dptr !end !src !dst
-    | src == end = return (PS dfp 0 (minusPtr dst dptr))
-    | plusPtr src 1 == end = do
-      !x <- peek @Word8  src
+loopTail !dfp (Ptr !alpha) !start !end !sptr !dptr
+    | sptr == end = return (PS dfp 0 (minusPtr dptr start))
+    | otherwise = go sptr dptr 0 0
+  where
+    go src
+      x <- peek @Word8 src
 
-      let !a = unsafeShiftR (x .&. 0xfc) 2
-          !b = unsafeShiftL (x .&. 0x03) 4
+      let !a = aix (unsafeShiftR x 2) alpha
+      poke @Word8 dst a
+      c0 <- peek @Word8 $ src `plusPtr` 1
 
-      poke @Word8 dst (aix a alpha)
-      poke @Word8 (plusPtr dst 1) (aix b alpha)
-      poke @Word8 (plusPtr dst 2) 0x3d
-      poke @Word8 (plusPtr dst 3) 0x3d
-      return (PS dfp 0 (4 + minusPtr dst dptr))
+      if src `plusPtr` 1 == end then
+        pure $ PS dfp 0 (dst `minusPtr` dptr)
+      else do
 
-    | otherwise = do
-      !x <- peek @Word8  src
-      !y <- peek @Word8 (plusPtr src 1)
+        let carry0 = unsafeShiftL c0 4 .&. 0x30
 
-      let !a = unsafeShiftR (x .&. 0xfc) 2
-          !b = unsafeShiftL (x .&. 0x03) 4
-
-      let !c = unsafeShiftR (y .&. 0xf0) 4 .|. b
-          !d = unsafeShiftL (y .&. 0x0f) 2
-
-      poke @Word8 dst (aix a alpha)
-      poke @Word8 (plusPtr dst 1) (aix c alpha)
-      poke @Word8 (plusPtr dst 2) (aix d alpha)
-      poke @Word8 (plusPtr dst 3) 0x3d
-      return (PS dfp 0 (4 + minusPtr dst dptr))
+        y <- peek
+        pure mempty
 {-# inline loopTail #-}
 
 -- | Finalize a bytestring by filling out the remaining bits
