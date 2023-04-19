@@ -35,8 +35,40 @@ import GHC.Word
 
 import System.IO.Unsafe ( unsafeDupablePerformIO )
 
+#ifdef SIMD
+import Foreign.C.Types (CSize, CChar)
+import Foreign.Storable (peek)
+import qualified Foreign.Marshal.Utils as Foreign
+import LibBase64Bindings
+#endif
 
 encodeBase64_ :: EncodingTable -> ByteString -> ByteString
+#ifdef SIMD
+encodeBase64_ _ (PS !sfp !soff !slen) =
+  unsafeDupablePerformIO $ do
+    dfp <- mallocPlainForeignPtrBytes dlen
+    dlenFinal <- do
+      withForeignPtr dfp $ \out ->
+        withForeignPtr sfp $ \src -> do
+          Foreign.with (intToCSize dlen) $ \outlen -> do
+            base64_encode
+              (plusPtr (castPtr src :: Ptr CChar) soff)
+              (intToCSize slen)
+              out
+              outlen
+              base64Flags
+            peek outlen
+    pure (PS (castForeignPtr dfp) 0 (cSizeToInt dlenFinal))
+  where
+    !dlen = 4 * ((slen + 2) `div` 3)
+    !base64Flags = 0
+
+    intToCSize :: Int -> CSize
+    intToCSize = fromIntegral
+
+    cSizeToInt :: CSize -> Int
+    cSizeToInt = fromIntegral
+#else
 encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
     unsafeDupablePerformIO $ do
       dfp <- mallocPlainForeignPtrBytes dlen
@@ -52,6 +84,7 @@ encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
             (loopTail dfp dptr aptr (castPtr end))
   where
     !dlen = 4 * ((slen + 2) `div` 3)
+#endif
 
 encodeBase64Nopad_ :: EncodingTable -> ByteString -> ByteString
 encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
