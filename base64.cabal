@@ -19,7 +19,7 @@ extra-doc-files:
   CHANGELOG.md
   README.md
 
-tested-with:     GHC ==8.10.7 || ==9.0.2 || ==9.2.5 || ==9.4.4
+tested-with:     GHC ==8.10.7 || ==9.0.2 || ==9.2.4 || ==9.4.3 || ==9.6.1
 
 source-repository head
   type:     git
@@ -53,7 +53,7 @@ library
     Data.ByteString.Base64.Internal.W64.Loop
 
   build-depends:
-      base           >=4.14     && <4.18
+      base           >=4.14     && <4.19
     , bytestring     >=0.11     && <0.12
     , deepseq        >=1.4.3.0  && <1.5
     , text           >=2.0 && <2.1
@@ -70,7 +70,7 @@ test-suite tasty
   other-modules:    Internal
   main-is:          Main.hs
   build-depends:
-      base               >=4.14 && <4.18
+      base               >=4.14 && <4.19
     , base64
     , base64-bytestring
     , bytestring         >=0.11
@@ -90,7 +90,7 @@ benchmark bench
   hs-source-dirs:   benchmarks
   main-is:          Base64Bench.hs
   build-depends:
-      base               >=4.14 && <4.18
+      base               >=4.14 && <4.19
     , base64
     , base64-bytestring
     , bytestring         >=0.11
