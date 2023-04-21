@@ -52,6 +52,14 @@ import qualified Data.Text.Encoding as T
 import System.IO.Unsafe
 
 
+-- $setup
+--
+-- >>> import Data.Base64.Types
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XTypeApplications
+-- >>> :set -XDataKinds
+--
+
 -- | Encode a 'ByteString' value as a Base64url 'Text' value with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
@@ -87,10 +95,10 @@ encodeBase64' = assertBase64 . encodeBase64_ base64UrlTable
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 $ assertBase64 "PDw_Pj4="
+-- >>> decodeBase64 $ assertBase64 @'UrlPadded "PDw_Pj4="
 -- "<<?>>"
 --
--- >>> decodeBase64 $ assertBase64 "PDw_Pj4"
+-- >>> decodeBase64 $ assertBase64 @'UrlUnpadded "PDw_Pj4"
 -- "<<?>>"
 --
 decodeBase64
@@ -112,16 +120,16 @@ decodeBase64 b64@(Base64 bs)
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 "PDw_Pj4="
+-- >>> decodeBase64Untyped "PDw_Pj4="
 -- Right "<<?>>"
 --
--- >>> decodeBase64 "PDw_Pj4"
+-- >>> decodeBase64Untyped "PDw_Pj4"
 -- Right "<<?>>"
 --
--- >>> decodeBase64 "PDw-Pg="
+-- >>> decodeBase64Untyped "PDw-Pg="
 -- Left "Base64-encoded bytestring has invalid padding"
 --
--- >>> decodeBase64 "PDw-Pg"
+-- >>> decodeBase64Untyped "PDw-Pg"
 -- Right "<<>>"
 --
 decodeBase64Untyped :: ByteString -> Either Text ByteString
@@ -175,8 +183,8 @@ encodeBase64Unpadded' = assertBase64 . encodeBase64Nopad_ base64UrlTable
 --
 -- === __Examples__:
 --
--- >>> decodeBase64Unpadded $ assertBase64 "PDw_Pj4"
--- Right "<<?>>"
+-- >>> decodeBase64Unpadded $ assertBase64 @'UrlUnpadded "PDw_Pj4"
+-- "<<?>>"
 --
 decodeBase64Unpadded :: Base64 'UrlUnpadded ByteString -> ByteString
 decodeBase64Unpadded b64@(Base64 (PS _ _ !l))
@@ -197,7 +205,7 @@ decodeBase64Unpadded b64@(Base64 (PS _ _ !l))
 --
 -- === __Examples__:
 --
--- >>> decodeBase64Padded $ assertBase64 "PDw_Pj4="
+-- >>> decodeBase64PaddedUntyped "PDw_Pj4="
 -- Right "<<?>>"
 --
 decodeBase64PaddedUntyped :: ByteString -> Either Text ByteString
@@ -221,7 +229,7 @@ decodeBase64PaddedUntyped bs@(PS _ _ !l)
 --
 -- === __Examples__:
 --
--- >>> decodeBase64Padded $ assertBase64 "PDw_Pj4="
+-- >>> decodeBase64Padded $ assertBase64 @'UrlPadded "PDw_Pj4="
 -- "<<?>>"
 --
 decodeBase64Padded :: Base64 'UrlPadded ByteString -> ByteString
@@ -239,10 +247,10 @@ decodeBase64Padded = decodeBase64Typed_ decodeB64UrlTable
 --
 -- === __Examples__:
 --
--- >>> decodeBase64Unpadded "PDw_Pj4"
+-- >>> decodeBase64UnpaddedUntyped "PDw_Pj4"
 -- Right "<<?>>"
 --
--- >>> decodeBase64Unpadded "PDw_Pj4="
+-- >>> decodeBase64UnpaddedUntyped "PDw_Pj4="
 -- Left "Base64-encoded bytestring has invalid padding"
 --
 decodeBase64UnpaddedUntyped :: ByteString -> Either Text ByteString

@@ -45,6 +45,8 @@ import System.IO.Unsafe
 --
 -- >>> import Data.Base64.Types
 -- >>> :set -XOverloadedStrings
+-- >>> :set -XTypeApplications
+-- >>> :set -XDataKinds
 --
 
 -- | Encode a 'ByteString' value as Base64 'Text' with padding.
@@ -79,7 +81,7 @@ encodeBase64' = assertBase64 . encodeBase64_ base64Table
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 $ assertBase64 "U3Vu"
+-- >>> decodeBase64 $ assertBase64 @'StdPadded "U3Vu"
 -- "Sun"
 --
 decodeBase64 :: StdAlphabet k => Base64 k ByteString -> ByteString
@@ -98,7 +100,7 @@ decodeBase64 = decodeBase64Typed_ decodeB64Table
 -- >>> decodeBase64Untyped "U3V"
 -- Left "Base64-encoded bytestring requires padding"
 --
--- >>> decodebase64Untyped "U3V="
+-- >>> decodeBase64Untyped "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
 decodeBase64Untyped :: ByteString -> Either Text ByteString
@@ -125,7 +127,7 @@ decodeBase64Untyped bs@(PS _ _ !l)
 -- >>> decodeBase64Lenient "U3V"
 -- "Su"
 --
--- >>> decodebase64Lenient "U3V="
+-- >>> decodeBase64Lenient "U3V="
 -- "Su"
 --
 decodeBase64Lenient :: ByteString -> ByteString

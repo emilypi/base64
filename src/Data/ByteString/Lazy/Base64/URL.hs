@@ -49,6 +49,15 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 
 
+-- $setup
+--
+-- >>> import Data.Base64.Types
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XTypeApplications
+-- >>> :set -XDataKinds
+--
+
+
 -- | Encode a 'ByteString' value as a Base64url 'Text' value with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
@@ -116,16 +125,16 @@ decodeBase64 = fromChunks
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 "PDw_Pj4="
+-- >>> decodeBase64Untyped "PDw_Pj4="
 -- Right "<<?>>"
 --
--- >>> decodeBase64 "PDw_Pj4"
+-- >>> decodeBase64Untyped "PDw_Pj4"
 -- Right "<<?>>"
 --
--- >>> decodeBase64 "PDw-Pg="
+-- >>> decodeBase64Untyped "PDw-Pg="
 -- Left "Base64-encoded bytestring has invalid padding"
 --
--- >>> decodeBase64 "PDw-Pg"
+-- >>> decodeBase64Untyped "PDw-Pg"
 -- Right "<<>>"
 --
 decodeBase64Untyped :: ByteString -> Either T.Text ByteString
