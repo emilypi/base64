@@ -53,7 +53,7 @@ encodeBase64 = B64.encodeBase64 . T.encodeUtf8
 -- | Decode a padded Base64-encoded 'Text' value.
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
 -- and pass in a custom decode function.
@@ -66,13 +66,13 @@ encodeBase64 = B64.encodeBase64 . T.encodeUtf8
 -- "Sun"
 --
 decodeBase64 :: StdAlphabet k => Base64 k Text -> Text
-decodeBase64 = T.decodeLatin1 . B64.decodeBase64 . fmap T.encodeUtf8
+decodeBase64 = T.decodeUtf8 . B64.decodeBase64 . fmap T.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
 -- | Decode a padded Base64-encoded 'Text' value.
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
 -- and pass in a custom decode function.
@@ -85,7 +85,7 @@ decodeBase64 = T.decodeLatin1 . B64.decodeBase64 . fmap T.encodeUtf8
 -- "Sun"
 --
 decodeBase64Untyped :: Text -> Either Text Text
-decodeBase64Untyped = fmap T.decodeLatin1
+decodeBase64Untyped = fmap T.decodeUtf8
   . B64.decodeBase64Untyped
   . T.encodeUtf8
 {-# INLINE decodeBase64Untyped #-}
@@ -132,7 +132,7 @@ decodeBase64UntypedWith f t = case B64.decodeBase64Untyped t of
 -- "Su"
 --
 decodeBase64Lenient :: Text -> Text
-decodeBase64Lenient = T.decodeLatin1
+decodeBase64Lenient = T.decodeUtf8
     . B64.decodeBase64Lenient
     . T.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}

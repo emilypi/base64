@@ -57,7 +57,7 @@ encodeBase64 = BL64.encodeBase64 . TL.encodeUtf8
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
 -- and pass in a custom decode function.
@@ -68,7 +68,7 @@ encodeBase64 = BL64.encodeBase64 . TL.encodeUtf8
 -- "Sun"
 --
 decodeBase64 :: StdAlphabet k => Base64 k TL.Text -> TL.Text
-decodeBase64 = TL.decodeLatin1 . BL64.decodeBase64 . fmap TL.encodeUtf8
+decodeBase64 = TL.decodeUtf8 . BL64.decodeBase64 . fmap TL.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
 -- | Decode a padded Base64-encoded 'TL.Text' value
@@ -76,7 +76,7 @@ decodeBase64 = TL.decodeLatin1 . BL64.decodeBase64 . fmap TL.encodeUtf8
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
 -- and pass in a custom decode function.
@@ -93,7 +93,7 @@ decodeBase64 = TL.decodeLatin1 . BL64.decodeBase64 . fmap TL.encodeUtf8
 -- Left "non-canonical encoding detected at offset: 2"
 --
 decodeBase64Untyped :: TL.Text -> Either T.Text TL.Text
-decodeBase64Untyped = fmap TL.decodeLatin1 . BL64.decodeBase64Untyped . TL.encodeUtf8
+decodeBase64Untyped = fmap TL.decodeUtf8 . BL64.decodeBase64Untyped . TL.encodeUtf8
 {-# INLINE decodeBase64Untyped #-}
 
 -- | Attempt to decode a 'ByteString' value as Base64, converting from
@@ -138,7 +138,7 @@ decodeBase64UntypedWith f t = case BL64.decodeBase64Untyped t of
 -- "Su"
 --
 decodeBase64Lenient :: TL.Text -> TL.Text
-decodeBase64Lenient = TL.decodeLatin1
+decodeBase64Lenient = TL.decodeUtf8
   . BL64.decodeBase64Lenient
   . TL.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}

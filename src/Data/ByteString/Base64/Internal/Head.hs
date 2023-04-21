@@ -33,7 +33,7 @@ import Foreign.Ptr
 import GHC.ForeignPtr
 import GHC.Word
 
-import System.IO.Unsafe
+import System.IO.Unsafe ( unsafeDupablePerformIO )
 
 
 encodeBase64_ :: EncodingTable -> ByteString -> ByteString
@@ -49,7 +49,7 @@ encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
             (castPtr (plusPtr sptr soff))
             (castPtr dptr)
             end
-            (loopTail dfp aptr dptr (castPtr end))
+            (loopTail dfp dptr aptr (castPtr end))
   where
     !dlen = 4 * ((slen + 2) `div` 3)
 

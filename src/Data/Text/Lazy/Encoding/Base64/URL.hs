@@ -65,7 +65,7 @@ encodeBase64 = BL64U.encodeBase64 . TL.encodeUtf8
 -- For a decoder that fails on unpadded input, use 'decodeBase64Unpadded'.
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
 -- and pass in a custom decode function.
@@ -81,7 +81,7 @@ encodeBase64 = BL64U.encodeBase64 . TL.encodeUtf8
 -- "<<?>>"
 --
 decodeBase64 :: UrlAlphabet k => Base64 k TL.Text -> TL.Text
-decodeBase64 = TL.decodeLatin1 . BL64U.decodeBase64 . fmap TL.encodeUtf8
+decodeBase64 = TL.decodeUtf8 . BL64U.decodeBase64 . fmap TL.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
 -- | Decode a Base64url-encoded 'TL.Text' value. If its length is not a multiple
@@ -91,7 +91,7 @@ decodeBase64 = TL.decodeLatin1 . BL64U.decodeBase64 . fmap TL.encodeUtf8
 -- For a decoder that fails on unpadded input, use 'decodeBase64Unpadded'.
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
 -- and pass in a custom decode function.
@@ -113,7 +113,7 @@ decodeBase64 = TL.decodeLatin1 . BL64U.decodeBase64 . fmap TL.encodeUtf8
 -- Right "<<>>"
 --
 decodeBase64Untyped :: TL.Text -> Either T.Text TL.Text
-decodeBase64Untyped = fmap TL.decodeLatin1
+decodeBase64Untyped = fmap TL.decodeUtf8
   . BL64U.decodeBase64Untyped
   . TL.encodeUtf8
 {-# INLINE decodeBase64Untyped #-}
@@ -160,7 +160,7 @@ encodeBase64Unpadded = BL64U.encodeBase64Unpadded . TL.encodeUtf8
 -- | Decode an unpadded Base64url encoded 'Text' value.
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to
 -- 'decodeBase64UnpaddedWith' and pass in a custom decode function.
@@ -173,7 +173,7 @@ encodeBase64Unpadded = BL64U.encodeBase64Unpadded . TL.encodeUtf8
 -- "<<?>>"
 --
 decodeBase64Unpadded :: Base64 'UrlUnpadded TL.Text -> TL.Text
-decodeBase64Unpadded = TL.decodeLatin1
+decodeBase64Unpadded = TL.decodeUtf8
   . BL64U.decodeBase64Unpadded
   . fmap TL.encodeUtf8
 {-# INLINE decodeBase64Unpadded #-}
@@ -181,7 +181,7 @@ decodeBase64Unpadded = TL.decodeLatin1
 -- | Decode an unpadded Base64url encoded 'TL.Text' value.
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64WUnpaddedWith`
 -- and pass in a custom decode function.
@@ -197,7 +197,7 @@ decodeBase64Unpadded = TL.decodeLatin1
 -- Left "Base64-encoded bytestring has invalid padding"
 --
 decodeBase64UnpaddedUntyped :: TL.Text -> Either T.Text TL.Text
-decodeBase64UnpaddedUntyped = fmap TL.decodeLatin1
+decodeBase64UnpaddedUntyped = fmap TL.decodeUtf8
     . BL64U.decodeBase64UnpaddedUntyped
     . TL.encodeUtf8
 {-# INLINE decodeBase64UnpaddedUntyped #-}
@@ -229,7 +229,7 @@ decodeBase64UnpaddedUntypedWith f t = case BL64U.decodeBase64UnpaddedUntyped t o
 -- | Decode an padded Base64url encoded 'TL.Text' value
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64PaddedWith`
 -- and pass in a custom decode function.
@@ -242,7 +242,7 @@ decodeBase64UnpaddedUntypedWith f t = case BL64U.decodeBase64UnpaddedUntyped t o
 -- "<<?>>"
 --
 decodeBase64Padded :: Base64 'UrlPadded TL.Text -> TL.Text
-decodeBase64Padded = TL.decodeLatin1
+decodeBase64Padded = TL.decodeUtf8
   . BL64U.decodeBase64Padded
   . fmap TL.encodeUtf8
 {-# INLINE decodeBase64Padded #-}
@@ -250,7 +250,7 @@ decodeBase64Padded = TL.decodeLatin1
 -- | Decode an padded Base64url encoded 'Text' value
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'TL.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'TL.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to 'decodeBase64PaddedWith'
 -- and pass in a custom decode function.
@@ -263,7 +263,7 @@ decodeBase64Padded = TL.decodeLatin1
 -- Right "<<?>>"
 --
 decodeBase64PaddedUntyped :: TL.Text -> Either T.Text TL.Text
-decodeBase64PaddedUntyped = fmap TL.decodeLatin1
+decodeBase64PaddedUntyped = fmap TL.decodeUtf8
   . BL64U.decodeBase64PaddedUntyped
   . TL.encodeUtf8
 {-# inline decodeBase64PaddedUntyped #-}
@@ -307,7 +307,7 @@ decodeBase64PaddedUntypedWith f t = case BL64U.decodeBase64PaddedUntyped t of
 -- "<<?>>"
 --
 decodeBase64Lenient :: TL.Text -> TL.Text
-decodeBase64Lenient = TL.decodeLatin1
+decodeBase64Lenient = TL.decodeUtf8
     . BL64U.decodeBase64Lenient
     . TL.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}

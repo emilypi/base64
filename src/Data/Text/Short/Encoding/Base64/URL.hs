@@ -68,7 +68,7 @@ encodeBase64 = fmap fromByteStringUnsafe
 -- For a decoder that fails on unpadded input, use 'decodeBase64Unpadded'.
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
 -- and pass in a custom decode function.
@@ -94,7 +94,7 @@ decodeBase64 = fromText . B64TU.decodeBase64 . fmap toText
 -- For a decoder that fails on unpadded input, use 'decodeBase64Unpadded'.
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
 -- and pass in a custom decode function.
@@ -163,7 +163,7 @@ encodeBase64Unpadded = fmap fromByteStringUnsafe
 -- | Decode an unpadded Base64url encoded 'ShortText' value.
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64UnpaddedWith`
 -- and pass in a custom decode function.
@@ -182,7 +182,7 @@ decodeBase64Unpadded = fromText . B64TU.decodeBase64Unpadded . fmap toText
 -- | Decode an unpadded Base64url encoded 'ShortText' value.
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64UnpaddedWith`
 -- and pass in a custom decode function.
@@ -230,7 +230,7 @@ decodeBase64UnpaddedUntypedWith f t = case BS64U.decodeBase64UnpaddedUntyped t o
 -- | Decode an padded Base64url encoded 'ShortText' value
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64PaddedWith`
 -- and pass in a custom decode function.
@@ -249,7 +249,7 @@ decodeBase64Padded = fromText . B64TU.decodeBase64Padded . fmap toText
 -- | Decode an padded Base64url encoded 'ShortText' value
 --
 -- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeLatin1'. This will always round trip for any valid Base64-encoded
+-- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
 -- text value, but it may not round trip for bad inputs. The onus is on the
 -- caller to make sure inputs are valid. If unsure, defer to `decodeBase64PaddedWith`
 -- and pass in a custom decode function.

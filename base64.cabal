@@ -54,9 +54,9 @@ library
 
   build-depends:
       base           >=4.14     && <4.18
-    , bytestring     >=0.10     && <0.12
+    , bytestring     >=0.11     && <0.12
     , deepseq        >=1.4.3.0  && <1.5
-    , text           >=1.2 && <1.3 || >=2.0 && <2.1
+    , text           >=2.0 && <2.1
     , text-short     ^>=0.1
 
   hs-source-dirs:   src
@@ -73,13 +73,13 @@ test-suite tasty
       base               >=4.14 && <4.18
     , base64
     , base64-bytestring
-    , bytestring
+    , bytestring         >=0.11
     , QuickCheck
     , random-bytestring
     , tasty
     , tasty-hunit
     , tasty-quickcheck
-    , text
+    , text               >=2.0
     , text-short
 
   ghc-options:      -Wall -threaded -with-rtsopts=-N
@@ -93,10 +93,10 @@ benchmark bench
       base               >=4.14 && <4.18
     , base64
     , base64-bytestring
-    , bytestring
+    , bytestring         >=0.11
     , criterion
     , deepseq
     , random-bytestring
-    , text
+    , text               >=2.0
 
   ghc-options:      -Wall -rtsopts
