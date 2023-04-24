@@ -30,10 +30,10 @@ import GHC.Generics
 -- unicode exceptions caught in the unicode decoding process.
 --
 data Base64Error e
-  = DecodeError Text
+  = DecodeError !Text
     -- ^ The error associated with decoding failure
     -- as a result of the Base64 decoding process
-  | ConversionError e
+  | ConversionError !e
     -- ^ The error associated with the decoding failure
     -- as a result of the conversion process
   deriving

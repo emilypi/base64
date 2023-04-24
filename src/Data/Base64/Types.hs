@@ -52,7 +52,7 @@ assertBase64 = Base64
 
 -- | Forget that a particular value is Base64-encoded
 --
-extractBase64 :: forall a k. Base64 k a -> a
+extractBase64 :: Base64 k a -> a
 extractBase64 (Base64 a) = a
 
 -- | Coerce the alphabet of a base64-encoded bytestring

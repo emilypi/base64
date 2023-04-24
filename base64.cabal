@@ -1,6 +1,6 @@
 cabal-version:   2.0
 name:            base64
-version:         0.5
+version:         1.0
 synopsis:        A modern Base64 library
 description:
   A performant, featureful RFC 4648 and 7049-compliant Base64 implementation
@@ -50,14 +50,13 @@ library
     Data.ByteString.Base64.Internal.Tail
     Data.ByteString.Base64.Internal.Utils
     Data.ByteString.Base64.Internal.W16.Loop
-    Data.ByteString.Base64.Internal.W32.Loop
     Data.ByteString.Base64.Internal.W64.Loop
 
   build-depends:
       base           >=4.14     && <4.19
-    , bytestring     >=0.10     && <0.12
+    , bytestring     >=0.11     && <0.12
     , deepseq        >=1.4.3.0  && <1.5
-    , text           >=1.2 && <1.3 || >=2.0 && <2.1
+    , text           >=2.0 && <2.1
     , text-short     ^>=0.1
 
   hs-source-dirs:   src
@@ -74,13 +73,13 @@ test-suite tasty
       base               >=4.14 && <4.19
     , base64
     , base64-bytestring
-    , bytestring
+    , bytestring         >=0.11
     , QuickCheck
     , random-bytestring
     , tasty
     , tasty-hunit
     , tasty-quickcheck
-    , text
+    , text               >=2.0
     , text-short
 
   ghc-options:      -Wall -threaded -with-rtsopts=-N
@@ -94,10 +93,10 @@ benchmark bench
       base               >=4.14 && <4.19
     , base64
     , base64-bytestring
-    , bytestring
+    , bytestring         >=0.11
     , criterion
     , deepseq
     , random-bytestring
-    , text
+    , text               >=2.0
 
   ghc-options:      -Wall -rtsopts

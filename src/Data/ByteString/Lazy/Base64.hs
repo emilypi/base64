@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Lazy.Base64
@@ -22,6 +21,7 @@ module Data.ByteString.Lazy.Base64
 , encodeBase64'
   -- * Decoding
 , decodeBase64
+, decodeBase64Untyped
 , decodeBase64Lenient
   -- * Validation
 , isBase64
@@ -40,6 +40,14 @@ import Data.Either (isRight)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
+
+-- $setup
+--
+-- >>> import Data.Base64.Types
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XTypeApplications
+-- >>> :set -XDataKinds
+--
 
 -- | Encode a 'ByteString' value as Base64 'Text' with padding.
 --
@@ -77,20 +85,37 @@ encodeBase64' = assertBase64
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 "U3Vu"
--- Right "Sun"
+-- >>> decodeBase64 $ assertBase64 @'StdPadded "U3Vu"
+-- "Sun"
 --
--- >>> decodeBase64 "U3V"
--- Left "Base64-encoded bytestring requires padding"
---
--- >>> decodebase64 "U3V="
--- Left "non-canonical encoding detected at offset: 2"
---
-decodeBase64 :: StdAlphabet k => Base64 k ByteString -> Either T.Text ByteString
-decodeBase64 = fmap (fromChunks . (:[]))
+decodeBase64 :: StdAlphabet k => Base64 k ByteString -> ByteString
+decodeBase64 = fromChunks
+  . pure
   . B64.decodeBase64
   . fmap (BS.concat . toChunks)
 {-# INLINE decodeBase64 #-}
+
+-- | Decode a padded untyped Base64-encoded 'ByteString' value.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+-- === __Examples__:
+--
+-- >>> decodeBase64Untyped "U3Vu"
+-- Right "Sun"
+--
+-- >>> decodeBase64Untyped "U3V"
+-- Left "Base64-encoded bytestring requires padding"
+--
+-- >>> decodeBase64Untyped "U3V="
+-- Left "non-canonical encoding detected at offset: 2"
+--
+decodeBase64Untyped :: ByteString -> Either T.Text ByteString
+decodeBase64Untyped = fmap (fromChunks . pure)
+  . B64.decodeBase64Untyped
+  . BS.concat
+  . toChunks
+{-# inline decodeBase64Untyped #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ByteString' value. This function
 -- will not generate parse errors. If input data contains padding chars,
@@ -106,16 +131,15 @@ decodeBase64 = fmap (fromChunks . (:[]))
 -- >>> decodeBase64Lenient "U3V"
 -- "Su"
 --
--- >>> decodebase64Lenient "U3V="
+-- >>> decodeBase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: Base64 k ByteString -> ByteString
+decodeBase64Lenient :: ByteString -> ByteString
 decodeBase64Lenient = fromChunks
-    . fmap (B64.decodeBase64Lenient . assertBase64)
+    . fmap B64.decodeBase64Lenient
     . reChunkN 4
     . fmap (BS.filter (`BL.elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="))
     . toChunks
-    . extractBase64
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ByteString' value is base64 encoded.
@@ -138,7 +162,7 @@ decodeBase64Lenient = fromChunks
 isBase64 :: ByteString -> Bool
 isBase64 bs
   = isValidBase64 bs
-  && isRight (decodeBase64 $ assertBase64 @'StdPadded bs)
+  && isRight (decodeBase64Untyped bs)
 {-# INLINE isBase64 #-}
 
 -- | Tell whether a 'ByteString' value is a valid Base64 format.

@@ -1,7 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Base64
@@ -23,6 +22,7 @@ module Data.ByteString.Base64
 , encodeBase64'
   -- * Decoding
 , decodeBase64
+, decodeBase64Untyped
 , decodeBase64Lenient
   -- * Validation
 , isBase64
@@ -30,7 +30,6 @@ module Data.ByteString.Base64
 ) where
 
 import Data.Base64.Types
-import Data.Base64.Types.Internal
 
 import Data.ByteString.Internal (ByteString(..))
 import Data.ByteString.Base64.Internal
@@ -42,6 +41,13 @@ import qualified Data.Text.Encoding as T
 
 import System.IO.Unsafe
 
+-- $setup
+--
+-- >>> import Data.Base64.Types
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XTypeApplications
+-- >>> :set -XDataKinds
+--
 
 -- | Encode a 'ByteString' value as Base64 'Text' with padding.
 --
@@ -75,24 +81,37 @@ encodeBase64' = assertBase64 . encodeBase64_ base64Table
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 "U3Vu"
+-- >>> decodeBase64 $ assertBase64 @'StdPadded "U3Vu"
+-- "Sun"
+--
+decodeBase64 :: StdAlphabet k => Base64 k ByteString -> ByteString
+decodeBase64 = decodeBase64Typed_ decodeB64Table
+{-# inline decodeBase64 #-}
+
+-- | Decode a padded untyped Base64-encoded 'ByteString' value.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+-- === __Examples__:
+--
+-- >>> decodeBase64Untyped "U3Vu"
 -- Right "Sun"
 --
--- >>> decodeBase64 "U3V"
+-- >>> decodeBase64Untyped "U3V"
 -- Left "Base64-encoded bytestring requires padding"
 --
--- >>> decodebase64 "U3V="
+-- >>> decodeBase64Untyped "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
-decodeBase64 :: StdAlphabet k => Base64 k ByteString -> Either Text ByteString
-decodeBase64 (Base64 bs@(PS _ _ !l))
-    | l == 0 = Right bs
+decodeBase64Untyped :: ByteString -> Either Text ByteString
+decodeBase64Untyped bs@(PS _ _ !l)
+    | l == 0 = Right mempty
     | r == 1 = Left "Base64-encoded bytestring has invalid size"
     | r /= 0 = Left "Base64-encoded bytestring requires padding"
     | otherwise = unsafeDupablePerformIO $ decodeBase64_ decodeB64Table bs
   where
     !r = l `rem` 4
-{-# inline decodeBase64 #-}
+{-# inline decodeBase64Untyped #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ByteString' value. This function
 -- will not generate parse errors. If input data contains padding chars,
@@ -108,11 +127,11 @@ decodeBase64 (Base64 bs@(PS _ _ !l))
 -- >>> decodeBase64Lenient "U3V"
 -- "Su"
 --
--- >>> decodebase64Lenient "U3V="
+-- >>> decodeBase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: Base64 k ByteString -> ByteString
-decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table . extractBase64
+decodeBase64Lenient :: ByteString -> ByteString
+decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table
 {-# inline decodeBase64Lenient #-}
 
 -- | Tell whether a 'ByteString' value is base64 encoded.
@@ -135,7 +154,7 @@ decodeBase64Lenient = decodeBase64Lenient_ decodeB64Table . extractBase64
 isBase64 :: ByteString -> Bool
 isBase64 bs
   = isValidBase64 bs
-  && isRight (decodeBase64 (assertBase64 @'StdPadded bs))
+  && isRight (decodeBase64Untyped bs)
 {-# inline isBase64 #-}
 
 -- | Tell whether a 'ByteString' value is a valid Base64 format.

@@ -15,9 +15,9 @@
 module Data.ByteString.Base64.Internal.W16.Loop
 ( innerLoop
 , decodeLoop
+, decodeLoopNoError
 , lenientLoop
 ) where
-
 
 import Data.Bits
 import Data.ByteString.Internal
@@ -173,6 +173,66 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
             poke @Word8 (plusPtr dst 2) (fromIntegral w)
             return $ Right $ PS dfp 0 (3 + (dst `minusPtr` dptr))
 {-# inline decodeLoop #-}
+
+decodeLoopNoError
+    :: Ptr Word8
+        -- ^ decode lookup table
+    -> Ptr Word8
+        -- ^ src pointer
+    -> Ptr Word8
+        -- ^ dst pointer
+    -> Ptr Word8
+    -> ForeignPtr Word8
+    -> IO ByteString
+decodeLoopNoError !dtable !sptr !dptr !end !dfp = go dptr sptr
+  where
+    look :: Ptr Word8 -> IO Word32
+    look !p = do
+      !i <- peek p
+      !v <- peekByteOff @Word8 dtable (fromIntegral i)
+      pure $ fromIntegral v
+
+    go !dst !src
+      | plusPtr src 4 >= end = do
+        a <- look src
+        b <- look (src `plusPtr` 1)
+        c <- look (src `plusPtr` 2)
+        d <- look (src `plusPtr` 3)
+
+        let !w = (unsafeShiftL a 18
+              .|. unsafeShiftL b 12
+              .|. unsafeShiftL c 6
+              .|. d) :: Word32
+
+        poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
+
+        if c == 0x63 && d == 0x63 then
+          pure $ PS dfp 0 (1 + (dst `minusPtr` dptr))
+        else if d == 0x63 then do
+          poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
+          pure $ PS dfp 0 (2 + (dst `minusPtr` dptr))
+        else do
+          poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
+          poke @Word8 (plusPtr dst 2) (fromIntegral w)
+          pure $ PS dfp 0 (3 + (dst `minusPtr` dptr))
+
+      | otherwise = do
+        a <- look src
+        b <- look (src `plusPtr` 1)
+        c <- look (src `plusPtr` 2)
+        d <- look (src `plusPtr` 3)
+
+        let !w = (unsafeShiftL a 18
+              .|. unsafeShiftL b 12
+              .|. unsafeShiftL c 6
+              .|. d) :: Word32
+
+        poke @Word8 dst (fromIntegral (unsafeShiftR w 16))
+        poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
+        poke @Word8 (plusPtr dst 2) (fromIntegral w)
+        go (plusPtr dst 3) (plusPtr src 4)
+{-# inline decodeLoopNoError #-}
+
 
 lenientLoop
     :: Ptr Word8
