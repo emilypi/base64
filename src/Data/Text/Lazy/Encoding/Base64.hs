@@ -39,6 +39,16 @@ import Data.Text.Encoding.Base64.Error
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 
+
+
+-- $setup
+--
+-- >>> import Data.Base64.Types
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XTypeApplications
+-- >>> :set -XDataKinds
+--
+
 -- | Encode a 'TL.Text' value in Base64 with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
@@ -64,7 +74,7 @@ encodeBase64 = BL64.encodeBase64 . TL.encodeUtf8
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 $ assertBase64 "U3Vu"
+-- >>> decodeBase64 $ assertBase64 @'StdPadded "U3Vu"
 -- "Sun"
 --
 decodeBase64 :: StdAlphabet k => Base64 k TL.Text -> TL.Text
@@ -89,7 +99,7 @@ decodeBase64 = TL.decodeUtf8 . BL64.decodeBase64 . fmap TL.encodeUtf8
 -- >>> decodeBase64Untyped "U3V"
 -- Left "Base64-encoded bytestring requires padding"
 --
--- >>> decodebase64Untyped "U3V="
+-- >>> decodeBase64Untyped "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
 decodeBase64Untyped :: TL.Text -> Either T.Text TL.Text
@@ -134,7 +144,7 @@ decodeBase64UntypedWith f t = case BL64.decodeBase64Untyped t of
 -- >>> decodeBase64Lenient "U3V"
 -- "Su"
 --
--- >>> decodebase64Lenient "U3V="
+-- >>> decodeBase64Lenient "U3V="
 -- "Su"
 --
 decodeBase64Lenient :: TL.Text -> TL.Text

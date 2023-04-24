@@ -79,24 +79,14 @@ encodeBase64' = assertBase64
   . toChunks
 {-# INLINE encodeBase64' #-}
 
--- | Decode a padded or unpadded Base64url encoded 'ByteString' value. If its length is not a multiple
--- of 4, then padding chars will be added to fill out the input to a multiple of
--- 4 for safe decoding as Base64url-encoded values are optionally padded.
---
--- For a decoder that fails on unpadded input of incorrect size, use 'decodeBase64Unpadded'.
+-- | Decode a padded Base64-encoded 'ByteString' value.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 $ assertBase64 "PDw_Pj4="
--- "<<?>>"
---
--- >>> decodeBase64 $ assertBase64 "PDw_Pj4"
--- "<<?>>"
---
--- >>> decodeBase64 $ assertBase64 "PDw-Pg"
--- "<<>>"
+-- >>> decodeBase64 $ assertBase64 @'StdPadded "U3Vu"
+-- "Sun"
 --
 decodeBase64 :: StdAlphabet k => Base64 k ByteString -> ByteString
 decodeBase64 = fromChunks

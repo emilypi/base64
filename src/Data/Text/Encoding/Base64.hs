@@ -37,6 +37,14 @@ import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import Data.Text.Encoding.Base64.Error
 
+-- $setup
+--
+-- >>> import Data.Base64.Types
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XTypeApplications
+-- >>> :set -XDataKinds
+--
+
 -- | Encode a 'Text' value in Base64 with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
@@ -62,7 +70,7 @@ encodeBase64 = B64.encodeBase64 . T.encodeUtf8
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 $ assertBase64 "U3Vu"
+-- >>> decodeBase64 $ assertBase64 @'StdPadded "U3Vu"
 -- "Sun"
 --
 decodeBase64 :: StdAlphabet k => Base64 k Text -> Text
@@ -82,7 +90,7 @@ decodeBase64 = T.decodeUtf8 . B64.decodeBase64 . fmap T.encodeUtf8
 -- === __Examples__:
 --
 -- >>> decodeBase64Untyped "U3Vu"
--- "Sun"
+-- Right "Sun"
 --
 decodeBase64Untyped :: Text -> Either Text Text
 decodeBase64Untyped = fmap T.decodeUtf8
@@ -99,7 +107,7 @@ decodeBase64Untyped = fmap T.decodeUtf8
 -- === __Example__:
 --
 -- @
--- 'decodeBase64With' 'T.decodeUtf8''
+-- 'decodeBase64UntypedWith' 'T.decodeUtf8''
 --   :: 'ByteString' -> 'Either' ('Base64Error' 'UnicodeException') 'Text'
 -- @
 --
@@ -128,7 +136,7 @@ decodeBase64UntypedWith f t = case B64.decodeBase64Untyped t of
 -- >>> decodeBase64Lenient "U3V"
 -- "Su"
 --
--- >>> decodebase64Lenient "U3V="
+-- >>> decodeBase64Lenient "U3V="
 -- "Su"
 --
 decodeBase64Lenient :: Text -> Text

@@ -96,13 +96,13 @@ encodeBase64' = assertBase64 . fromChunks
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 $ assertBase64 "PDw_Pj4="
+-- >>> decodeBase64 $ assertBase64 @'UrlPadded "PDw_Pj4="
 -- "<<?>>"
 --
--- >>> decodeBase64 $ assertBase64 "PDw_Pj4"
+-- >>> decodeBase64 $ assertBase64 @'UrlUnpadded "PDw_Pj4"
 -- "<<?>>"
 --
--- >>> decodeBase64 $ assertBase64 "PDw-Pg"
+-- >>> decodeBase64 $ assertBase64 @'UrlUnpadded "PDw-Pg"
 -- "<<>>"
 --
 decodeBase64
@@ -188,7 +188,7 @@ encodeBase64Unpadded' = assertBase64
 --
 -- === __Examples__:
 --
--- >>> decodeBase64Unpadded $ assertBase64 "PDw_Pj4"
+-- >>> decodeBase64Unpadded $ assertBase64 @'UrlUnpadded "PDw_Pj4"
 -- "<<?>>"
 --
 decodeBase64Unpadded :: Base64 'UrlUnpadded ByteString -> ByteString
@@ -232,7 +232,7 @@ decodeBase64UnpaddedUntyped = fmap (fromChunks . (:[]))
 --
 -- === __Examples__:
 --
--- >>> decodeBase64Unpadded $ assertBase64 "PDw_Pj4"
+-- >>> decodeBase64Unpadded $ assertBase64 @'UrlUnpadded "PDw_Pj4"
 -- "<<?>>"
 --
 decodeBase64Padded :: Base64 'UrlPadded ByteString -> ByteString

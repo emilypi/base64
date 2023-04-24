@@ -42,6 +42,15 @@ import Data.Text (Text)
 import Data.Text.Short (ShortText)
 import Data.Text.Short.Unsafe (fromShortByteStringUnsafe)
 
+
+-- $setup
+--
+-- >>> import Data.Base64.Types
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XTypeApplications
+-- >>> :set -XDataKinds
+--
+
 -- | Encode a 'ShortByteString' value as a Base64url 'Text' value with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
@@ -77,10 +86,10 @@ encodeBase64' = fmap toShort . B64U.encodeBase64' . fromShort
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 $ assertBae64 "PDw_Pj4="
+-- >>> decodeBase64 $ assertBase64 @'UrlPadded "PDw_Pj4="
 -- "<<?>>"
 --
--- >>> decodeBase64 $ assertBase64 "PDw_Pj4"
+-- >>> decodeBase64 $ assertBase64 @'UrlUnpadded "PDw_Pj4"
 -- "<<?>>"
 --
 decodeBase64
@@ -155,7 +164,7 @@ encodeBase64Unpadded' = fmap toShort . B64U.encodeBase64Unpadded' . fromShort
 --
 -- === __Examples__:
 --
--- >>> decodeBase64Unpadded $ assertBase64 "PDw_Pj4"
+-- >>> decodeBase64Unpadded $ assertBase64 @'UrlUnpadded "PDw_Pj4"
 -- "<<?>>"
 --
 decodeBase64Unpadded :: Base64 'UrlUnpadded ShortByteString -> ShortByteString
@@ -171,9 +180,6 @@ decodeBase64Unpadded = toShort . B64U.decodeBase64Unpadded . fmap fromShort
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 -- === __Examples__:
---
--- >>> decodeBase64UnpaddedUntyped "PDw_Pj4="
--- Right "<<?>>"
 --
 -- >>> decodeBase64UnpaddedUntyped "PDw_Pj4"
 -- Right "<<?>>"
@@ -201,7 +207,7 @@ decodeBase64UnpaddedUntyped = fmap toShort
 --
 -- === __Examples__:
 --
--- >>> decodeBase64Padded $ assertBase64 "PDw_Pj4="
+-- >>> decodeBase64Padded $ assertBase64 @'UrlPadded "PDw_Pj4="
 -- "<<?>>"
 --
 decodeBase64Padded :: Base64 'UrlPadded ShortByteString -> ShortByteString
@@ -222,13 +228,7 @@ decodeBase64Padded = toShort . B64U.decodeBase64Padded . fmap fromShort
 -- Right "<<?>>"
 --
 -- >>> decodeBase64PaddedUntyped "PDw_Pj4"
--- Right "<<?>>"
---
--- >>> decodeBase64PaddedUntyped "PDw-Pg="
--- Left "Base64-encoded bytestring has invalid padding"
---
--- >>> decodeBase64PaddedUntyped "PDw-Pg"
--- Right "<<>>"
+-- Left "Base64-encoded bytestring requires padding"
 --
 decodeBase64PaddedUntyped :: ShortByteString -> Either Text ShortByteString
 decodeBase64PaddedUntyped = fmap toShort

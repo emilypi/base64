@@ -45,6 +45,16 @@ import Data.Text.Encoding.Base64.Error
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 
+
+
+-- $setup
+--
+-- >>> import Data.Base64.Types
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XTypeApplications
+-- >>> :set -XDataKinds
+--
+
 -- | Encode a 'TL.Text' value in Base64url with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
@@ -74,10 +84,10 @@ encodeBase64 = BL64U.encodeBase64 . TL.encodeUtf8
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 $ assertBase64 "PDw_Pj4="
+-- >>> decodeBase64 $ assertBase64 @'UrlPadded "PDw_Pj4="
 -- "<<?>>"
 --
--- >>> decodeBase64 $ assertBase64 "PDw_Pj4"
+-- >>> decodeBase64 $ assertBase64 @'UrlUnpadded "PDw_Pj4"
 -- "<<?>>"
 --
 decodeBase64 :: UrlAlphabet k => Base64 k TL.Text -> TL.Text
@@ -169,7 +179,7 @@ encodeBase64Unpadded = BL64U.encodeBase64Unpadded . TL.encodeUtf8
 --
 -- === __Examples__:
 --
--- >>> decodeBase64Unpadded $ assertBase64 "PDw_Pj4"
+-- >>> decodeBase64Unpadded $ assertBase64 @'UrlUnpadded "PDw_Pj4"
 -- "<<?>>"
 --
 decodeBase64Unpadded :: Base64 'UrlUnpadded TL.Text -> TL.Text
@@ -238,7 +248,7 @@ decodeBase64UnpaddedUntypedWith f t = case BL64U.decodeBase64UnpaddedUntyped t o
 --
 -- === __Examples__:
 --
--- >>> decodeBase64Padded $ assertBase64 "PDw_Pj4="
+-- >>> decodeBase64Padded $ assertBase64 @'UrlPadded "PDw_Pj4="
 -- "<<?>>"
 --
 decodeBase64Padded :: Base64 'UrlPadded TL.Text -> TL.Text

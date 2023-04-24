@@ -34,6 +34,15 @@ import Data.Text (Text)
 import Data.Text.Short (ShortText)
 import Data.Text.Short.Unsafe (fromShortByteStringUnsafe)
 
+-- $setup
+--
+-- >>> import Data.Base64.Types
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XTypeApplications
+-- >>> :set -XDataKinds
+--
+
+
 -- | Encode a 'ShortByteString' value as Base64 'ShortText' with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
@@ -66,7 +75,7 @@ encodeBase64' = fmap toShort . B64.encodeBase64' . fromShort
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 $ assertBase64 "U3Vu"
+-- >>> decodeBase64 $ assertBase64 @'StdPadded "U3Vu"
 -- "Sun"
 --
 decodeBase64
@@ -82,13 +91,13 @@ decodeBase64 = toShort . B64.decodeBase64 . fmap fromShort
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 "U3Vu"
+-- >>> decodeBase64Untyped "U3Vu"
 -- Right "Sun"
 --
--- >>> decodeBase64 "U3V"
+-- >>> decodeBase64Untyped "U3V"
 -- Left "Base64-encoded bytestring requires padding"
 --
--- >>> decodebase64 "U3V="
+-- >>> decodeBase64Untyped "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
 decodeBase64Untyped :: ShortByteString -> Either Text ShortByteString
@@ -109,7 +118,7 @@ decodeBase64Untyped = fmap toShort . B64.decodeBase64Untyped . fromShort
 -- >>> decodeBase64Lenient "U3V"
 -- "Su"
 --
--- >>> decodebase64Lenient "U3V="
+-- >>> decodeBase64Lenient "U3V="
 -- "Su"
 --
 decodeBase64Lenient :: ShortByteString -> ShortByteString
