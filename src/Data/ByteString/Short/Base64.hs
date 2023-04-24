@@ -20,6 +20,7 @@ module Data.ByteString.Short.Base64
 , encodeBase64'
   -- * Decoding
 , decodeBase64
+, decodeBase64Untyped
 , decodeBase64Lenient
   -- * Validation
 , isBase64
@@ -32,6 +33,15 @@ import Data.ByteString.Short (ShortByteString, fromShort, toShort)
 import Data.Text (Text)
 import Data.Text.Short (ShortText)
 import Data.Text.Short.Unsafe (fromShortByteStringUnsafe)
+
+-- $setup
+--
+-- >>> import Data.Base64.Types
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XTypeApplications
+-- >>> :set -XDataKinds
+--
+
 
 -- | Encode a 'ShortByteString' value as Base64 'ShortText' with padding.
 --
@@ -65,21 +75,34 @@ encodeBase64' = fmap toShort . B64.encodeBase64' . fromShort
 --
 -- === __Examples__:
 --
--- >>> decodeBase64 "U3Vu"
--- Right "Sun"
---
--- >>> decodeBase64 "U3V"
--- Left "Base64-encoded bytestring requires padding"
---
--- >>> decodebase64 "U3V="
--- Left "non-canonical encoding detected at offset: 2"
+-- >>> decodeBase64 $ assertBase64 @'StdPadded "U3Vu"
+-- "Sun"
 --
 decodeBase64
   :: StdAlphabet k
   => Base64 k ShortByteString
-  -> Either Text ShortByteString
-decodeBase64 = fmap toShort . B64.decodeBase64 . fmap fromShort
+  -> ShortByteString
+decodeBase64 = toShort . B64.decodeBase64 . fmap fromShort
 {-# INLINE decodeBase64 #-}
+
+-- | Decode a padded Base64-encoded 'ShortByteString' value.
+--
+-- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
+--
+-- === __Examples__:
+--
+-- >>> decodeBase64Untyped "U3Vu"
+-- Right "Sun"
+--
+-- >>> decodeBase64Untyped "U3V"
+-- Left "Base64-encoded bytestring requires padding"
+--
+-- >>> decodeBase64Untyped "U3V="
+-- Left "non-canonical encoding detected at offset: 2"
+--
+decodeBase64Untyped :: ShortByteString -> Either Text ShortByteString
+decodeBase64Untyped = fmap toShort . B64.decodeBase64Untyped . fromShort
+{-# inline decodeBase64Untyped #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ShortByteString' value. This function
 -- will not generate parse errors. If input data contains padding chars,
@@ -95,11 +118,11 @@ decodeBase64 = fmap toShort . B64.decodeBase64 . fmap fromShort
 -- >>> decodeBase64Lenient "U3V"
 -- "Su"
 --
--- >>> decodebase64Lenient "U3V="
+-- >>> decodeBase64Lenient "U3V="
 -- "Su"
 --
-decodeBase64Lenient :: Base64 k ShortByteString -> ShortByteString
-decodeBase64Lenient = toShort . B64.decodeBase64Lenient . fmap fromShort
+decodeBase64Lenient :: ShortByteString -> ShortByteString
+decodeBase64Lenient = toShort . B64.decodeBase64Lenient . fromShort
 {-# INLINE decodeBase64Lenient #-}
 
 -- | Tell whether a 'ShortByteString' value is base64 encoded.

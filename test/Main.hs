@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
 -- |
 -- Module       : Main
 -- Copyright    : (c) 2019-2020 Emily Pillmore
@@ -19,6 +21,8 @@ module Main
 
 
 import Prelude hiding (length)
+
+import Data.Base64.Types
 
 import Data.Bifunctor (second)
 import qualified Data.ByteString as BS
@@ -163,58 +167,66 @@ mkDecodeTree utf8 t a = mkTests "Decoding tests"
 
 prop_roundtrip :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
 prop_roundtrip Harness{..} = testGroup "prop_roundtrip"
-  [ testProperty "prop_std_roundtrip" $ \(bs :: b) ->
-      Right (encode bs) == decode (encode (encode bs))
-  , testProperty "prop_url_roundtrip" $ \(bs :: b) ->
-      Right (encodeUrl bs) == decodeUrl (encodeUrl (encodeUrl bs))
-  , testProperty "prop_url_roundtrip_nopad" $ \(bs :: b) ->
-      Right (encodeUrlNopad bs)
-        == decodeUrlNopad (encodeUrlNopad (encodeUrlNopad bs))
-  , testProperty "prop_std_lenient_roundtrip" $ \(bs :: b) ->
-      encode bs == lenient (encode (encode bs))
-  , testProperty "prop_url_lenient_roundtrip" $ \(bs :: b) ->
-      encodeUrl bs == lenientUrl (encodeUrl (encodeUrl bs))
+  [ testProperty "prop_std_roundtrip" $ \(bs :: a) ->
+      Right bs == decode (extractBase64 $ encode bs)
+  , testProperty "prop_url_roundtrip" $ \(bs :: a) ->
+      Right bs == decodeUrl (extractBase64 $ encodeUrl bs)
+  , testProperty "prop_url_roundtrip_nopad" $ \(bs :: a) ->
+      Right bs
+        == decodeUrlNopad (extractBase64 $ encodeUrlNopad bs)
+  , testProperty "prop_std_lenient_roundtrip" $ \(bs :: a) ->
+      bs == lenient (extractBase64 $ encode bs)
+  , testProperty "prop_url_lenient_roundtrip" $ \(bs :: a) ->
+      bs == lenientUrl (extractBase64 $ encodeUrl bs)
   ]
 
 prop_correctness :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
 prop_correctness Harness{..} = testGroup "prop_validity"
-  [ testProperty "prop_std_valid" $ \(bs :: b) ->
-    validate (encode bs)
-  , testProperty "prop_url_valid" $ \(bs :: b) ->
-    validateUrl (encodeUrl bs)
-  , testProperty "prop_std_correct" $ \(bs :: b) ->
-    correct (encode bs)
-  , testProperty "prop_url_correct" $ \(bs :: b) ->
-    correctUrl (encodeUrl bs)
+  [ testProperty "prop_std_valid" $ \(bs :: a) ->
+    validate (extractBase64 $ encode bs)
+  , testProperty "prop_url_valid" $ \(bs :: a) ->
+    validateUrl (extractBase64 $ encodeUrl bs)
+  , testProperty "prop_std_correct" $ \(bs :: a) ->
+    correct (extractBase64 $ encode bs)
+  , testProperty "prop_url_correct" $ \(bs :: a) ->
+    correctUrl (extractBase64 $ encodeUrl bs)
   ]
 
 prop_url_padding :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
 prop_url_padding Harness{..}  = testGroup "prop_url_padding"
-  [ testProperty "prop_url_nopad_roundtrip" $ \(bs :: b) ->
-      Right (encodeUrlNopad bs)
-        == decodeUrlNopad (encodeUrlNopad (encodeUrlNopad bs))
+  [ testProperty "prop_url_nopad_roundtrip_untyped" $ \(bs :: a) ->
+      Right bs
+        == decodeUrlNopad (extractBase64 $ encodeUrlNopad bs)
+  , testProperty "prop_url_nopad_roundtrip_typed" $ \(bs :: a) ->
+     bs == decodeUrlTypedNopad (encodeUrlNopad bs)
+  , testProperty "prop_url_pad_roundtrip_untyped" $ \(bs :: a) ->
+      Right bs == decodeUrlPad (extractBase64 $ encodeUrl bs)
+  , testProperty "prop_url_pad_roundtrip_typed" $ \(bs :: a) ->
+     bs == decodeUrlTypedPad (encodeUrl bs)
+  , testProperty "prop_url_decode_invariant_untyped" $ \(bs :: a) ->
+      (decodeUrlNopad (extractBase64 $ encodeUrlNopad bs)
+       == decodeUrl (extractBase64 $ encodeUrlNopad bs))
+      ||
+      (decodeUrlPad (extractBase64 $ encodeUrl bs)
+       == decodeUrl (extractBase64 $ encodeUrl bs))
 
-  , testProperty "prop_url_pad_roundtrip" $ \(bs :: b) ->
-      Right (encodeUrl bs) == decodeUrlPad (encodeUrl (encodeUrl bs))
-
-  , testProperty "prop_url_decode_invariant" $ \(bs :: b) ->
-      ( decodeUrlNopad (encodeUrlNopad (encodeUrlNopad bs))
-      == decodeUrl (encodeUrl (encodeUrl bs))
-      ) ||
-      ( decodeUrlPad (encodeUrl (encodeUrl bs))
-      == decodeUrl (encodeUrl (encodeUrl bs))
-      )
+  , testProperty "prop_url_decode_invariant_typed" $ \(bs :: a) ->
+      (decodeUrlTypedNopad (encodeUrlNopad bs)
+      == decodeUrlTyped (encodeUrlNopad bs))
+      ||
+      (decodeUrlPad (extractBase64 $ encodeUrl bs)
+      == decodeUrl (extractBase64 $ encodeUrl bs))
 
   -- NOTE: we need to fix the bitmasking issue for "impossible"
   -- inputs
 
-  , testProperty "prop_url_padding_coherence" $ \(bs :: b) ->
-      Right (encodeUrl bs) == decodeUrl (encodeUrl (encodeUrl bs))
-      && Right (encodeUrl bs) == decodeUrlPad (encodeUrl (encodeUrl bs))
+  , testProperty "prop_url_padding_coherence" $ \(bs :: a) ->
+      Right bs == decodeUrl (extractBase64 $ encodeUrl bs)
+      && Right bs == decodeUrlPad (extractBase64 $ encodeUrl bs)
 
-  , testProperty "prop_url_nopadding_coherence" $ \(bs :: b) ->
-      Right (encodeUrlNopad bs) == decodeUrlNopad (encodeUrlNopad (encodeUrlNopad bs))
-      && Right (encodeUrlNopad bs) == decodeUrl (encodeUrlNopad (encodeUrlNopad bs))
+  , testProperty "prop_url_nopadding_coherence" $ \(bs :: a) ->
+      Right bs == decodeUrlNopad (extractBase64 $ encodeUrlNopad bs)
+      && Right bs == decodeUrl (extractBase64 $ encodeUrlNopad bs)
   ]
 
 -- | just a sanity check against `base64-bytestring`
@@ -222,11 +234,13 @@ prop_url_padding Harness{..}  = testGroup "prop_url_padding"
 prop_bos_coherence :: TestTree
 prop_bos_coherence = testGroup "prop_bos_coherence"
   [ testProperty "prop_std_bos_coherence" $ \bs ->
-      Right bs == B64.decodeBase64 (B64.encodeBase64' bs)
+      Right bs == B64.decodeBase64Untyped (extractBase64 $ B64.encodeBase64' bs)
       && Right bs == Bos.decode (Bos.encode bs)
+      && bs == B64.decodeBase64 (B64.encodeBase64' bs)
   , testProperty "prop_url_bos_coherence" $ \bs ->
-      Right bs == B64U.decodeBase64 (B64U.encodeBase64' bs)
+      Right bs == B64U.decodeBase64Untyped (extractBase64 $ B64U.encodeBase64' bs)
       && Right bs == BosU.decode (BosU.encode bs)
+      && bs == B64U.decodeBase64 (B64U.encodeBase64' bs)
   ]
 
 -- ---------------------------------------------------------------- --
@@ -260,18 +274,30 @@ rfcVectors Harness{..} = testGroup "RFC 4648 Test Vectors"
     testCaseStd s t =
       testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
         step "encode is sound"
-        t @=? encode s
+        assertBase64 t @=? encode s
 
-        step "decode is sound"
-        Right s @=? decode (encode s)
+        step "decode is sound - untyped"
+        Right s @=? decode (extractBase64 $ encode s)
+        Right s @=? decode t
+
+        step "decode is sound - typed"
+        s @=? decodeTyped (encode s)
+        s @=? decodeTyped (assertBase64 t)
 
     testCaseUrl s t =
       testCaseSteps (show $ if s == "" then "empty" else s) $ \step -> do
         step "encode is sound"
-        t @=? encodeUrl s
+        assertBase64 t @=? encodeUrl s
 
-        step "decode is sound"
-        Right s @=? decodeUrlPad t
+        step "decode is sound - untyped"
+        Right s @=? decodeUrl (extractBase64 $ encodeUrl s)
+        Right s @=? decodeUrl t
+
+        step "decode is sound - typed"
+        s @=? decodeUrlTyped (encodeUrl s)
+        s @=? decodeUrlTypedPad (encodeUrl s)
+        s @=? decodeUrlTyped (assertBase64 @'UrlPadded t)
+        s @=? decodeUrlTypedPad (assertBase64 @'UrlPadded t)
 
 -- | Url-safe padding unit tests (stresses entire alphabet)
 --
@@ -433,7 +459,7 @@ decodeWithVectors utf8 TextHarness{..} h t = testGroup "DecodeWith* unit tests"
         Left (DecodeError _) -> return ()
         _ -> assertFailure "decoding phase"
     , testCase "decodeWith valid utf8 inputs on decodeUtf8" $ do
-      case decodeWith_ utf8 (encode h "\1079743") of
+      case decodeWith_ utf8 (extractBase64 $ encode h "\1079743") of
         Left (ConversionError _) -> return ()
         _ -> assertFailure "conversion phase"
     , testCase "decodeUrlWith non-utf8 inputs on decodeUtf8" $ do
@@ -441,7 +467,7 @@ decodeWithVectors utf8 TextHarness{..} h t = testGroup "DecodeWith* unit tests"
         Left (DecodeError _) -> return ()
         _ -> assertFailure "decoding phase"
     , testCase "decodeUrlWith valid utf8 inputs on decodeUtf8" $ do
-      case decodeUrlWith_ utf8 (encodeUrl h "\1079743") of
+      case decodeUrlWith_ utf8 (extractBase64 $ encodeUrl h "\1079743") of
         Left (ConversionError _) -> return ()
         _ -> assertFailure "conversion phase"
     , testCase "decodeUrlPaddedWith non-utf8 inputs on decodeUtf8" $ do
@@ -449,7 +475,7 @@ decodeWithVectors utf8 TextHarness{..} h t = testGroup "DecodeWith* unit tests"
         Left (DecodeError _) -> return ()
         _ -> assertFailure "decoding phase"
     , testCase "decodePaddedWith valid utf8 inputs on decodeUtf8" $ do
-      case decodeUrlPaddedWith_ utf8 (encodeUrl h "\1079743") of
+      case decodeUrlPaddedWith_ utf8 (extractBase64 $ encodeUrl h "\1079743") of
         Left (ConversionError _) -> return ()
         _ -> assertFailure "conversion phase"
     , testCase "decodeUnpaddedWith non-utf8 inputs on decodeUtf8" $ do
@@ -457,7 +483,7 @@ decodeWithVectors utf8 TextHarness{..} h t = testGroup "DecodeWith* unit tests"
         Left (DecodeError _) -> return ()
         _ -> assertFailure "decoding phase"
     , testCase "decodeUnpaddedWith valid utf8 inputs on decodeUtf8" $ do
-      case decodeUrlUnpaddedWith_ utf8 (encodeUrlNopad h "\1079743") of
+      case decodeUrlUnpaddedWith_ utf8 (extractBase64 $ encodeUrlNopad h "\1079743") of
         Left (ConversionError _) -> return ()
         _ -> assertFailure "conversion phase"
     ]

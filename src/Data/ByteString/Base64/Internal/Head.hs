@@ -16,20 +16,14 @@ module Data.ByteString.Base64.Internal.Head
 ( encodeBase64_
 , encodeBase64Nopad_
 , decodeBase64_
+, decodeBase64Typed_
 , decodeBase64Lenient_
 ) where
 
-#include "MachDeps.h"
-
+import Data.Base64.Types.Internal
 import Data.ByteString.Base64.Internal.Tail
 import Data.ByteString.Base64.Internal.Utils
-#if WORD_SIZE_IN_BITS == 32
-import Data.ByteString.Base64.Internal.W32.Loop
-#elif WORD_SIZE_IN_BITS >= 64
 import Data.ByteString.Base64.Internal.W64.Loop
-#else
-import Data.ByteString.Base64.Internal.W16.Loop
-#endif
 import Data.ByteString.Internal
 import Data.Text (Text)
 
@@ -39,7 +33,7 @@ import Foreign.Ptr
 import GHC.ForeignPtr
 import GHC.Word
 
-import System.IO.Unsafe
+import System.IO.Unsafe ( unsafeDupablePerformIO )
 
 
 encodeBase64_ :: EncodingTable -> ByteString -> ByteString
@@ -55,7 +49,7 @@ encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
             (castPtr (plusPtr sptr soff))
             (castPtr dptr)
             end
-            (loopTail dfp aptr dptr (castPtr end))
+            (loopTail dfp dptr aptr (castPtr end))
   where
     !dlen = 4 * ((slen + 2) `div` 3)
 
@@ -102,6 +96,32 @@ decodeBase64_ !dtfp (PS !sfp !soff !slen) =
   where
     !dlen = (slen `quot` 4) * 3
 {-# inline decodeBase64_ #-}
+
+-- | The main decode function for typed base64 values.
+--
+-- This loop is separate from 'decodeBase64_' due to the fact that
+-- when taking a 'Base64' value from this library, the existence
+-- of the wrapper is a witness to the well-formedness of the underlying value,
+-- and so we can eschew error checking in the decode loop.
+--
+decodeBase64Typed_
+    :: ForeignPtr Word8
+    -> Base64 k ByteString
+    -> ByteString
+decodeBase64Typed_ !dtfp (Base64 (PS sfp soff slen))
+  | slen == 0 = mempty
+  | otherwise = unsafeDupablePerformIO $
+    withForeignPtr dtfp $ \dtable ->
+    withForeignPtr sfp $ \sptr -> do
+      dfp <- mallocPlainForeignPtrBytes dlen
+      withForeignPtr dfp $ \dptr -> do
+        let !end = plusPtr sptr (soff + slen)
+        decodeLoopNoError dtable
+          (plusPtr sptr soff)
+          dptr end dfp
+  where
+    !dlen = (slen `quot` 4) * 3
+{-# inline decodeBase64Typed_ #-}
 
 decodeBase64Lenient_ :: ForeignPtr Word8 -> ByteString -> ByteString
 decodeBase64Lenient_ !dtfp (PS !sfp !soff !slen) = unsafeDupablePerformIO $
