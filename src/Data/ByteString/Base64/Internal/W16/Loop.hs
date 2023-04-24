@@ -78,12 +78,12 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
   where
     err :: Ptr Word8 -> IO (Either Text ByteString)
     err p = return . Left . T.pack
-      $ "invalid character at offset: "
+      $ "invalid base64 encoding near offset: "
       ++ show (p `minusPtr` sptr)
 
     padErr :: Ptr Word8 -> IO (Either Text ByteString)
     padErr p =  return . Left . T.pack
-      $ "invalid padding at offset: "
+      $ "invalid padding near offset: "
       ++ show (p `minusPtr` sptr)
 
     canonErr :: Ptr Word8 -> IO (Either Text ByteString)
