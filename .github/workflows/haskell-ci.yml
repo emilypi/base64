@@ -21,6 +21,11 @@ jobs:
         - os: macOS-latest
           ghc: 'latest'
     steps:
+    - uses: actions/checkout@v3
+    - name: Install libncurses5 and libtinfo
+      if: runner.os == 'Linux' && (matrix.ghc == '8.0' || matrix.ghc == '8.2')
+      run: |
+        sudo apt-get install libncurses5 libtinfo5
     - uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
       with:
