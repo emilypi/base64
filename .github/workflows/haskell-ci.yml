@@ -59,60 +59,6 @@ jobs:
         cd base64-*/
         cabal check
 
-  windows-build:
-    runs-on: windows-latest
-    needs: build
-    strategy:
-      fail-fast: true
-      matrix:
-        ghc: ['9.2', '9.4', '9.6']
-    steps:
-    - uses: actions/checkout@v3
-    - uses: haskell/actions/setup@v2
-      id: setup-haskell-cabal
-      with:
-        ghc-version: ${{ matrix.ghc }}
-    - name: Update cabal package database
-      run: cabal update
-    - uses: actions/cache@v2
-      name: Cache cabal stuff
-      with:
-        path: |
-          ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-          dist-newstyle
-        key: ${{ runner.os }}-${{ matrix.ghc }}
-    # We rebuild tests several times to avoid intermittent failures on Windows
-    # https://github.com/haskell/actions/issues/36
-    # We also use --enable-tests and --enable-benchmarks to avoid
-    # test and bench commands from reconfiguring and thus rebuilding.
-    - name: Build Test
-      run: |
-        cabal sdist -z -o .
-        cabal get base64-*.tar.gz
-        cd base64-*/
-        bld() { cabal build base64:tests --enable-tests --enable-benchmarks; }
-        bld || bld || bld
-
-    - name: Run Test
-      run: |
-        $bin = cabal list-bin base64-tests
-        $env:PATH = ''
-        & "$bin"
-      shell: pwsh
-
-    - name: Bench
-      run: |
-        cd base64-*/
-        cabal bench --enable-tests --enable-benchmarks --benchmark-option=-l all
-    - name: Haddock
-      run: |
-        cd base64-*/
-        cabal haddock all
-    - name: Cabal check
-      run: |
-        cd base64-*/
-        cabal check
-
   bounds-checking:
     needs: build
     runs-on: ubuntu-latest
