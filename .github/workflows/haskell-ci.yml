@@ -97,34 +97,3 @@ jobs:
         source ~/.ghcup/env
         cabal update
         cabal test
-
-  # We use github.com/haskell self-hosted runners for ARM testing.
-  # If they become unavailable in future, put ['armv7', 'aarch64']
-  # back to emulation jobs above.
-  arm:
-    needs: build
-    runs-on: [Linux, ARM64]
-    strategy:
-      fail-fast: true
-      matrix:
-        arch: [arm32v7, arm64v8]
-    steps:
-      - uses: docker://hasufell/arm64v8-ubuntu-haskell:focal
-        name: Cleanup
-        with:
-          args: "find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +"
-
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - if: matrix.arch == 'arm32v7'
-        uses: docker://hasufell/arm32v7-ubuntu-haskell:focal
-        name: Run build (arm32v7 linux)
-        with:
-          args: sh -c "cabal update && cabal test"
-
-      - if: matrix.arch == 'arm64v8'
-        uses: docker://hasufell/arm64v8-ubuntu-haskell:focal
-        name: Run build (arm64v8 linux)
-        with:
-          args: sh -c "cabal update && cabal test"
