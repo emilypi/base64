@@ -1,10 +1,9 @@
 {-# language DataKinds #-}
 {-# language RankNTypes #-}
 {-# language TypeFamilies #-}
-{-# language Safe #-}
 -- |
 -- Module       : Data.ByteString.Base64.Types.Internal
--- Copyright    : (c) 2019-2022 Emily Pillmore
+-- Copyright    : (c) 2019-2023 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>,

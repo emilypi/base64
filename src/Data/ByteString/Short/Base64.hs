@@ -1,8 +1,7 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Short.Base64
--- Copyright    : (c) 2019-2022 Emily Pillmore
+-- Copyright    : (c) 2019-2023 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -127,6 +126,10 @@ decodeBase64Lenient = toShort . B64.decodeBase64Lenient . fromShort
 
 -- | Tell whether a 'ShortByteString' value is base64 encoded.
 --
+-- This function will also detect non-canonical encodings such as @ZE==@, which are
+-- externally valid Base64-encoded values, but are internally inconsistent "impossible"
+-- values.
+--
 -- === __Examples__:
 --
 -- >>> isBase64 "U3Vu"
@@ -144,7 +147,7 @@ isBase64 = B64.isBase64 . fromShort
 
 -- | Tell whether a 'ShortByteString' value is a valid Base64 format.
 --
--- This will not tell you whether or not this is a correct Base64url representation,
+-- This will not tell you whether or not this is a correct Base64 representation,
 -- only that it conforms to the correct shape. To check whether it is a true
 -- Base64 encoded 'ShortByteString' value, use 'isBase64'.
 --

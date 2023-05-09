@@ -12,7 +12,7 @@ license-file:    LICENSE
 author:          Emily Pillmore
 maintainer:      Emily Pillmore <emilypi@cohomolo.gy>
                , Sofia-m-a <https://github.com/sofia-m-a>
-copyright:       (c) 2019-2022 Emily Pillmore
+copyright:       (c) 2019-2023 Emily Pillmore
 category:        Data
 build-type:      Simple
 extra-doc-files:

@@ -1,8 +1,7 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE Safe #-}
 -- |
 -- Module       : Data.Text.Lazy.Encoding.Base64
--- Copyright    : (c) 2019-2022 Emily Pillmore
+-- Copyright    : (c) 2019-2023 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -66,12 +65,6 @@ encodeBase64 = BL64.encodeBase64 . TL.encodeUtf8
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
--- and pass in a custom decode function.
---
 -- === __Examples__:
 --
 -- >>> decodeBase64 $ assertBase64 @'StdPadded "U3Vu"
@@ -81,15 +74,9 @@ decodeBase64 :: StdAlphabet k => Base64 k TL.Text -> TL.Text
 decodeBase64 = TL.decodeUtf8 . BL64.decodeBase64 . fmap TL.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
--- | Decode a padded Base64-encoded 'TL.Text' value
+-- | Decode a padded, untyped Base64-encoded 'TL.Text' value
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
---
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
--- and pass in a custom decode function.
 --
 -- === __Examples__:
 --
@@ -130,7 +117,7 @@ decodeBase64UntypedWith f t = case BL64.decodeBase64Untyped t of
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64UntypedWith #-}
 
--- | Leniently decode a Base64-encoded 'TL.Text' value. This function
+-- | Leniently decode an untyped Base64-encoded 'TL.Text' value. This function
 -- will not generate parse errors. If input data contains padding chars,
 -- then the input will be parsed up until the first pad character.
 --
@@ -153,7 +140,7 @@ decodeBase64Lenient = TL.decodeUtf8
   . TL.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
 
--- | Tell whether a 'TL.Text' value is Base64-encoded.
+-- | Tell whether an untyped 'TL.Text' value is Base64-encoded.
 --
 -- === __Examples__:
 --
@@ -170,7 +157,7 @@ isBase64 :: TL.Text -> Bool
 isBase64 = BL64.isBase64 . TL.encodeUtf8
 {-# INLINE isBase64 #-}
 
--- | Tell whether a 'TL.Text' value is a valid Base64 format.
+-- | Tell whether an untyped 'TL.Text' value is a valid Base64 format.
 --
 -- This will not tell you whether or not this is a correct Base64 representation,
 -- only that it conforms to the correct shape. To check whether it is a true

@@ -1,8 +1,7 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE Safe #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.URL
--- Copyright    : (c) 2019-2022 Emily Pillmore
+-- Copyright    : (c) 2019-2023 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -67,17 +66,12 @@ encodeBase64 :: Text -> Base64 'UrlPadded Text
 encodeBase64 = B64U.encodeBase64 . T.encodeUtf8
 {-# INLINE encodeBase64 #-}
 
--- | Decode a Base64url-encoded 'Text' value. If its length is not a multiple
--- of 4, then padding chars will be added to fill out the input to a multiple of
--- 4 for safe decoding as base64url encodings are optionally padded.
+-- | Decode a Base64url encoded 'Text' value, either padded or unpadded.
+-- The correct decoding function is dispatched based on the existence of padding.
 --
--- For a decoder that fails on unpadded input, use 'decodeBase64Unpadded'
---
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
--- and pass in a custom decode function.
+-- For typed values:
+--   - If a padded value is required, use 'decodeBase64Padded'
+--   - If an unpadded value is required, use 'decodeBase64Unpadded'
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -93,17 +87,13 @@ decodeBase64 :: UrlAlphabet k => Base64 k Text -> Text
 decodeBase64 = T.decodeUtf8 . B64U.decodeBase64 . fmap T.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
--- | Decode a padded Base64url-encoded 'Text' value. If its length is not a multiple
+-- | Decode an untyped Base64url encoded 'Text' value. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
--- 4 for safe decoding as base64url encodings are optionally padded.
+-- 4 for safe decoding as Base64url-encoded values are optionally padded.
 --
--- For a decoder that fails on unpadded input, use 'decodeBase64Unpadded'
---
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
--- and pass in a custom decode function.
+-- For a decoder that fails to decode untyped values of incorrect size:
+--   - If a padded value is required, use 'decodeBase64PaddedUntyped'
+--   - If an unpadded value is required, use 'decodeBase64UnpaddedUntyped'
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -127,7 +117,7 @@ decodeBase64Untyped = fmap T.decodeUtf8
   . T.encodeUtf8
 {-# inline decodeBase64Untyped #-}
 
--- | Attempt to decode a 'ByteString' value as Base64url, converting from
+-- | Attempt to decode an untyped 'ByteString' value as Base64url, converting from
 -- 'ByteString' to 'Text' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -151,9 +141,7 @@ decodeBase64UntypedWith f t = case B64U.decodeBase64Untyped t of
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64UntypedWith #-}
 
--- | Encode a 'Text' value in Base64url without padding. Note that for Base64url,
--- padding is optional. If you call this function, you will simply be encoding
--- as Base64url and stripping padding chars from the output.
+-- | Encode a 'Text' value in Base64url without padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
@@ -168,12 +156,6 @@ encodeBase64Unpadded = B64U.encodeBase64Unpadded . T.encodeUtf8
 
 -- | Decode an unpadded Base64url encoded 'Text' value.
 --
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to
--- 'decodeBase64UnpaddedWith' and pass in a custom decode function.
---
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 -- === __Examples__:
@@ -187,17 +169,11 @@ decodeBase64Unpadded = T.decodeUtf8
   . fmap T.encodeUtf8
 {-# INLINE decodeBase64Unpadded #-}
 
--- | Decode a unpadded Base64url-encoded 'Text' value. If its length is not a multiple
+-- | Decode a unpadded, untyped Base64url-encoded 'Text' value. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
 -- 4 for safe decoding as base64url encodings are optionally padded.
 --
--- For a decoder that fails on unpadded input, use 'decodeBase64Unpadded'
---
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
--- and pass in a custom decode function.
+-- For a decoder that fails on unpadded input, use 'decodeBase64PaddedUntyped'
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -219,7 +195,7 @@ decodeBase64UnpaddedUntyped = fmap T.decodeUtf8
 {-# inline decodeBase64UnpaddedUntyped #-}
 
 
--- | Attempt to decode an unpadded 'ByteString' value as Base64url, converting from
+-- | Attempt to decode an untyped, unpadded 'ByteString' value as Base64url, converting from
 -- 'ByteString' to 'Text' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -243,13 +219,7 @@ decodeBase64UnpaddedUntypedWith f t = case B64U.decodeBase64UnpaddedUntyped t of
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64UnpaddedUntypedWith #-}
 
--- | Decode an padded Base64url encoded 'Text' value
---
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to 'decodeBase64PaddedWith'
--- and pass in a custom decode function.
+-- | Decode a padded Base64url encoded 'Text' value
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -264,13 +234,9 @@ decodeBase64Padded = T.decodeUtf8
   . fmap T.encodeUtf8
 {-# INLINE decodeBase64Padded #-}
 
--- | Decode an padded Base64url encoded 'Text' value
+-- | Decode an untyped, padded Base64url encoded 'Text' value
 --
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to 'decodeBase64PaddedWith'
--- and pass in a custom decode function.
+-- For a decoder that fails on padded input, use 'decodeBase64UnpaddedUntyped'
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -285,7 +251,7 @@ decodeBase64PaddedUntyped = fmap T.decodeUtf8
   . T.encodeUtf8
 {-# inline decodeBase64PaddedUntyped #-}
 
--- | Attempt to decode a padded 'ByteString' value as Base64url, converting from
+-- | Attempt to decode a padded, untyped 'ByteString' value as Base64url, converting from
 -- 'ByteString' to 'Text' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -309,7 +275,7 @@ decodeBase64PaddedUntypedWith f t = case B64U.decodeBase64PaddedUntyped t of
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64PaddedUntypedWith #-}
 
--- | Leniently decode an unpadded Base64url-encoded 'Text'. This function
+-- | Leniently decode an untyped Base64url-encoded 'Text'. This function
 -- will not generate parse errors. If input data contains padding chars,
 -- then the input will be parsed up until the first pad character.
 --
@@ -329,7 +295,7 @@ decodeBase64Lenient = T.decodeUtf8
     . T.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
 
--- | Tell whether a 'Text' value is Base64url-encoded.
+-- | Tell whether an untyped 'Text' value is Base64url-encoded.
 --
 -- === __Examples__:
 --
@@ -346,7 +312,7 @@ isBase64Url :: Text -> Bool
 isBase64Url = B64U.isBase64Url . T.encodeUtf8
 {-# INLINE isBase64Url #-}
 
--- | Tell whether a 'Text' value is a valid Base64url format.
+-- | Tell whether an untyped 'Text' value is a valid Base64url format.
 --
 -- This will not tell you whether or not this is a correct Base64url representation,
 -- only that it conforms to the correct shape. To check whether it is a true
