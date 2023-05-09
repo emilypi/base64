@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 -- |
 -- Module       : Data.ByteString.Short.Base64
--- Copyright    : (c) 2019-2022 Emily Pillmore
+-- Copyright    : (c) 2019-2023 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>

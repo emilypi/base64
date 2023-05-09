@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.Text.Short.Encoding.Base64
 -- Copyright    : (c) 2019-2023 Emily Pillmore
