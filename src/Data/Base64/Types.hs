@@ -2,11 +2,10 @@
 {-# language PolyKinds #-}
 {-# language RankNTypes #-}
 {-# language TypeFamilies #-}
-{-# language Trustworthy #-}
 {-# language UndecidableInstances #-}
 -- |
 -- Module       : Data.ByteString.Base64.Types
--- Copyright    : (c) 2019-2022 Emily Pillmore
+-- Copyright    : (c) 2019-2023 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>,
@@ -37,20 +36,21 @@ import Data.Kind
 import GHC.TypeLits
 
 
--- | Assert a value to be encoded in a specific way
+-- | Assert the provenance of a value encoded in a particular
+-- base64 alphabet.
 --
 -- /Warning/: This is a blind assertion that a particular
 -- value is base64 encoded in some alphabet. If you are not
 -- sure of the provenance of the value, you may experience
 -- odd behavior when attempting to decode. Use at your own
 -- risk. If I see any issues logged on this project from
--- negligent use of this or 'coerceBase64', Sofia and I will
+-- negligent use of this or 'coerceBase64', I will
 -- smite you.
 --
 assertBase64 :: forall k a. a -> Base64 k a
 assertBase64 = Base64
 
--- | Forget that a particular value is Base64-encoded
+-- | Forget the provenance of a base64-encoded value.
 --
 extractBase64 :: Base64 k a -> a
 extractBase64 (Base64 a) = a
@@ -62,7 +62,7 @@ extractBase64 (Base64 a) = a
 -- sure of the provenance of the value, you may experience
 -- odd behavior when attempting to decode. Use at your own
 -- risk. If I see any issues logged on this project from
--- negligent use of this or 'assertBase64', Sofia and I will
+-- negligent use of this or 'assertBase64', I will
 -- smite you.
 --
 coerceBase64 :: forall j k a. Base64 k a -> Base64 j a
@@ -70,7 +70,9 @@ coerceBase64 = coerce
 
 -- | The type family of Url-safe alphabets
 --
--- This type family defines the union of compatible Url-safe base64 types
+-- This type family defines the union of compatible Url-safe base64 types.
+-- To write a function that is parametric over such types, issue a
+-- constraint like `forall k. UrlAlphabet k`.
 --
 type family UrlAlphabet k :: Constraint where
   UrlAlphabet 'UrlPadded = ()
@@ -81,7 +83,7 @@ type family UrlAlphabet k :: Constraint where
             \a lenient decoder for the url-safe alphabet instead."
     )
 
--- | The type family of Std alphabets
+-- | The type family of standard alphabets
 --
 -- This type family defines the union of compatible standard
 -- alphabet base64 types
@@ -94,6 +96,12 @@ type family StdAlphabet k :: Constraint where
             \a lenient decoder for the std alphabet instead."
     )
 
+-- | The type family of non-standard alphabets
+--
+-- Only untyped variants of encodeBase64/decodeBase64 can interact with this
+-- type family, in addition to assertion\/coercion\/extraction of
+-- these types of values.
+--
 type family NonStandardAlphabet k :: Constraint where
   NonStandardAlphabet 'NonStandard = ()
   NonStandardAlphabet _ = TypeError

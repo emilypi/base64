@@ -1,9 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Lazy.Base64
--- Copyright    : (c) 2019-2022 Emily Pillmore
+-- Copyright    : (c) 2019-2023 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -145,7 +144,7 @@ decodeBase64Lenient = fromChunks
 -- | Tell whether a 'ByteString' value is base64 encoded.
 --
 -- This function will also detect non-canonical encodings such as @ZE==@, which are
--- externally valid Base64url-encoded values, but are internally inconsistent "impossible"
+-- externally valid Base64-encoded values, but are internally inconsistent "impossible"
 -- values.
 --
 -- === __Examples__:
@@ -167,7 +166,7 @@ isBase64 bs
 
 -- | Tell whether a 'ByteString' value is a valid Base64 format.
 --
--- This will not tell you whether or not this is a correct Base64url representation,
+-- This will not tell you whether or not this is a correct Base64 representation,
 -- only that it conforms to the correct shape. To check whether it is a true
 -- Base64 encoded 'ByteString' value, use 'isBase64'.
 --
