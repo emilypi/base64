@@ -1,8 +1,7 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.Text.Short.Encoding.Base64.URL
--- Copyright    : (c) 2019-2022 Emily Pillmore
+-- Copyright    : (c) 2019-2023 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -71,17 +70,11 @@ encodeBase64 = fmap fromByteStringUnsafe
   . toByteString
 {-# INLINE encodeBase64 #-}
 
--- | Decode a padded Base64url-encoded 'ShortText' value. If its length is not a multiple
--- of 4, then padding chars will be added to fill out the input to a multiple of
--- 4 for safe decoding as base64url encodings are optionally padded.
+-- | Decode an arbitrarily padded Base64url-encoded 'ShortText' value.
 --
--- For a decoder that fails on unpadded input, use 'decodeBase64Unpadded'.
---
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
--- and pass in a custom decode function.
+-- For typed values:
+--   - If a padded value is required, use 'decodeBase64Padded'
+--   - If an unpadded value is required, use 'decodeBase64Unpadded'
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -97,7 +90,7 @@ decodeBase64 :: UrlAlphabet k => Base64 k ShortText -> ShortText
 decodeBase64 = fromText . B64TU.decodeBase64 . fmap toText
 {-# INLINE decodeBase64 #-}
 
--- | Decode a padded Base64url-encoded 'ShortText' value. If its length is not a multiple
+-- | Decode an untyped padded Base64url-encoded 'ShortText' value. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
 -- 4 for safe decoding as base64url encodings are optionally padded.
 --
@@ -129,7 +122,7 @@ decodeBase64Untyped :: ShortText -> Either Text ShortText
 decodeBase64Untyped = fmap fromText . B64TU.decodeBase64Untyped . toText
 {-# INLINE decodeBase64Untyped #-}
 
--- | Attempt to decode a 'ShortByteString' value as Base64url, converting from
+-- | Attempt to decode an untyped 'ShortByteString' value as Base64url, converting from
 -- 'ByteString' to 'ShortText' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -153,9 +146,7 @@ decodeBase64UntypedWith f t = case BS64U.decodeBase64Untyped t of
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64UntypedWith #-}
 
--- | Encode a 'ShortText' value in Base64url without padding. Note that for Base64url,
--- padding is optional. If you call this function, you will simply be encoding
--- as Base64url and stripping padding chars from the output.
+-- | Encode a 'ShortText' value in Base64url without padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
@@ -172,12 +163,6 @@ encodeBase64Unpadded = fmap fromByteStringUnsafe
 
 -- | Decode an unpadded Base64url encoded 'ShortText' value.
 --
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to `decodeBase64UnpaddedWith`
--- and pass in a custom decode function.
---
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 -- === __Examples__:
@@ -189,13 +174,7 @@ decodeBase64Unpadded :: Base64 'UrlUnpadded ShortText -> ShortText
 decodeBase64Unpadded = fromText . B64TU.decodeBase64Unpadded . fmap toText
 {-# INLINE decodeBase64Unpadded #-}
 
--- | Decode an unpadded Base64url encoded 'ShortText' value.
---
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to `decodeBase64UnpaddedWith`
--- and pass in a custom decode function.
+-- | Decode an untyped, unpadded Base64url encoded 'ShortText' value.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -213,7 +192,7 @@ decodeBase64UnpaddedUntyped = fmap fromText
   . toText
 {-# INLINE decodeBase64UnpaddedUntyped #-}
 
--- | Attempt to decode an unpadded 'ShortByteString' value as Base64url, converting from
+-- | Attempt to decode an untyped, unpadded 'ShortByteString' value as Base64url, converting from
 -- 'ShortByteString' to 'ShortText' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -237,13 +216,7 @@ decodeBase64UnpaddedUntypedWith f t = case BS64U.decodeBase64UnpaddedUntyped t o
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64UnpaddedUntypedWith #-}
 
--- | Decode an padded Base64url encoded 'ShortText' value
---
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to `decodeBase64PaddedWith`
--- and pass in a custom decode function.
+-- | Decode a padded Base64url encoded 'ShortText' value
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -256,13 +229,7 @@ decodeBase64Padded :: Base64 'UrlPadded ShortText -> ShortText
 decodeBase64Padded = fromText . B64TU.decodeBase64Padded . fmap toText
 {-# INLINE decodeBase64Padded #-}
 
--- | Decode an padded Base64url encoded 'ShortText' value
---
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to `decodeBase64PaddedWith`
--- and pass in a custom decode function.
+-- | Decode an untyped, padded Base64url encoded 'ShortText' value
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -278,7 +245,7 @@ decodeBase64PaddedUntyped :: ShortText -> Either Text ShortText
 decodeBase64PaddedUntyped = fmap fromText . B64TU.decodeBase64PaddedUntyped . toText
 {-# INLINE decodeBase64PaddedUntyped #-}
 
--- | Attempt to decode a padded 'ShortByteString' value as Base64url, converting from
+-- | Attempt to decode an untyped, padded 'ShortByteString' value as Base64url, converting from
 -- 'ByteString' to 'ShortText' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -302,7 +269,7 @@ decodeBase64PaddedUntypedWith f t = case BS64U.decodeBase64PaddedUntyped t of
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64PaddedUntypedWith #-}
 
--- | Leniently decode an unpadded Base64url-encoded 'ShortText'. This function
+-- | Leniently decode an untyped, unpadded Base64url-encoded 'ShortText'. This function
 -- will not generate parse errors. If input data contains padding chars,
 -- then the input will be parsed up until the first pad character.
 --
@@ -320,7 +287,7 @@ decodeBase64Lenient :: ShortText -> ShortText
 decodeBase64Lenient = fromText . B64TU.decodeBase64Lenient . toText
 {-# INLINE decodeBase64Lenient #-}
 
--- | Tell whether a 'ShortText' value is Base64url-encoded.
+-- | Tell whether an untyped 'ShortText' value is Base64url-encoded.
 --
 -- === __Examples__:
 --
@@ -337,7 +304,7 @@ isBase64Url :: ShortText -> Bool
 isBase64Url = B64U.isBase64Url . toByteString
 {-# INLINE isBase64Url #-}
 
--- | Tell whether a 'ShortText' value is a valid Base64url format.
+-- | Tell whether an untyped 'ShortText' value is a valid Base64url format.
 --
 -- This will not tell you whether or not this is a correct Base64url representation,
 -- only that it conforms to the correct shape. To check whether it is a true

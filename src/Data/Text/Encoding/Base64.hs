@@ -2,7 +2,7 @@
 {-# LANGUAGE Safe #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64
--- Copyright    : (c) 2019-2022 Emily Pillmore
+-- Copyright    : (c) 2019-2023 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -60,12 +60,6 @@ encodeBase64 = B64.encodeBase64 . T.encodeUtf8
 
 -- | Decode a padded Base64-encoded 'Text' value.
 --
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
--- and pass in a custom decode function.
---
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 -- === __Examples__:
@@ -77,13 +71,7 @@ decodeBase64 :: StdAlphabet k => Base64 k Text -> Text
 decodeBase64 = T.decodeUtf8 . B64.decodeBase64 . fmap T.encodeUtf8
 {-# INLINE decodeBase64 #-}
 
--- | Decode a padded Base64-encoded 'Text' value.
---
--- /Note:/ This function makes sure that decoding is total by deferring to
--- 'T.decodeUtf8'. This will always round trip for any valid Base64-encoded
--- text value, but it may not round trip for bad inputs. The onus is on the
--- caller to make sure inputs are valid. If unsure, defer to `decodeBase64With`
--- and pass in a custom decode function.
+-- | Decode a padded, untyped Base64-encoded 'Text' value.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -98,7 +86,7 @@ decodeBase64Untyped = fmap T.decodeUtf8
   . T.encodeUtf8
 {-# INLINE decodeBase64Untyped #-}
 
--- | Attempt to decode a 'Text' value as Base64, converting from
+-- | Attempt to decode an untyped 'Text' value as Base64, converting from
 -- 'ByteString' to 'Text' according to some encoding function. In practice,
 -- This is something like 'decodeUtf8'', which may produce an error.
 --
@@ -122,7 +110,7 @@ decodeBase64UntypedWith f t = case B64.decodeBase64Untyped t of
   Right a -> first ConversionError (f a)
 {-# INLINE decodeBase64UntypedWith #-}
 
--- | Leniently decode a Base64-encoded 'Text' value. This function
+-- | Leniently decode an untyped Base64-encoded 'Text' value. This function
 -- will not generate parse errors. If input data contains padding chars,
 -- then the input will be parsed up until the first pad character.
 --
@@ -145,7 +133,7 @@ decodeBase64Lenient = T.decodeUtf8
     . T.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
 
--- | Tell whether a 'Text' value is Base64-encoded.
+-- | Tell whether an untyped 'Text' value is Base64-encoded.
 --
 -- === __Examples__:
 --
@@ -162,7 +150,7 @@ isBase64 :: Text -> Bool
 isBase64 = B64.isBase64 . T.encodeUtf8
 {-# INLINE isBase64 #-}
 
--- | Tell whether a 'Text' value is a valid Base64 format.
+-- | Tell whether an untyped 'Text' value is a valid Base64 format.
 --
 -- This will not tell you whether or not this is a correct Base64 representation,
 -- only that it conforms to the correct shape. To check whether it is a true
