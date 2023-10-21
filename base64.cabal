@@ -53,10 +53,10 @@ library
     Data.ByteString.Base64.Internal.W64.Loop
 
   build-depends:
-      base           >=4.14     && <4.19
-    , bytestring     ^>=0.11
-    , deepseq        >=1.4.4.0  && <1.5
-    , text           ^>=2.0
+      base           >=4.14     && <4.20
+    , bytestring     >=0.11
+    , deepseq        >=1.4.4.0  && <1.6
+    , text           >=2.0
     , text-short     ^>=0.1
 
   hs-source-dirs:   src
@@ -70,10 +70,10 @@ test-suite base64-tests
   other-modules:    Internal
   main-is:          Main.hs
   build-depends:
-      base               >=4.14 && <4.19
+      base               >=4.14 && <4.20
     , base64
     , base64-bytestring
-    , bytestring         ^>=0.11
+    , bytestring         >=0.11
     , QuickCheck
     , random-bytestring
     , tasty
@@ -90,10 +90,10 @@ benchmark bench
   hs-source-dirs:   benchmarks
   main-is:          Base64Bench.hs
   build-depends:
-      base               >=4.14 && <4.19
+      base               >=4.14 && <4.20
     , base64
     , base64-bytestring
-    , bytestring         >=0.11
+    , bytestring         >=0.12
     , criterion
     , deepseq
     , random-bytestring
