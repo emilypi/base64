@@ -53,9 +53,9 @@ library
     Data.ByteString.Base64.Internal.W64.Loop
 
   build-depends:
-      base           >=4.14     && <4.19
+      base           >=4.14   && <4.19
     , bytestring     ^>=0.11
-    , deepseq        >=1.4.8.0  && <1.5
+    , deepseq        >=1.4.4  && <1.5
     , text           ^>=2.0
     , text-short     ^>=0.1
 

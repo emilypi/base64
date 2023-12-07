@@ -387,29 +387,29 @@ offsetVectors :: (IsString a, Eq a, Show a) => Harness a -> TestTree
 offsetVectors Harness{..} = testGroup "Offset tests"
   [ testGroup "Invalid padding"
     [ testCase "Invalid staggered padding" $ do
-      decodeUrl "=A==" @=? Left "invalid padding at offset: 0"
-      decodeUrl "P===" @=? Left "invalid padding at offset: 1"
+      decodeUrl "=A==" @=? Left "invalid padding near offset: 0"
+      decodeUrl "P===" @=? Left "invalid padding near offset: 1"
     , testCase "Invalid character coverage - final chunk" $ do
-      decodeUrl "%D==" @=? Left "invalid character at offset: 0"
-      decodeUrl "P%==" @=? Left "invalid character at offset: 1"
-      decodeUrl "PD%=" @=? Left "invalid character at offset: 2"
-      decodeUrl "PA=%" @=? Left "invalid character at offset: 3"
-      decodeUrl "PDw%" @=? Left "invalid character at offset: 3"
+      decodeUrl "%D==" @=? Left "invalid base64 encoding near offset: 0"
+      decodeUrl "P%==" @=? Left "invalid base64 encoding near offset: 1"
+      decodeUrl "PD%=" @=? Left "invalid base64 encoding near offset: 2"
+      decodeUrl "PA=%" @=? Left "invalid base64 encoding near offset: 3"
+      decodeUrl "PDw%" @=? Left "invalid base64 encoding near offset: 3"
     , testCase "Invalid character coverage - decode chunk" $ do
-      decodeUrl "%Dw_PDw_" @=? Left "invalid character at offset: 0"
-      decodeUrl "P%w_PDw_" @=? Left "invalid character at offset: 1"
-      decodeUrl "PD%_PDw_" @=? Left "invalid character at offset: 2"
-      decodeUrl "PDw%PDw_" @=? Left "invalid character at offset: 3"
+      decodeUrl "%Dw_PDw_" @=? Left "invalid base64 encoding near offset: 0"
+      decodeUrl "P%w_PDw_" @=? Left "invalid base64 encoding near offset: 1"
+      decodeUrl "PD%_PDw_" @=? Left "invalid base64 encoding near offset: 2"
+      decodeUrl "PDw%PDw_" @=? Left "invalid base64 encoding near offset: 3"
     , testCase "Invalid padding in body" $ do
-      decodeUrl "PD=_PDw_" @=? Left "invalid padding at offset: 2"
-      decodeUrl "PDw=PDw_" @=? Left "invalid padding at offset: 3"
+      decodeUrl "PD=_PDw_" @=? Left "invalid padding near offset: 2"
+      decodeUrl "PDw=PDw_" @=? Left "invalid padding near offset: 3"
     , testCase "Padding fails everywhere but end" $ do
-      decode "=eAoeAo=" @=? Left "invalid padding at offset: 0"
-      decode "e=AoeAo=" @=? Left "invalid padding at offset: 1"
-      decode "eA=oeAo=" @=? Left "invalid padding at offset: 2"
-      decode "eAo=eAo=" @=? Left "invalid padding at offset: 3"
-      decode "eAoe=Ao=" @=? Left "invalid padding at offset: 4"
-      decode "eAoeA=o=" @=? Left "invalid padding at offset: 5"
+      decode "=eAoeAo=" @=? Left "invalid padding near offset: 0"
+      decode "e=AoeAo=" @=? Left "invalid padding near offset: 1"
+      decode "eA=oeAo=" @=? Left "invalid padding near offset: 2"
+      decode "eAo=eAo=" @=? Left "invalid padding near offset: 3"
+      decode "eAoe=Ao=" @=? Left "invalid padding near offset: 4"
+      decode "eAoeA=o=" @=? Left "invalid padding near offset: 5"
     ]
   ]
 
