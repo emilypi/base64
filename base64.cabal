@@ -93,7 +93,7 @@ benchmark bench
       base               >=4.14 && <4.20
     , base64
     , base64-bytestring
-    , bytestring         >=0.12
+    , bytestring         >=0.11
     , criterion
     , deepseq
     , random-bytestring
