@@ -12,14 +12,14 @@ license-file:    LICENSE
 author:          Emily Pillmore
 maintainer:      Emily Pillmore <emilypi@cohomolo.gy>
                , Sofia-m-a <https://github.com/sofia-m-a>
-copyright:       (c) 2019-2022 Emily Pillmore
+copyright:       (c) 2019-2023 Emily Pillmore
 category:        Data
 build-type:      Simple
 extra-doc-files:
   CHANGELOG.md
   README.md
 
-tested-with:     GHC ==8.10.7 || ==9.0.2 || ==9.2.5 || ==9.4.5 || ==9.6.1
+tested-with:     GHC ==8.10.7 || ==9.0.2 || ==9.2.5 || ==9.4.7 || ==9.6.3 || ==9.8.1
 
 source-repository head
   type:     git
@@ -53,27 +53,27 @@ library
     Data.ByteString.Base64.Internal.W64.Loop
 
   build-depends:
-      base           >=4.14   && <4.19
-    , bytestring     ^>=0.11
-    , deepseq        >=1.4.4  && <1.5
-    , text           ^>=2.0
+      base           >=4.14     && <4.20
+    , bytestring     >=0.11     && <0.13
+    , deepseq        >=1.4.4.0  && <1.6
+    , text           >=2.0      && <2.3
     , text-short     ^>=0.1
 
   hs-source-dirs:   src
   default-language: Haskell2010
   ghc-options:      -Wall
 
-test-suite tasty
+test-suite base64-tests
   default-language: Haskell2010
   type:             exitcode-stdio-1.0
   hs-source-dirs:   test
   other-modules:    Internal
   main-is:          Main.hs
   build-depends:
-      base               >=4.14 && <4.19
+      base               >=4.14 && <4.20
     , base64
     , base64-bytestring
-    , bytestring         ^>=0.11
+    , bytestring         >=0.11
     , QuickCheck
     , random-bytestring
     , tasty
@@ -90,10 +90,10 @@ benchmark bench
   hs-source-dirs:   benchmarks
   main-is:          Base64Bench.hs
   build-depends:
-      base               >=4.14 && <4.19
+      base               >=4.14 && <4.20
     , base64
     , base64-bytestring
-    , bytestring         >=0.11
+    , bytestring         >=0.12
     , criterion
     , deepseq
     , random-bytestring

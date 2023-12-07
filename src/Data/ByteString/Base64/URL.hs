@@ -1,11 +1,10 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module       : Data.ByteString.Base64.URL
--- Copyright    : (c) 2019-2022 Emily Pillmore
+-- Copyright    : (c) 2019-2023 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -13,7 +12,7 @@
 -- Portability  : non-portable
 --
 -- This module contains 'Data.ByteString.ByteString'-valued combinators for
--- implementing the RFC 4648 specification of the Base64url
+-- implementing the RFC 4648 specification of the url-safe Base64 (Base64url)
 -- encoding format. This includes strictly padded/unpadded and lenient decoding
 -- variants, as well as internal and external validation for canonicity.
 --
@@ -85,11 +84,12 @@ encodeBase64 = fmap T.decodeUtf8 . encodeBase64'
 encodeBase64' :: ByteString -> Base64 'UrlPadded ByteString
 encodeBase64' = assertBase64 . encodeBase64_ base64UrlTable
 
--- | Decode a Base64url encoded 'ByteString' value. If its length is not a multiple
--- of 4, then padding chars will be added to fill out the input to a multiple of
--- 4 for safe decoding as Base64url-encoded values are optionally padded.
+-- | Decode a Base64url encoded 'ByteString' value, either padded or unpadded.
+-- The correct decoding function is dispatched based on the existence of padding.
 --
--- For a decoder that fails on unpadded input of incorrect size, use 'decodeBase64Unpadded'.
+-- For typed values:
+--   - If a padded value is required, use 'decodeBase64Padded'
+--   - If an unpadded value is required, use 'decodeBase64Unpadded'
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -110,11 +110,13 @@ decodeBase64 b64@(Base64 bs)
   | otherwise = decodeBase64Unpadded $ coerceBase64 b64
 {-# inline decodeBase64 #-}
 
--- | Decode a Base64url encoded 'ByteString' value. If its length is not a multiple
+-- | Decode an untyped Base64url encoded 'ByteString' value. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
 -- 4 for safe decoding as Base64url-encoded values are optionally padded.
 --
--- For a decoder that fails on unpadded input of incorrect size, use 'decodeBase64Unpadded'.
+-- For a decoder that fails to decode untyped values of incorrect size:
+--   - If a padded value is required, use 'decodeBase64PaddedUntyped'
+--   - If an unpadded value is required, use 'decodeBase64UnpaddedUntyped'
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -176,9 +178,6 @@ encodeBase64Unpadded' = assertBase64 . encodeBase64Nopad_ base64UrlTable
 -- required to be unpadded, and will undergo validation prior to decoding to
 -- confirm.
 --
--- In general, unless unpadded Base64url is explicitly required, it is
--- safer to call 'decodeBase64'.
---
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 -- === __Examples__:
@@ -194,12 +193,12 @@ decodeBase64Unpadded b64@(Base64 (PS _ _ !l))
   where
     !r = l `rem` 4
 
--- | Decode a padded Base64url-encoded 'ByteString' value. Input strings are
+-- | Decode a padded, untyped Base64url-encoded 'ByteString' value. Input strings are
 -- required to be correctly padded, and will be validated prior to decoding
 -- to confirm.
 --
 -- In general, unless padded Base64url is explicitly required, it is
--- safer to call 'decodeBase64'.
+-- safer to call 'decodeBase64Untyped'.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -222,9 +221,6 @@ decodeBase64PaddedUntyped bs@(PS _ _ !l)
 -- required to be correctly padded, and will be validated prior to decoding
 -- to confirm.
 --
--- In general, unless padded Base64url is explicitly required, it is
--- safer to call 'decodeBase64'.
---
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
 -- === __Examples__:
@@ -236,12 +232,12 @@ decodeBase64Padded :: Base64 'UrlPadded ByteString -> ByteString
 decodeBase64Padded = decodeBase64Typed_ decodeB64UrlTable
 {-# INLINE decodeBase64Padded #-}
 
--- | Decode an unpadded Base64url-encoded 'ByteString' value. Input strings are
+-- | Decode an unpadded, untyped Base64url-encoded 'ByteString' value. Input strings are
 -- required to be unpadded, and will undergo validation prior to decoding to
 -- confirm.
 --
 -- In general, unless unpadded Base64url is explicitly required, it is
--- safer to call 'decodeBase64'.
+-- safer to call 'decodeBase64Untyped'.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -264,7 +260,7 @@ decodeBase64UnpaddedUntyped bs@(PS _ _ !l)
     !r = l `rem` 4
 {-# INLINE decodeBase64UnpaddedUntyped #-}
 
--- | Leniently decode an unpadded Base64url-encoded 'ByteString'. This function
+-- | Leniently decode an unpadded, untyped Base64url-encoded 'ByteString'. This function
 -- will not generate parse errors. If input data contains padding chars,
 -- then the input will be parsed up until the first pad character.
 --
