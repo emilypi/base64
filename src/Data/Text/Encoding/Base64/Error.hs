@@ -1,8 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE Safe #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.Error
--- Copyright    : (c) 2019-2022 Emily Pillmore
+-- Copyright    : (c) 2019-2023 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>

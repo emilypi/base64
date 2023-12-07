@@ -1,10 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE Trustworthy #-}
 -- |
 -- Module       : Data.ByteString.Lazy.Base64.URL
--- Copyright    : (c) 2019-2022 Emily Pillmore
+-- Copyright    : (c) 2019-2023 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
@@ -57,7 +56,6 @@ import qualified Data.Text.Lazy.Encoding as TL
 -- >>> :set -XDataKinds
 --
 
-
 -- | Encode a 'ByteString' value as a Base64url 'Text' value with padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-5 RFC-4648 section 5>
@@ -86,11 +84,12 @@ encodeBase64' = assertBase64 . fromChunks
   . reChunkN 3
   . toChunks
 
--- | Decode a padded Base64url encoded 'ByteString' value. If its length is not a multiple
--- of 4, then padding chars will be added to fill out the input to a multiple of
--- 4 for safe decoding as Base64url-encoded values are optionally padded.
+-- | Decode a Base64url encoded 'ByteString' value, either padded or unpadded.
+-- The correct decoding function is dispatched based on the existence of padding.
 --
--- For a decoder that fails on unpadded input of incorrect size, use 'decodeBase64Unpadded'.
+-- For typed values:
+--   - If a padded value is required, use 'decodeBase64Padded'
+--   - If an unpadded value is required, use 'decodeBase64Unpadded'
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -119,7 +118,9 @@ decodeBase64 = fromChunks
 -- of 4, then padding chars will be added to fill out the input to a multiple of
 -- 4 for safe decoding as Base64url-encoded values are optionally padded.
 --
--- For a decoder that fails on unpadded input of incorrect size, use 'decodeBase64Unpadded'.
+-- For a decoder that fails to decode untyped values of incorrect size:
+--   - If a padded value is required, use 'decodeBase64PaddedUntyped'
+--   - If an unpadded value is required, use 'decodeBase64UnpaddedUntyped'
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -144,9 +145,7 @@ decodeBase64Untyped = fmap (fromChunks . pure)
   . toChunks
 {-# INLINE decodeBase64Untyped #-}
 
--- | Encode a 'ByteString' value as Base64url 'Text' without padding. Note that for Base64url,
--- padding is optional. If you call this function, you will simply be encoding
--- as Base64url and stripping padding chars from the output.
+-- | Encode a 'ByteString' value as Base64url 'Text' without padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
@@ -159,9 +158,7 @@ encodeBase64Unpadded :: ByteString -> Base64 'UrlUnpadded TL.Text
 encodeBase64Unpadded = fmap TL.decodeUtf8 . encodeBase64Unpadded'
 {-# INLINE encodeBase64Unpadded #-}
 
--- | Encode a 'ByteString' value as Base64url without padding. Note that for Base64url,
--- padding is optional. If you call this function, you will simply be encoding
--- as Base64url and stripping padding chars from the output.
+-- | Encode a 'ByteString' value as Base64url without padding.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-3.2 RFC-4648 section 3.2>
 --
@@ -177,12 +174,7 @@ encodeBase64Unpadded' = assertBase64
   . reChunkN 3
   . toChunks
 
--- | Decode an unpadded Base64url-encoded 'ByteString' value. Input strings are
--- required to be unpadded, and will undergo validation prior to decoding to
--- confirm.
---
--- In general, unless unpadded Base64url is explicitly required, it is
--- safer to call 'decodeBase64'.
+-- | Decode an unpadded Base64url-encoded 'ByteString' value.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -197,12 +189,12 @@ decodeBase64Unpadded = fromChunks
   . B64U.decodeBase64Unpadded
   . fmap (BS.concat . toChunks)
 
--- | Decode an unpadded Base64url-encoded 'ByteString' value. Input strings are
+-- | Decode an unpadded, untyped Base64url-encoded 'ByteString' value. Input strings are
 -- required to be unpadded, and will undergo validation prior to decoding to
 -- confirm.
 --
 -- In general, unless unpadded Base64url is explicitly required, it is
--- safer to call 'decodeBase64'.
+-- safer to call 'decodeBase64Untyped'.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -221,12 +213,7 @@ decodeBase64UnpaddedUntyped = fmap (fromChunks . (:[]))
   . toChunks
 {-# INLINE decodeBase64UnpaddedUntyped #-}
 
--- | Decode a padded Base64url-encoded 'ByteString' value. Input strings are
--- required to be padded, and will undergo validation prior to decoding to
--- confirm.
---
--- In general, unless padded Base64url is explicitly required, it is
--- safer to call 'decodeBase64'.
+-- | Decode a padded Base64url-encoded 'ByteString' value.
 --
 -- See: <https://tools.ietf.org/html/rfc4648#section-4 RFC-4648 section 4>
 --
@@ -242,7 +229,7 @@ decodeBase64Padded = fromChunks
   . fmap (BS.concat . toChunks)
 {-# inline decodeBase64Padded #-}
 
--- | Decode a padded Base64url-encoded 'ByteString' value. Input strings are
+-- | Decode a padded, untyped Base64url-encoded 'ByteString' value. Input strings are
 -- required to be correctly padded, and will be validated prior to decoding
 -- to confirm.
 --
@@ -266,7 +253,7 @@ decodeBase64PaddedUntyped = fmap (fromChunks . (:[]))
   . toChunks
 {-# INLINE decodeBase64PaddedUntyped #-}
 
--- | Leniently decode an unpadded Base64url-encoded 'ByteString'. This function
+-- | Leniently decode an unpadded, untyped Base64url-encoded 'ByteString'. This function
 -- will not generate parse errors. If input data contains padding chars,
 -- then the input will be parsed up until the first pad character.
 --
@@ -288,7 +275,7 @@ decodeBase64Lenient = fromChunks
     . toChunks
 {-# INLINE decodeBase64Lenient #-}
 
--- | Tell whether a 'ByteString' is Base64url-encoded.
+-- | Tell whether an untyped 'ByteString' is Base64url-encoded.
 --
 -- === __Examples__:
 --
@@ -307,7 +294,7 @@ isBase64Url bs
   && isRight (decodeBase64Untyped bs)
 {-# INLINE isBase64Url #-}
 
--- | Tell whether a 'ByteString' is a valid Base64url format.
+-- | Tell whether an untyped 'ByteString' is a valid Base64url format.
 --
 -- This will not tell you whether or not this is a correct Base64url representation,
 -- only that it conforms to the correct shape. To check whether it is a true
