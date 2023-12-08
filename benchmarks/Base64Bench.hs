@@ -56,27 +56,33 @@ main =
       bgroup "decode"
       [ bgroup "25"
         [ bench "base64-bytestring" $ whnf Bos.decode (B64.extractBase64 bs25)
-        , bench "base64" $ whnf B64.decodeBase64 bs25
+        , bench "base64-typed" $ whnf B64.decodeBase64 bs25
+        , bench "base64-untyped" $ whnf B64.decodeBase64Untyped (B64.extractBase64 bs25)
         ]
       , bgroup "100"
         [ bench "base64-bytestring" $ whnf Bos.decode (B64.extractBase64 bs100)
-        , bench "base64" $ whnf B64.decodeBase64 bs100
+        , bench "base64-typed" $ whnf B64.decodeBase64 bs100
+        , bench "base64-untyped" $ whnf B64.decodeBase64Untyped (B64.extractBase64 bs100)
         ]
       , bgroup "1k"
         [ bench "base64-bytestring" $ whnf Bos.decode (B64.extractBase64 bs1k)
-        , bench "base64" $ whnf B64.decodeBase64 bs1k
+        , bench "base64-typed" $ whnf B64.decodeBase64 bs1k
+        , bench "base64-untyped" $ whnf B64.decodeBase64Untyped (B64.extractBase64 bs1k)
         ]
       , bgroup "10k"
         [ bench "base64-bytestring" $ whnf Bos.decode (B64.extractBase64 bs10k)
-        , bench "base64" $ whnf B64.decodeBase64 bs10k
+        , bench "base64-typed" $ whnf B64.decodeBase64 bs10k
+        , bench "base64-untyped" $ whnf B64.decodeBase64Untyped (B64.extractBase64 bs10k)
         ]
       , bgroup "100k"
         [ bench "base64-bytestring" $ whnf Bos.decode (B64.extractBase64 bs100k)
-        , bench "base64" $ whnf B64.decodeBase64 bs100k
+        , bench "base64-typed" $ whnf B64.decodeBase64 bs100k
+        , bench "base64-untyped" $ whnf B64.decodeBase64Untyped (B64.extractBase64 bs100k)
         ]
       , bgroup "1mm"
         [ bench "base64-bytestring" $ whnf Bos.decode (B64.extractBase64 bs1mm)
-        , bench "base64" $ whnf B64.decodeBase64 bs1mm
+        , bench "base64-typed" $ whnf B64.decodeBase64 bs1mm
+        , bench "base64-untyped" $ whnf B64.decodeBase64Untyped (B64.extractBase64 bs1mm)
         ]
       ]
     ]
