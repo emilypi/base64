@@ -45,7 +45,7 @@ innerLoop
 innerLoop !etable !sptr !dptr !end finish = go sptr dptr
   where
     go !src !dst
-      | plusPtr src 5 >= end =
+      | plusPtr src 7 >= end =
         W16.innerLoop etable (castPtr src) (castPtr dst) (castPtr end) finish
       | otherwise = do
         !t <- peekWord64BE src

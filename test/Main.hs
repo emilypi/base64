@@ -395,7 +395,7 @@ offsetVectors Harness{..} = testGroup "Offset tests"
       decodeUrl "PD%=" @=? Left "invalid base64 encoding near offset: 2"
       decodeUrl "PA=%" @=? Left "invalid base64 encoding near offset: 3"
       decodeUrl "PDw%" @=? Left "invalid base64 encoding near offset: 3"
-    , testCase "Invalid base64 encoding near coverage - decode chunk" $ do
+    , testCase "Invalid character coverage - decode chunk" $ do
       decodeUrl "%Dw_PDw_" @=? Left "invalid base64 encoding near offset: 0"
       decodeUrl "P%w_PDw_" @=? Left "invalid base64 encoding near offset: 1"
       decodeUrl "PD%_PDw_" @=? Left "invalid base64 encoding near offset: 2"
