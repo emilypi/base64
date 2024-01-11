@@ -18,6 +18,7 @@ build-type:      Simple
 extra-doc-files:
   CHANGELOG.md
   README.md
+  MIGRATION-1.0.md
 
 tested-with:     GHC ==8.10.7 || ==9.0.2 || ==9.2.5 || ==9.4.7 || ==9.6.3 || ==9.8.1
 

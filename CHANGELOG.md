@@ -1,5 +1,20 @@
 # Revision history for base64
 
+## 1.0.0.0
+
+New epoch time! lots of changes to the API. Please see MIGRATION.md for more info:
+
+* Add support for GHC 9.x
+* Bumped bounds to more modern dependency set
+* Introduced `Base64` newtype, located in `Data.Base64.Types`, as well as ADT for associated alphabets.
+* Signature for `encodeBase64` has changed so that it produces a `Base64` wrapped value.
+* `decodeBase64` and its URLsafe variants now consume a value of type `Base64` and produces a decoded value of the underlying type.
+* The *old* `decodeBase64` and its URLsafe variants is now renamed to `decodeBase64Untyped*`.
+* Fix for 32-bit systems in which memory barriers were not respected in the encoe loop (see: #56)
+* Optimize encode and decode loops to achieve *significant speedup* across the board.
+
+Thanks to everyone who contributed (especially @sofia-m-a!).
+
 ## 0.4.2.4
 
 * Support for GHC 9.2.x
