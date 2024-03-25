@@ -55,7 +55,7 @@ library
 
   build-depends:
       base           >=4.14     && <4.20
-    , bytestring     >=0.11     && <0.13
+    , bytestring     >=0.10     && <0.13
     , deepseq        >=1.4.4.0  && <1.6
     , text           >=2.0      && <2.3
     , text-short     ^>=0.1
