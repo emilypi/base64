@@ -22,7 +22,14 @@ module Data.Base64.Types.Internal
 
 import Control.DeepSeq (NFData, rnf)
 
--- | The different kinds of supported Base64 encodings
+-- | The different kinds of supported Base64 encodings. This library supports the encodings defined in 
+-- [RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648) and [RFC 7049](https://datatracker.ietf.org/doc/html/rfc7049).
+--
+-- [RFC 2045](https://www.ietf.org/rfc/rfc2045.txt) defines a separate Base64 encoding for MIME, which is not supported.
+-- This format requires a newline at least every 76 encoded characters, which works around
+-- limitations of older email programs that could not handle long lines.
+-- Be aware that other languages, such as Ruby, encode the RFC 2045 version
+-- by default. To decode their ouput, remove all newlines before decoding.
 data Alphabet
   = StdPadded
     -- ^ Standard base64 according to [RFC 4648 §4](https://datatracker.ietf.org/doc/html/rfc4648#section-4)
