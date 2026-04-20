@@ -16,12 +16,12 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest]
-        ghc: ['8.10', '9.0', '9.2', '9.4', '9.6', '9.8', '9.10']
+        ghc: ['9.6', '9.8', '9.10', '9.12', '9.14']
         include:
         - os: macOS-latest
           ghc: 'latest'
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install libncurses5 and libtinfo
       if: runner.os == 'Linux' && (matrix.ghc == '8.0' || matrix.ghc == '8.2')
       run: |
@@ -32,7 +32,7 @@ jobs:
         ghc-version: ${{ matrix.ghc }}
     - name: Update cabal package database
       run: cabal update
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       name: Cache cabal stuff
       with:
         path: |
@@ -70,7 +70,7 @@ jobs:
         ghc-version: 'latest'
     - name: Update cabal package database
       run: cabal update
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       name: Cache cabal stuff
       with:
         path: |
@@ -80,20 +80,3 @@ jobs:
     - name: Test
       run: cabal test --ghc-options='-fcheck-prim-bounds -fno-ignore-asserts'
 
-  i386:
-    needs: build
-    runs-on: ubuntu-latest
-    container:
-      image: i386/ubuntu:bionic
-    steps:
-    - name: Install
-      run: |
-        apt-get update -y
-        apt-get install -y autoconf build-essential zlib1g-dev libgmp-dev curl libncurses5 libtinfo5 libncurses5-dev libtinfo-dev
-        curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_INSTALL_NO_STACK=1 sh
-    - uses: actions/checkout@v1
-    - name: Test
-      run: |
-        source ~/.ghcup/env
-        cabal update
-        cabal test
