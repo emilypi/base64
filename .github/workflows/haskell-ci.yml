@@ -21,7 +21,7 @@ jobs:
         - os: macOS-latest
           ghc: 'latest'
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install libncurses5 and libtinfo
       if: runner.os == 'Linux' && (matrix.ghc == '8.0' || matrix.ghc == '8.2')
       run: |
@@ -32,7 +32,7 @@ jobs:
         ghc-version: ${{ matrix.ghc }}
     - name: Update cabal package database
       run: cabal update
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       name: Cache cabal stuff
       with:
         path: |
@@ -70,7 +70,7 @@ jobs:
         ghc-version: 'latest'
     - name: Update cabal package database
       run: cabal update
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       name: Cache cabal stuff
       with:
         path: |
