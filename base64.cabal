@@ -26,6 +26,11 @@ source-repository head
   type:     git
   location: https://github.com/emilypi/base64.git
 
+flag simd
+  description: use libbase64 simd library
+  default: True
+  manual: True
+
 library
   exposed-modules:
     Data.Base64.Types
@@ -62,7 +67,13 @@ library
 
   hs-source-dirs:   src
   default-language: Haskell2010
-  ghc-options:      -Wall
+  ghc-options:      -Wall -O2
+
+  if flag(simd)
+    build-depends:
+      libbase64-bindings
+    cpp-options:
+      -DSIMD
 
 test-suite base64-tests
   default-language: Haskell2010
@@ -100,4 +111,4 @@ benchmark bench
     , random-bytestring
     , text               >=2.0
 
-  ghc-options:      -Wall -rtsopts
+  ghc-options:      -Wall -O2 -rtsopts
