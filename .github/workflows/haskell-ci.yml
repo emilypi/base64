@@ -4,6 +4,7 @@ on:
     branches:
       - master
       - emily/ghc-9.14.x
+      - emily/simd
   pull_request: {} # Validate all PRs
   workflow_dispatch: {}
 
@@ -22,9 +23,14 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         ghc: ['9.6.7', '9.8.4', '9.10.3', '9.12.4', '9.14.1']
+        simd: ['-simd', 'simd']
         include:
         - os: macOS-latest
           ghc: '9.14.1'
+          simd: '-simd'
+        - os: macOS-latest
+          ghc: '9.14.1'
+          simd: 'simd'
     steps:
     - uses: actions/checkout@v7
     - uses: haskell-actions/setup@v2.12.1
@@ -39,22 +45,39 @@ jobs:
       with:
         path: |
           ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-        key: ${{ runner.os }}-${{ runner.arch }}-ghc-${{ steps.setup-haskell-cabal.outputs.ghc-version }}-cabal-${{ steps.setup-haskell-cabal.outputs.cabal-version }}-${{ hashFiles('**/*.cabal', 'cabal.project') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.simd }}-ghc-${{ steps.setup-haskell-cabal.outputs.ghc-version }}-cabal-${{ steps.setup-haskell-cabal.outputs.cabal-version }}-${{ hashFiles('**/*.cabal', 'cabal.project') }}
     - name: Test
       run: |
         cabal sdist -z -o .
         cabal get base64-*.tar.gz
         cd base64-*/
-        cabal build base64:tests --enable-tests --enable-benchmarks
-        cabal test --enable-tests --enable-benchmarks --test-show-details=direct all
+        cabal build base64:tests --enable-tests --enable-benchmarks --flags=${{ matrix.simd }}
+        cabal test --enable-tests --enable-benchmarks --flags=${{ matrix.simd }} --test-show-details=direct all
     - name: Bench
       run: |
         cd base64-*/
-        cabal bench --enable-tests --enable-benchmarks --benchmark-option=-l all
+        cabal bench --enable-tests --enable-benchmarks --flags=${{ matrix.simd }} --benchmark-options='--iters 1' all
     - name: Haddock
       run: |
         cd base64-*/
-        cabal haddock all
+        cabal haddock --flags=${{ matrix.simd }} all
+    - name: Native SIMD memory checks
+      if: matrix.simd == 'simd' && matrix.ghc == '9.14.1'
+      env:
+        UBSAN_OPTIONS: halt_on_error=1
+      run: |
+        cd base64-*/
+        cc -std=c99 -O2 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Icbits cbits/base64_simd.c test/simd-native.c -o "$RUNNER_TEMP/base64-simd-check"
+        "$RUNNER_TEMP/base64-simd-check"
+        if [[ "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]; then
+          "$RUNNER_TEMP/base64-simd-check" --require-backend 3
+          cc -std=c99 -O2 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -DHS_BASE64_SIMD_FORCE_SSSE3 -Icbits cbits/base64_simd.c test/simd-native.c -o "$RUNNER_TEMP/base64-ssse3-check"
+          "$RUNNER_TEMP/base64-ssse3-check" --require-backend 1
+        fi
+        cc -std=c99 -O2 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -DHS_BASE64_SIMD_FORCE_SCALAR -Icbits cbits/base64_simd.c test/simd-native.c -o "$RUNNER_TEMP/base64-scalar-check"
+        "$RUNNER_TEMP/base64-scalar-check" --require-backend 0
+        cc -std=c99 -O2 -Wall -Wextra -Werror -Icbits cbits/base64_simd.c benchmarks/simd-native.c -o "$RUNNER_TEMP/base64-native-bench"
+        "$RUNNER_TEMP/base64-native-bench" --seconds 0.001 --rounds 1 --pattern random
     - name: Cabal check
       run: |
         cd base64-*/
@@ -63,6 +86,9 @@ jobs:
   bounds-checking:
     needs: build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        simd: ['-simd', 'simd']
     steps:
     - uses: actions/checkout@v7
     - uses: haskell-actions/setup@v2.12.1
@@ -77,7 +103,7 @@ jobs:
       with:
         path: |
           ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-        key: ${{ runner.os }}-${{ runner.arch }}-bounds-ghc-${{ steps.setup-haskell-cabal.outputs.ghc-version }}-cabal-${{ steps.setup-haskell-cabal.outputs.cabal-version }}-${{ hashFiles('**/*.cabal', 'cabal.project') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.simd }}-bounds-ghc-${{ steps.setup-haskell-cabal.outputs.ghc-version }}-cabal-${{ steps.setup-haskell-cabal.outputs.cabal-version }}-${{ hashFiles('**/*.cabal', 'cabal.project') }}
     - name: Test
-      run: cabal test --ghc-options='-fcheck-prim-bounds -fno-ignore-asserts'
+      run: cabal test --flags=${{ matrix.simd }} --ghc-options='-fcheck-prim-bounds -fno-ignore-asserts'
 
