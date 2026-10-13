@@ -74,9 +74,8 @@ data Harness bs = Harness
   , decodeUrlTypedNopad :: Base64 'UrlUnpadded bs -> bs
   , lenientUrl :: bs -> bs
   , lenient :: bs -> bs
-  , correct :: bs -> Bool
+  , parse :: bs -> Either Text (Base64 'StdPadded bs)
   , correctUrl :: bs -> Bool
-  , validate :: bs -> Bool
   , validateUrl :: bs -> Bool
   }
 
@@ -88,8 +87,7 @@ b64 = Harness
   , decode = B64.decodeBase64Untyped
   , decodeTyped = B64.decodeBase64
   , lenient = B64.decodeBase64Lenient
-  , correct = B64.isBase64
-  , validate = B64.isValidBase64
+  , parse = B64.parseBase64
   , encodeUrl = B64U.encodeBase64'
   , encodeUrlNopad = B64U.encodeBase64Unpadded'
   , decodeUrl = B64U.decodeBase64Untyped
@@ -110,8 +108,7 @@ lb64 = Harness
   , decode = LB64.decodeBase64Untyped
   , decodeTyped = LB64.decodeBase64
   , lenient = LB64.decodeBase64Lenient
-  , correct = LB64.isBase64
-  , validate = LB64.isValidBase64
+  , parse = LB64.parseBase64
   , encodeUrl = LB64U.encodeBase64'
   , encodeUrlNopad = LB64U.encodeBase64Unpadded'
   , decodeUrl = LB64U.decodeBase64Untyped
@@ -132,8 +129,7 @@ sb64 = Harness
   , decode = SB64.decodeBase64Untyped
   , decodeTyped = SB64.decodeBase64
   , lenient = SB64.decodeBase64Lenient
-  , correct = SB64.isBase64
-  , validate = SB64.isValidBase64
+  , parse = SB64.parseBase64
   , encodeUrl = SB64U.encodeBase64'
   , encodeUrlNopad = SB64U.encodeBase64Unpadded'
   , decodeUrl = SB64U.decodeBase64Untyped
@@ -154,8 +150,7 @@ t64 = Harness
   , decode = T64.decodeBase64Untyped
   , decodeTyped = T64.decodeBase64
   , lenient = T64.decodeBase64Lenient
-  , correct = T64.isBase64
-  , validate = T64.isValidBase64
+  , parse = T64.parseBase64
   , encodeUrl = T64U.encodeBase64
   , encodeUrlNopad = T64U.encodeBase64Unpadded
   , decodeUrl = T64U.decodeBase64Untyped
@@ -176,8 +171,7 @@ tl64 = Harness
   , decode = TL64.decodeBase64Untyped
   , decodeTyped = TL64.decodeBase64
   , lenient = TL64.decodeBase64Lenient
-  , correct = TL64.isBase64
-  , validate = TL64.isValidBase64
+  , parse = TL64.parseBase64
   , encodeUrl = TL64U.encodeBase64
   , encodeUrlNopad = TL64U.encodeBase64Unpadded
   , decodeUrl = TL64U.decodeBase64Untyped
@@ -198,8 +192,7 @@ ts64 = Harness
   , decode = TS64.decodeBase64Untyped
   , decodeTyped = TS64.decodeBase64
   , lenient = TS64.decodeBase64Lenient
-  , correct = TS64.isBase64
-  , validate = TS64.isValidBase64
+  , parse = TS64.parseBase64
   , encodeUrl = TS64U.encodeBase64
   , encodeUrlNopad = TS64U.encodeBase64Unpadded
   , decodeUrl = TS64U.decodeBase64Untyped
