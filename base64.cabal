@@ -1,6 +1,6 @@
 cabal-version:   2.0
 name:            base64
-version:         1.0
+version:         1.0.1
 synopsis:        A modern Base64 library
 description:
   A performant, featureful RFC 4648 and 7049-compliant Base64 implementation
@@ -11,7 +11,6 @@ license:         BSD3
 license-file:    LICENSE
 author:          Emily Pillmore
 maintainer:      Emily Pillmore <emilypi@cohomolo.gy>
-               , Sofia-m-a <https://github.com/sofia-m-a>
 copyright:       (c) 2019-2026 Emily Pillmore
 category:        Data
 build-type:      Simple
@@ -20,7 +19,7 @@ extra-doc-files:
   README.md
   MIGRATION-1.0.md
 
-tested-with:     GHC ==9.6.7 || ==9.8.4 || ==9.10.3 || ==9.14.1
+tested-with:     GHC ==9.6.7 || ==9.8.4 || ==9.10.3 || ==9.12.4 || ==9.14.1
 
 source-repository head
   type:     git

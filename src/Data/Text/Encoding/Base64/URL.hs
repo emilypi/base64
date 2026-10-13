@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 -- |
 -- Module       : Data.Text.Encoding.Base64.URL
--- Copyright    : (c) 2019-2023 Emily Pillmore
+-- Copyright    : (c) 2019-2026 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
