@@ -3,11 +3,10 @@
 {-# language TypeFamilies #-}
 -- |
 -- Module       : Data.ByteString.Base64.Types.Internal
--- Copyright    : (c) 2019-2023 Emily Pillmore
+-- Copyright    : (c) 2019-2026 Emily Pillmore
 -- License      : BSD-style
 --
--- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>,
---                sofia-m-a <https://github.com/sofia-m-a>
+-- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>
 -- Stability    : stable
 -- Portability  : non-portable
 --
