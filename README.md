@@ -28,6 +28,10 @@ Additionally this library has
 The library supports GHC 9.6 through 9.14. Its dependencies are `base`,
 `bytestring`, `deepseq`, `text`, and `text-short`.
 
+Upgrading to 2.0? See the [migration guide](MIGRATION-2.0.md) for the replacement
+of `isBase64` and `isValidBase64`, and the [release notes](CHANGELOG.md#20) for
+the optional SIMD implementation.
+
 ### Parsing existing Base64
 
 Use `parseBase64` to validate externally supplied standard Base64 and retain the

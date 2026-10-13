@@ -2,13 +2,23 @@
 
 ## 2.0
 
-* Replace `isBase64` and `isValidBase64` with `parseBase64` in all six standard-alphabet modules. The parser returns `Either Text (Base64 'StdPadded a)`, preserving the original encoded input after checking its alphabet, length, padding, and canonicity.
-* For a Boolean check, migrate to `isRight . parseBase64`. This is stricter than the old shape-only `isValidBase64` check. URL-specific validators are unchanged.
-* Due to the fact there were *zero* downstream occurrences of `isBase64` and `isValidBase64`, I'm not formally deprecating the functions and just replacing altogether.
+This release removes two public functions. See [MIGRATION-2.0.md](MIGRATION-2.0.md)
+for replacement examples and the stricter validation behavior.
+
+* Replace `isBase64` and `isValidBase64` with `parseBase64` in all six
+  standard-alphabet modules. The parser returns
+  `Either Text (Base64 'StdPadded a)`, preserving the original encoded input
+  after checking its alphabet, length, padding, and canonicity.
+* For a Boolean check, migrate to `isRight . parseBase64`. This is stricter
+  than the old shape-only `isValidBase64` check. URL-specific validators
+  are unchanged.
+* Remove the predicates without a deprecation period. A source scan of 45
+  published direct dependents found no occurrences of either function;
+  private projects and other historical versions were not covered.
 * Add an optional, manual `simd` flag (off by default) for bundled ARM64 NEON
   and runtime-detected x86-64 AVX2/SSSE3 encoding and strict decoding.
-* Retain scalar fallbacks, public API behavior, padding/canonicity checks,
-  and decoding error offsets.
+* The SIMD path retains scalar fallbacks, encoding and decoding behavior,
+  padding/canonicity checks, and decoding error offsets.
 * Add flag-on/off test and benchmark variants, SIMD boundary regressions,
   and native memory checks in CI.
 
