@@ -1,8 +1,16 @@
 # Revision history for base64
 
-## 1.0.0.0
+## 1.0.1
 
-New epoch time! lots of changes to the API. Please see MIGRATION.md for more info:
+* Support GHC 9.6 through 9.14, including `base-4.22`.
+* Require GHC 9.6 or later (`base >= 4.18`) and `bytestring >= 0.11`.
+* Refresh CI for current stable GHC releases and GitHub Actions; retire the i386 CI job.
+* Update maintainer metadata and copyright notices through 2026.
+* No changes to the public API.
+
+## 1.0
+
+New epoch time! lots of changes to the API. Please see [MIGRATION-1.0.md](MIGRATION-1.0.md) for more info:
 
 * Add support for GHC 9.x
 * Bumped bounds to more modern dependency set

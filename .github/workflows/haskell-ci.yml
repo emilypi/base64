@@ -3,7 +3,12 @@ on:
   push:
     branches:
       - master
+      - emily/ghc-9.14.x
   pull_request: {} # Validate all PRs
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
 
 defaults:
   run:
@@ -16,29 +21,25 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest]
-        ghc: ['9.6', '9.8', '9.10', '9.12', '9.14']
+        ghc: ['9.6.7', '9.8.4', '9.10.3', '9.12.4', '9.14.1']
         include:
         - os: macOS-latest
-          ghc: 'latest'
+          ghc: '9.14.1'
     steps:
-    - uses: actions/checkout@v4
-    - name: Install libncurses5 and libtinfo
-      if: runner.os == 'Linux' && (matrix.ghc == '8.0' || matrix.ghc == '8.2')
-      run: |
-        sudo apt-get install libncurses5 libtinfo5
-    - uses: haskell-actions/setup@v2
+    - uses: actions/checkout@v7
+    - uses: haskell-actions/setup@v2.12.1
       id: setup-haskell-cabal
       with:
         ghc-version: ${{ matrix.ghc }}
+        cabal-version: 'latest'
     - name: Update cabal package database
       run: cabal update
-    - uses: actions/cache@v4
+    - uses: actions/cache@v6
       name: Cache cabal stuff
       with:
         path: |
           ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-          dist-newstyle
-        key: ${{ runner.os }}-${{ matrix.ghc }}
+        key: ${{ runner.os }}-${{ runner.arch }}-ghc-${{ steps.setup-haskell-cabal.outputs.ghc-version }}-cabal-${{ steps.setup-haskell-cabal.outputs.cabal-version }}-${{ hashFiles('**/*.cabal', 'cabal.project') }}
     - name: Test
       run: |
         cabal sdist -z -o .
@@ -63,20 +64,20 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: haskell-actions/setup@v2
+    - uses: actions/checkout@v7
+    - uses: haskell-actions/setup@v2.12.1
       id: setup-haskell-cabal
       with:
-        ghc-version: 'latest'
+        ghc-version: '9.14.1'
+        cabal-version: 'latest'
     - name: Update cabal package database
       run: cabal update
-    - uses: actions/cache@v4
+    - uses: actions/cache@v6
       name: Cache cabal stuff
       with:
         path: |
           ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-          dist-newstyle
-        key: ${{ runner.os }}-latest
+        key: ${{ runner.os }}-${{ runner.arch }}-bounds-ghc-${{ steps.setup-haskell-cabal.outputs.ghc-version }}-cabal-${{ steps.setup-haskell-cabal.outputs.cabal-version }}-${{ hashFiles('**/*.cabal', 'cabal.project') }}
     - name: Test
       run: cabal test --ghc-options='-fcheck-prim-bounds -fno-ignore-asserts'
 
