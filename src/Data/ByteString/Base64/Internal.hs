@@ -13,8 +13,7 @@
 -- processes and tables.
 --
 module Data.ByteString.Base64.Internal
-( validateBase64
-, validateBase64Url
+( validateBase64Url
 , validateLastPad
 ) where
 
@@ -28,27 +27,6 @@ import Foreign.Ptr
 import Foreign.Storable
 
 import System.IO.Unsafe
-
--- | Given a bytestring, check to see that it conforms to a given alphabet
---
-validateBase64 :: ByteString -> ByteString -> Bool
-validateBase64 !alphabet (PS !fp !off !l) =
-    accursedUnutterablePerformIO $ withForeignPtr fp $ \p ->
-      go (plusPtr p off) (plusPtr p (l + off))
-  where
-    go !p !end
-      | p == end = return True
-      | otherwise = do
-        w <- peek p
-
-        let f a
-              | a == 0x3d, plusPtr p 1 == end = True
-              | a == 0x3d, plusPtr p 2 == end = True
-              | a == 0x3d = False
-              | otherwise = BS.elem a alphabet
-
-        if f w then go (plusPtr p 1) end else return False
-{-# INLINE validateBase64 #-}
 
 validateBase64Url :: ByteString -> ByteString -> Bool
 validateBase64Url !alphabet bs@(PS _ _ l)

@@ -21,9 +21,8 @@ module Data.ByteString.Short.Base64
 , decodeBase64
 , decodeBase64Untyped
 , decodeBase64Lenient
-  -- * Validation
-, isBase64
-, isValidBase64
+  -- * Parsing
+, parseBase64
 ) where
 
 import Data.Base64.Types
@@ -124,47 +123,27 @@ decodeBase64Lenient :: ShortByteString -> ShortByteString
 decodeBase64Lenient = toShort . B64.decodeBase64Lenient . fromShort
 {-# INLINE decodeBase64Lenient #-}
 
--- | Tell whether a 'ShortByteString' value is base64 encoded.
+-- | Parse a canonical, padded Base64-encoded 'ShortByteString' value.
 --
--- This function will also detect non-canonical encodings such as @ZE==@, which are
--- externally valid Base64-encoded values, but are internally inconsistent "impossible"
--- values.
---
--- === __Examples__:
---
--- >>> isBase64 "U3Vu"
--- True
---
--- >>> isBase64 "U3V"
--- False
---
--- >>> isBase64 "U3V="
--- False
---
-isBase64 :: ShortByteString -> Bool
-isBase64 = B64.isBase64 . fromShort
-{-# INLINE isBase64 #-}
-
--- | Tell whether a 'ShortByteString' value is a valid Base64 format.
---
--- This will not tell you whether or not this is a correct Base64 representation,
--- only that it conforms to the correct shape. To check whether it is a true
--- Base64 encoded 'ShortByteString' value, use 'isBase64'.
+-- Checks the alphabet, length, padding, and unused padding bits. On success,
+-- returns the original encoded value wrapped in 'Base64', ready for
+-- 'decodeBase64'. On failure, returns the same error as 'decodeBase64Untyped'.
+-- The input is neither decoded nor normalized in the returned value.
 --
 -- === __Examples__:
 --
--- >>> isValidBase64 "U3Vu"
--- True
+-- >>> parseBase64 "U3Vu"
+-- Right "U3Vu"
 --
--- >>> isValidBase64 "U3V"
--- True
+-- >>> fmap decodeBase64 (parseBase64 "U3Vu")
+-- Right "Sun"
 --
--- >>> isValidBase64 "U3V="
--- True
+-- >>> parseBase64 "U3V"
+-- Left "Base64-encoded bytestring requires padding"
 --
--- >>> isValidBase64 "%"
--- False
+-- >>> parseBase64 "U3V="
+-- Left "non-canonical encoding detected at offset: 2"
 --
-isValidBase64 :: ShortByteString -> Bool
-isValidBase64 = B64.isValidBase64 . fromShort
-{-# INLINE isValidBase64 #-}
+parseBase64 :: ShortByteString -> Either Text (Base64 'StdPadded ShortByteString)
+parseBase64 bs = assertBase64 bs <$ B64.parseBase64 (fromShort bs)
+{-# INLINE parseBase64 #-}

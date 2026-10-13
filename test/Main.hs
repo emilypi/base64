@@ -33,6 +33,7 @@ import "base64" Data.ByteString.Base64 as B64
 import "base64" Data.ByteString.Base64.URL as B64U
 import qualified "base64-bytestring" Data.ByteString.Base64 as Bos
 import qualified "base64-bytestring" Data.ByteString.Base64.URL as BosU
+import Data.Either (isLeft)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Text.Encoding.Base64.Error (Base64Error(..))
@@ -84,6 +85,7 @@ tests = testGroup "Base64 Tests"
     , mkDecodeTree
       (second TS.fromText . T.decodeUtf8' . SBS.fromShort) tts64 sb64
     ]
+  , parseRepresentationTests
   ]
 
 -- ---------------------------------------------------------------- --
@@ -122,6 +124,7 @@ mkTests context ts = testGroup context . (<*>) ts . pure
 mkPropTree :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
 mkPropTree = mkTests "Property Tests"
   [ prop_roundtrip
+  , prop_parse
   , prop_correctness
   , prop_url_padding
   , const prop_bos_coherence
@@ -141,6 +144,7 @@ mkUnitTree last_ length_ = mkTests "Unit tests"
   , offsetVectors
   , validityTests
   , canonicityTests
+  , parseTests
   ]
 
 -- | Make unit tests for textual 'decode*With' functions
@@ -182,14 +186,104 @@ prop_roundtrip Harness{..} = testGroup "prop_roundtrip"
 
 prop_correctness :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
 prop_correctness Harness{..} = testGroup "prop_validity"
-  [ testProperty "prop_std_valid" $ \(bs :: a) ->
-    validate (extractBase64 $ encode bs)
-  , testProperty "prop_url_valid" $ \(bs :: a) ->
+  [ testProperty "prop_url_valid" $ \(bs :: a) ->
     validateUrl (extractBase64 $ encodeUrl bs)
-  , testProperty "prop_std_correct" $ \(bs :: a) ->
-    correct (extractBase64 $ encode bs)
   , testProperty "prop_url_correct" $ \(bs :: a) ->
     correctUrl (extractBase64 $ encodeUrl bs)
+  ]
+
+prop_parse :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
+prop_parse Harness{..} = testGroup "Parsing properties"
+  [ testProperty "parse an encoded value" $ \(bs :: a) ->
+      parse (extractBase64 $ encode bs) === Right (encode bs)
+  , testProperty "decode a parsed value" $ \(bs :: a) ->
+      fmap decodeTyped (parse $ extractBase64 $ encode bs) === Right bs
+  , testProperty "preserve the encoded input" $ \(bs :: a) ->
+      case parse bs of
+        Left _ -> property True
+        Right encoded -> extractBase64 encoded === bs
+  , testProperty "agree with untyped decoding errors" $ \(bs :: a) ->
+      -- Discard the decoded payload without forcing a possible UTF-8 conversion.
+      (() <$ parse bs) === (() <$ decode bs)
+  ]
+
+parseTests :: (IsString a, Eq a, Show a) => Harness a -> TestTree
+parseTests Harness{..} = testGroup "Parsing unit tests"
+  [ testGroup "Preserve valid encoded values"
+      [ testCase (show input) $
+          parse input @?= Right (assertBase64 input)
+      | input <- [ "", "Zg==", "Zm8=", "Zm9v", "Zm9vYg=="
+                 , "Zm9vYmE=", "Zm9vYmFy", "PDw/Pz4+"
+                 , "/w==" -- Valid Base64 whose decoded byte is not valid UTF-8.
+                 ]
+      ]
+  , testGroup "Reject malformed and non-canonical values"
+      [ testCase (show input) $ parse input @?= Left err
+      | (input, err) <-
+          [ ("Z", "Base64-encoded bytestring has invalid size")
+          , ("Zg", "Base64-encoded bytestring requires padding")
+          , ("Zm8", "Base64-encoded bytestring requires padding")
+          , ("Zg===", "Base64-encoded bytestring has invalid size")
+          , ("====", "invalid padding near offset: 0")
+          , ("A===", "invalid padding near offset: 1")
+          , ("AA=A", "invalid base64 encoding near offset: 3")
+          , ("Zg==AAAA", "invalid padding near offset: 2")
+          , ("Zm8=AAAA", "invalid padding near offset: 3")
+          , ("%AAA", "invalid base64 encoding near offset: 0")
+          , ("A%AA", "invalid base64 encoding near offset: 1")
+          , ("AA%A", "invalid base64 encoding near offset: 2")
+          , ("AAA%", "invalid base64 encoding near offset: 3")
+          , ("AAAA%AAA", "invalid base64 encoding near offset: 4")
+          , ("PDw_", "invalid base64 encoding near offset: 3")
+          , ("PDw-", "invalid base64 encoding near offset: 3")
+          , ("AAA ", "invalid base64 encoding near offset: 3")
+          , ("AAA\n", "invalid base64 encoding near offset: 3")
+          , ("ZE==", "non-canonical encoding detected at offset: 1")
+          , ("ZmC=", "non-canonical encoding detected at offset: 2")
+          , ("Zm9vYE==", "non-canonical encoding detected at offset: 5")
+          , ("Zm9vYmC=", "non-canonical encoding detected at offset: 6")
+          ]
+      ]
+  , testCase "reject non-ASCII input" $
+      assertBool "non-ASCII input was accepted" $
+        isLeft (parse "\255\255\255\255")
+  ]
+
+parseRepresentationTests :: TestTree
+parseRepresentationTests = testGroup "Parsing representations"
+  [ testProperty "parse sliced ByteStrings" $ \bs ->
+      let input = extractBase64 (B64.encodeBase64' bs)
+          sliced = BS.take (BS.length input) $ BS.drop 2 ("!!" <> input <> "!!")
+      in B64.parseBase64 sliced === Right (assertBase64 input)
+  , testCase "error offsets are relative to the ByteString slice" $
+      B64.parseBase64 (BS.take 4 $ BS.drop 2 "!!AA%A!!")
+        @?= Left "invalid base64 encoding near offset: 2"
+  , testGroup "Lazy ByteString chunk boundaries"
+      [ testCase (show (input, n)) $
+          let chunks = [BS.take n input, BS.drop n input]
+              bytes = LBS.fromChunks chunks
+          in fmap (fmap LBS.toStrict) (parse lb64 bytes)
+               @?= B64.parseBase64 input
+      | input <- ["Zg==", "Zm9vYmFy", "Zg==AAAA", "Zm9vYmC=", "Zg", "AAAA%AAA"]
+      , n <- [0 .. BS.length input]
+      ]
+  , testGroup "Lazy Text chunk boundaries"
+      [ testCase (show (input, n)) $
+          let chunks = [T.take n input, T.drop n input]
+              txt = TL.fromChunks chunks
+          in fmap (fmap TL.toStrict) (parse tl64 txt)
+               @?= parse t64 input
+      | input <- ["Zg==", "Zm9vYmFy", "Zg==AAAA", "Zm9vYmC=", "Zg", "AAAA%AAA"]
+      , n <- [0 .. T.length input]
+      ]
+  , testCase "preserve lazy ByteString chunks, including split padding" $ do
+      let chunks = ["Z", "g=", "="]
+      fmap (LBS.toChunks . extractBase64) (parse lb64 $ LBS.fromChunks chunks)
+        @?= Right chunks
+  , testCase "preserve lazy Text chunks, including split padding" $ do
+      let chunks = ["Z", "g=", "="]
+      fmap (TL.toChunks . extractBase64) (parse tl64 $ TL.fromChunks chunks)
+        @?= Right chunks
   ]
 
 prop_url_padding :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree

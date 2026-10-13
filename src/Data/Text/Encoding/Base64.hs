@@ -21,9 +21,8 @@ module Data.Text.Encoding.Base64
 , decodeBase64Untyped
 , decodeBase64UntypedWith
 , decodeBase64Lenient
-  -- * Validation
-, isBase64
-, isValidBase64
+  -- * Parsing
+, parseBase64
 ) where
 
 
@@ -132,43 +131,30 @@ decodeBase64Lenient = T.decodeUtf8
     . T.encodeUtf8
 {-# INLINE decodeBase64Lenient #-}
 
--- | Tell whether an untyped 'Text' value is Base64-encoded.
+-- | Parse a canonical, padded Base64-encoded 'Text' value.
+--
+-- Checks the alphabet, length, padding, and unused padding bits. On success,
+-- returns the original encoded value wrapped in 'Base64', ready for
+-- 'decodeBase64'. On failure, returns the same error as 'decodeBase64Untyped'.
+-- The input is neither decoded nor normalized in the returned value.
+--
+-- This validates the Base64 encoding, not the UTF-8 validity of the decoded
+-- bytes. Use 'decodeBase64UntypedWith' to check the decoded text encoding.
 --
 -- === __Examples__:
 --
--- >>> isBase64 "U3Vu"
--- True
+-- >>> parseBase64 "U3Vu"
+-- Right "U3Vu"
 --
--- >>> isBase64 "U3V"
--- False
+-- >>> fmap decodeBase64 (parseBase64 "U3Vu")
+-- Right "Sun"
 --
--- >>> isBase64 "U3V="
--- False
+-- >>> parseBase64 "U3V"
+-- Left "Base64-encoded bytestring requires padding"
 --
-isBase64 :: Text -> Bool
-isBase64 = B64.isBase64 . T.encodeUtf8
-{-# INLINE isBase64 #-}
-
--- | Tell whether an untyped 'Text' value is a valid Base64 format.
+-- >>> parseBase64 "U3V="
+-- Left "non-canonical encoding detected at offset: 2"
 --
--- This will not tell you whether or not this is a correct Base64 representation,
--- only that it conforms to the correct shape. To check whether it is a true
--- Base64 encoded 'Text' value, use 'isBase64'.
---
--- === __Examples__:
---
--- >>> isValidBase64 "U3Vu"
--- True
---
--- >>> isValidBase64 "U3V"
--- True
---
--- >>> isValidBase64 "U3V="
--- True
---
--- >>> isValidBase64 "%"
--- False
---
-isValidBase64 :: Text -> Bool
-isValidBase64 = B64.isValidBase64 . T.encodeUtf8
-{-# INLINE isValidBase64 #-}
+parseBase64 :: Text -> Either Text (Base64 'StdPadded Text)
+parseBase64 bs = assertBase64 bs <$ B64.parseBase64 (T.encodeUtf8 bs)
+{-# INLINE parseBase64 #-}

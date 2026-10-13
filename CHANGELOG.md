@@ -1,5 +1,10 @@
 # Revision history for base64
 
+## Unreleased
+
+* Replace `isBase64` and `isValidBase64` with `parseBase64` in all six standard-alphabet modules. The parser returns `Either Text (Base64 'StdPadded a)`, preserving the original encoded input after checking its alphabet, length, padding, and canonicity.
+* For a Boolean check, migrate to `isRight . parseBase64`. This is stricter than the old shape-only `isValidBase64` check. URL-specific validators are unchanged.
+
 ## 1.0.1
 
 * Support GHC 9.6 through 9.14, including `base-4.22`.
