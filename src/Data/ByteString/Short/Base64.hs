@@ -144,6 +144,8 @@ decodeBase64Lenient = toShort . B64.decodeBase64Lenient . fromShort
 -- >>> parseBase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
+-- @since 2.0
+--
 parseBase64 :: ShortByteString -> Either Text (Base64 'StdPadded ShortByteString)
 parseBase64 bs = assertBase64 bs <$ B64.parseBase64 (fromShort bs)
 {-# INLINE parseBase64 #-}

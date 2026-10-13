@@ -166,6 +166,8 @@ decodeBase64Lenient = TL.decodeUtf8
 -- >>> parseBase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
+-- @since 2.0
+--
 parseBase64 :: TL.Text -> Either T.Text (Base64 'StdPadded TL.Text)
 parseBase64 bs = assertBase64 bs <$ BL64.parseBase64 (TL.encodeUtf8 bs)
 {-# INLINE parseBase64 #-}

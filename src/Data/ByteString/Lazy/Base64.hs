@@ -163,6 +163,8 @@ decodeBase64Lenient = fromChunks
 -- >>> parseBase64 "U3V="
 -- Left "non-canonical encoding detected at offset: 2"
 --
+-- @since 2.0
+--
 parseBase64 :: ByteString -> Either T.Text (Base64 'StdPadded ByteString)
 parseBase64 bs = assertBase64 bs <$ B64.parseBase64 (BS.concat $ toChunks bs)
 {-# INLINE parseBase64 #-}
