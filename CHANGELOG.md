@@ -1,7 +1,10 @@
 # Revision history for base64
 
-## Unreleased
+## 2.0
 
+* Replace `isBase64` and `isValidBase64` with `parseBase64` in all six standard-alphabet modules. The parser returns `Either Text (Base64 'StdPadded a)`, preserving the original encoded input after checking its alphabet, length, padding, and canonicity.
+* For a Boolean check, migrate to `isRight . parseBase64`. This is stricter than the old shape-only `isValidBase64` check. URL-specific validators are unchanged.
+* Due to the fact there were *zero* downstream occurrences of `isBase64` and `isValidBase64`, I'm not formally deprecating the functions and just replacing altogether.
 * Add an optional, manual `simd` flag (off by default) for bundled ARM64 NEON
   and runtime-detected x86-64 AVX2/SSSE3 encoding and strict decoding.
 * Retain scalar fallbacks, public API behavior, padding/canonicity checks,
