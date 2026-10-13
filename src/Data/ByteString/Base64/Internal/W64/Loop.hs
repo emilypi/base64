@@ -13,7 +13,9 @@
 module Data.ByteString.Base64.Internal.W64.Loop
 ( innerLoop
 , decodeLoop
+, decodeLoopFrom
 , decodeLoopNoError
+, decodeLoopNoErrorFrom
 , lenientLoop
 ) where
 
@@ -85,6 +87,17 @@ decodeLoop
 decodeLoop = W16.decodeLoop
 {-# inline decodeLoop #-}
 
+decodeLoopFrom
+    :: Ptr Word8
+    -> Ptr Word8
+    -> Ptr Word8
+    -> Ptr Word8
+    -> ForeignPtr Word8
+    -> Int
+    -> IO (Either Text ByteString)
+decodeLoopFrom = W16.decodeLoopFrom
+{-# INLINE decodeLoopFrom #-}
+
 decodeLoopNoError
     :: Ptr Word8
         -- ^ decode lookup table
@@ -99,6 +112,17 @@ decodeLoopNoError
     -> IO ByteString
 decodeLoopNoError = W16.decodeLoopNoError
 {-# inline decodeLoopNoError #-}
+
+decodeLoopNoErrorFrom
+    :: Ptr Word8
+    -> Ptr Word8
+    -> Ptr Word8
+    -> Ptr Word8
+    -> ForeignPtr Word8
+    -> Int
+    -> IO ByteString
+decodeLoopNoErrorFrom = W16.decodeLoopNoErrorFrom
+{-# INLINE decodeLoopNoErrorFrom #-}
 
 lenientLoop
     :: Ptr Word8

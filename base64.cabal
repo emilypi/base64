@@ -1,6 +1,6 @@
 cabal-version:   2.0
 name:            base64
-version:         1.0.1
+version:         1.1.0
 synopsis:        A modern Base64 library
 description:
   A performant, featureful RFC 4648 and 7049-compliant Base64 implementation
@@ -21,6 +21,16 @@ extra-doc-files:
 
 tested-with:     GHC ==9.6.7 || ==9.8.4 || ==9.10.3 || ==9.12.4 || ==9.14.1
 
+
+extra-source-files:
+  cbits/base64_simd.h
+  test/simd-native.c
+  benchmarks/simd-native.c
+
+flag simd
+  description:     Use bundled SIMD kernels where supported, with a scalar fallback
+  default:         False
+  manual:          True
 
 source-repository head
   type:     git
@@ -53,6 +63,13 @@ library
     Data.ByteString.Base64.Internal.W16.Loop
     Data.ByteString.Base64.Internal.W64.Loop
 
+  if flag(simd)
+    other-modules:  Data.ByteString.Base64.Internal.SIMD
+    cpp-options:    -DBASE64_SIMD
+    c-sources:      cbits/base64_simd.c
+    include-dirs:   cbits
+    cc-options:     -O2 -std=c99
+
   build-depends:
       base           >=4.18     && <4.23
     , bytestring     >=0.11     && <0.13
@@ -69,6 +86,7 @@ test-suite base64-tests
   type:             exitcode-stdio-1.0
   hs-source-dirs:   test
   other-modules:    Internal
+                    Simd
   main-is:          Main.hs
   build-depends:
       base               >=4.18 && <4.23
@@ -83,6 +101,9 @@ test-suite base64-tests
     , text               >=2.0
     , text-short
 
+  if flag(simd)
+    cpp-options:    -DBASE64_SIMD
+
   ghc-options:      -Wall -threaded -with-rtsopts=-N
 
 benchmark bench
@@ -96,8 +117,8 @@ benchmark bench
     , base64-bytestring
     , bytestring         >=0.11
     , criterion
-    , deepseq
-    , random-bytestring
-    , text               >=2.0
+
+  if flag(simd)
+    cpp-options:    -DBASE64_SIMD
 
   ghc-options:      -Wall -rtsopts

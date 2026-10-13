@@ -54,3 +54,53 @@ UTF-8 validity; use `decodeBase64UntypedWith` to check that conversion.
 `isRight . parseBase64` from `Data.Either`. Unlike the old `isValidBase64`, this
 rejects missing padding and non-canonical encodings. The URL-specific validators
 `isBase64Url` and `isValidBase64Url` retain their existing behavior.
+
+### Optional SIMD
+
+Enable the manual `simd` Cabal flag to use bundled SIMD kernels for standard
+and URL-safe encoding and strict decoding, including the typed decoders:
+
+```sh
+cabal build -fsimd
+cabal test -fsimd --test-show-details=direct
+```
+
+The flag is **off by default**. ARM64 uses NEON; x86-64 selects AVX2 when
+the CPU and operating system support it, then SSSE3 on older processors.
+Other targets and short inputs use the existing
+Haskell loops. No external C library is required. Remainders, padding checks,
+canonical-encoding checks, and error messages still use the Haskell code.
+Lenient decoding remains scalar.
+
+Test both configurations and compare optimized benchmark builds separately:
+
+```sh
+cabal test -f-simd --builddir=dist-scalar --test-show-details=direct
+cabal test -fsimd --builddir=dist-simd --test-show-details=direct
+cabal bench -f-simd --builddir=dist-scalar -O2 --benchmark-options='--csv scalar.csv'
+cabal bench -fsimd --builddir=dist-simd -O2 --benchmark-options='--csv simd.csv'
+```
+
+Benchmark names identify the selected flag configuration. The suite covers
+standard Base64 and padded/unpadded Base64url, encoding and typed/untyped
+decoding, short and large buffers, and sliced inputs. The test suite exercises
+block boundaries, scalar tails, slices, invalid input, and wrapper types in
+both configurations; CI also runs native memory checks on x86-64 and ARM64,
+explicitly requiring AVX2 on Linux x86-64 and checking the SSSE3 and scalar
+fallbacks separately.
+
+For native kernel measurements, a standalone benchmark validates every case
+against scalar output and checks both alphabets. It times pseudorandom,
+cycling, and repeated inputs at two alignments.
+It reports the detected backend and writes CSV results:
+
+```sh
+cc -O2 -std=c99 -Icbits cbits/base64_simd.c benchmarks/simd-native.c -o base64-native-bench
+./base64-native-bench --seconds 0.05 --rounds 5 > native.csv
+```
+
+Add `--url` to time the URL alphabet, or `--pattern random` to select one
+input distribution. On x86-64, compile a second executable with
+`-DHS_BASE64_SIMD_FORCE_SSSE3` to compare the older backend on the same CPU.
+These measurements cover native prefixes only; use the Cabal benchmarks above
+to include Haskell allocation and scalar tails.

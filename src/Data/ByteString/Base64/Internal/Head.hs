@@ -24,6 +24,9 @@ import Data.Base64.Types.Internal
 import Data.ByteString.Base64.Internal.Tail
 import Data.ByteString.Base64.Internal.Utils
 import Data.ByteString.Base64.Internal.W64.Loop
+#ifdef BASE64_SIMD
+import Data.ByteString.Base64.Internal.SIMD
+#endif
 import Data.ByteString.Internal
 import Data.Text (Text)
 
@@ -44,10 +47,15 @@ encodeBase64_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
         withForeignPtr sfp $ \sptr ->
         withForeignPtr efp $ \eptr -> do
           let !end = plusPtr sptr (soff + slen)
+#ifdef BASE64_SIMD
+          consumed <- encodePrefix (plusPtr sptr soff) slen dptr aptr
+#else
+          let consumed = 0
+#endif
           innerLoop
             eptr
-            (castPtr (plusPtr sptr soff))
-            (castPtr dptr)
+            (castPtr (plusPtr sptr (soff + consumed)))
+            (castPtr (plusPtr dptr ((consumed `quot` 3) * 4)))
             end
             (loopTail dfp dptr aptr (castPtr end))
   where
@@ -61,10 +69,15 @@ encodeBase64Nopad_ (EncodingTable !aptr !efp) (PS !sfp !soff !slen) =
         withForeignPtr efp $ \etable ->
         withForeignPtr sfp $ \sptr -> do
           let !end = plusPtr sptr (soff + slen)
+#ifdef BASE64_SIMD
+          consumed <- encodePrefix (plusPtr sptr soff) slen dptr aptr
+#else
+          let consumed = 0
+#endif
           innerLoop
             etable
-            (castPtr (plusPtr sptr soff))
-            (castPtr dptr)
+            (castPtr (plusPtr sptr (soff + consumed)))
+            (castPtr (plusPtr dptr ((consumed `quot` 3) * 4)))
             end
             (loopTailNoPad dfp aptr dptr (castPtr end))
   where
@@ -90,9 +103,12 @@ decodeBase64_ !dtfp (PS !sfp !soff !slen) =
       dfp <- mallocPlainForeignPtrBytes dlen
       withForeignPtr dfp $ \dptr -> do
         let !end = plusPtr sptr (soff + slen)
-        decodeLoop dtable
-          (plusPtr sptr soff)
-          dptr end dfp
+#ifdef BASE64_SIMD
+        consumed <- decodePrefix (plusPtr sptr soff) slen dptr dtable
+        decodeLoopFrom dtable (plusPtr sptr soff) dptr end dfp consumed
+#else
+        decodeLoop dtable (plusPtr sptr soff) dptr end dfp
+#endif
   where
     !dlen = (slen `quot` 4) * 3
 {-# inline decodeBase64_ #-}
@@ -116,9 +132,12 @@ decodeBase64Typed_ !dtfp (Base64 (PS sfp soff slen))
       dfp <- mallocPlainForeignPtrBytes dlen
       withForeignPtr dfp $ \dptr -> do
         let !end = plusPtr sptr (soff + slen)
-        decodeLoopNoError dtable
-          (plusPtr sptr soff)
-          dptr end dfp
+#ifdef BASE64_SIMD
+        consumed <- decodePrefix (plusPtr sptr soff) slen dptr dtable
+        decodeLoopNoErrorFrom dtable (plusPtr sptr soff) dptr end dfp consumed
+#else
+        decodeLoopNoError dtable (plusPtr sptr soff) dptr end dfp
+#endif
   where
     !dlen = (slen `quot` 4) * 3
 {-# inline decodeBase64Typed_ #-}

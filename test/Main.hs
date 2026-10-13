@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
@@ -43,6 +44,7 @@ import qualified Data.Text.Short as TS
 import Data.Word
 
 import Internal
+import qualified Simd
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -56,8 +58,13 @@ main = defaultMain tests
 
 
 tests :: TestTree
-tests = testGroup "Base64 Tests"
-  [ mkTree b64
+#ifdef BASE64_SIMD
+tests = testGroup "Base64 Tests (simd enabled)"
+#else
+tests = testGroup "Base64 Tests (scalar)"
+#endif
+  [ Simd.tests
+  , mkTree b64
     [ mkPropTree
     , mkUnitTree BS.last BS.length
     ]

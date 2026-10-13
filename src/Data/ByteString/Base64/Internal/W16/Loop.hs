@@ -15,7 +15,9 @@
 module Data.ByteString.Base64.Internal.W16.Loop
 ( innerLoop
 , decodeLoop
+, decodeLoopFrom
 , decodeLoopNoError
+, decodeLoopNoErrorFrom
 , lenientLoop
 ) where
 
@@ -74,7 +76,23 @@ decodeLoop
     -> Ptr Word8
     -> ForeignPtr Word8
     -> IO (Either Text ByteString)
-decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
+decodeLoop dtable sptr dptr end dfp =
+  decodeLoopFrom dtable sptr dptr end dfp 0
+{-# INLINE decodeLoop #-}
+
+-- | Resume after a validated prefix while retaining the original pointers
+-- for error offsets and the total output length. The consumed input length
+-- must be a multiple of four and leave at least the final quartet.
+decodeLoopFrom
+    :: Ptr Word8
+    -> Ptr Word8
+    -> Ptr Word8
+    -> Ptr Word8
+    -> ForeignPtr Word8
+    -> Int
+    -> IO (Either Text ByteString)
+decodeLoopFrom !dtable !sptr !dptr !end !dfp !consumed =
+    go (plusPtr dptr ((consumed `quot` 4) * 3)) (plusPtr sptr consumed)
   where
     err :: Ptr Word8 -> IO (Either Text ByteString)
     err p = return . Left . T.pack
@@ -172,7 +190,7 @@ decodeLoop !dtable !sptr !dptr !end !dfp = go dptr sptr
             poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
             poke @Word8 (plusPtr dst 2) (fromIntegral w)
             return $ Right $ PS dfp 0 (3 + (dst `minusPtr` dptr))
-{-# inline decodeLoop #-}
+{-# INLINE decodeLoopFrom #-}
 
 decodeLoopNoError
     :: Ptr Word8
@@ -184,7 +202,21 @@ decodeLoopNoError
     -> Ptr Word8
     -> ForeignPtr Word8
     -> IO ByteString
-decodeLoopNoError !dtable !sptr !dptr !end !dfp = go dptr sptr
+decodeLoopNoError dtable sptr dptr end dfp =
+  decodeLoopNoErrorFrom dtable sptr dptr end dfp 0
+{-# INLINE decodeLoopNoError #-}
+
+-- | Typed counterpart of 'decodeLoopFrom', with the same prefix contract.
+decodeLoopNoErrorFrom
+    :: Ptr Word8
+    -> Ptr Word8
+    -> Ptr Word8
+    -> Ptr Word8
+    -> ForeignPtr Word8
+    -> Int
+    -> IO ByteString
+decodeLoopNoErrorFrom !dtable !sptr !dptr !end !dfp !consumed =
+    go (plusPtr dptr ((consumed `quot` 4) * 3)) (plusPtr sptr consumed)
   where
     look :: Ptr Word8 -> IO Word32
     look !p = do
@@ -231,7 +263,7 @@ decodeLoopNoError !dtable !sptr !dptr !end !dfp = go dptr sptr
         poke @Word8 (plusPtr dst 1) (fromIntegral (unsafeShiftR w 8))
         poke @Word8 (plusPtr dst 2) (fromIntegral w)
         go (plusPtr dst 3) (plusPtr src 4)
-{-# inline decodeLoopNoError #-}
+{-# INLINE decodeLoopNoErrorFrom #-}
 
 
 lenientLoop
