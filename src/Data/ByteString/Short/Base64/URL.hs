@@ -36,6 +36,8 @@ module Data.ByteString.Short.Base64.URL
 import Data.Base64.Types
 
 import qualified Data.ByteString.Base64.URL as B64U
+import Data.ByteString.Base64.Internal.Short
+import Data.ByteString.Base64.Internal.Tables
 import Data.ByteString.Short (ShortByteString, fromShort, toShort)
 import Data.Text (Text)
 import Data.Text.Short (ShortText)
@@ -73,7 +75,7 @@ encodeBase64 = fmap fromShortByteStringUnsafe . encodeBase64'
 -- "PDw_Pj4="
 --
 encodeBase64' :: ShortByteString -> Base64 'UrlPadded ShortByteString
-encodeBase64' = fmap toShort . B64U.encodeBase64' . fromShort
+encodeBase64' = assertBase64 . encodeShort True base64UrlTable
 
 -- | Decode a Base64url encoded 'ShortByteString' value, either padded or unpadded.
 -- The correct decoding function is dispatched based on the existence of padding.
@@ -96,7 +98,7 @@ decodeBase64
   :: UrlAlphabet k
   => Base64 k ShortByteString
   -> ShortByteString
-decodeBase64 = toShort . B64U.decodeBase64 . fmap fromShort
+decodeBase64 = decodeShortTyped decodeB64UrlTable
 
 -- | Decode an untyped Base64url encoded 'ByteString' value. If its length is not a multiple
 -- of 4, then padding chars will be added to fill out the input to a multiple of
@@ -123,7 +125,7 @@ decodeBase64 = toShort . B64U.decodeBase64 . fmap fromShort
 -- Right "<<>>"
 --
 decodeBase64Untyped :: ShortByteString -> Either Text ShortByteString
-decodeBase64Untyped = fmap toShort . B64U.decodeBase64Untyped . fromShort
+decodeBase64Untyped = decodeShort Optional decodeB64UrlTable
 {-# inline decodeBase64Untyped #-}
 
 -- | Encode a 'ShortByteString' value as Base64url 'Text' without padding.
@@ -149,7 +151,7 @@ encodeBase64Unpadded = fmap fromShortByteStringUnsafe . encodeBase64Unpadded'
 -- "PDw_Pj4"
 --
 encodeBase64Unpadded' :: ShortByteString -> Base64 'UrlUnpadded ShortByteString
-encodeBase64Unpadded' = fmap toShort . B64U.encodeBase64Unpadded' . fromShort
+encodeBase64Unpadded' = assertBase64 . encodeShort False base64UrlTable
 
 -- | Decode an unpadded Base64url-encoded 'ShortByteString' value.
 --
@@ -161,7 +163,7 @@ encodeBase64Unpadded' = fmap toShort . B64U.encodeBase64Unpadded' . fromShort
 -- "<<?>>"
 --
 decodeBase64Unpadded :: Base64 'UrlUnpadded ShortByteString -> ShortByteString
-decodeBase64Unpadded = toShort . B64U.decodeBase64Unpadded . fmap fromShort
+decodeBase64Unpadded = decodeShortTyped decodeB64UrlTable
 {-# INLINE decodeBase64Unpadded #-}
 
 -- | Decode an unpadded, untyped Base64url encoded 'ByteString' value.
@@ -186,9 +188,7 @@ decodeBase64Unpadded = toShort . B64U.decodeBase64Unpadded . fmap fromShort
 -- Right "<<>>"
 --
 decodeBase64UnpaddedUntyped :: ShortByteString -> Either Text ShortByteString
-decodeBase64UnpaddedUntyped = fmap toShort
-  . B64U.decodeBase64UnpaddedUntyped
-  . fromShort
+decodeBase64UnpaddedUntyped = decodeShort Forbidden decodeB64UrlTable
 {-# inline decodeBase64UnpaddedUntyped #-}
 
 -- | Decode a padded Base64url-encoded 'ShortByteString' value.
@@ -201,7 +201,7 @@ decodeBase64UnpaddedUntyped = fmap toShort
 -- "<<?>>"
 --
 decodeBase64Padded :: Base64 'UrlPadded ShortByteString -> ShortByteString
-decodeBase64Padded = toShort . B64U.decodeBase64Padded . fmap fromShort
+decodeBase64Padded = decodeShortTyped decodeB64UrlTable
 {-# INLINE decodeBase64Padded #-}
 
 -- | Decode a padded, untyped Base64url encoded 'ByteString' value.
@@ -220,9 +220,7 @@ decodeBase64Padded = toShort . B64U.decodeBase64Padded . fmap fromShort
 -- Left "Base64-encoded bytestring requires padding"
 --
 decodeBase64PaddedUntyped :: ShortByteString -> Either Text ShortByteString
-decodeBase64PaddedUntyped = fmap toShort
-  . B64U.decodeBase64PaddedUntyped
-  . fromShort
+decodeBase64PaddedUntyped = decodeShort Required decodeB64UrlTable
 {-# inline decodeBase64PaddedUntyped #-}
 
 -- | Leniently decode an unpadded, untyped Base64url-encoded 'ShortByteString'. This function

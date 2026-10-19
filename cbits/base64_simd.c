@@ -7,9 +7,12 @@
 /*
  * These are original prefix kernels. No external SIMD library is required.
  * Target-specific instructions are confined to their implementation below;
- * x86 builds need no global ISA flags, and dispatch has no mutable state.
+ * x86 builds need no global ISA flags. OS register-state support is cached
+ * during library initialization; dispatch does not mutate that cache.
  * HS_BASE64_SIMD_FORCE_SCALAR exercises the unsupported-target fallback.
  * HS_BASE64_SIMD_FORCE_SSSE3 caps x86 dispatch for testing older processors.
+ * FORCE_AVX2 and FORCE_AVX512BW similarly cap dispatch; they never enable
+ * instructions that the CPU or operating system cannot execute.
  */
 #if !defined(HS_BASE64_SIMD_FORCE_SCALAR)
 #if defined(__aarch64__) && defined(__ARM_NEON) && \
@@ -18,11 +21,28 @@
 #include <arm_neon.h>
 #elif defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
 #define HS_BASE64_SSSE3 1
+#include <cpuid.h>
 #include <immintrin.h>
+#if defined(__APPLE__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
 #define HS_BASE64_TARGET_SSSE3 __attribute__((target("ssse3")))
 #if !defined(HS_BASE64_SIMD_FORCE_SSSE3)
 #define HS_BASE64_AVX2 1
 #define HS_BASE64_TARGET_AVX2 __attribute__((target("avx2")))
+#if !defined(HS_BASE64_SIMD_FORCE_AVX2) && \
+    ((defined(__clang__) && __clang_major__ >= 5) || \
+     (!defined(__clang__) && __GNUC__ >= 6))
+#define HS_BASE64_AVX512BW 1
+#define HS_BASE64_TARGET_AVX512BW __attribute__((target("avx512f,avx512bw")))
+#if !defined(HS_BASE64_SIMD_FORCE_AVX512BW) && \
+    ((defined(__clang__) && __clang_major__ >= 7) || \
+     (!defined(__clang__) && __GNUC__ >= 8))
+#define HS_BASE64_AVX512VBMI 1
+#define HS_BASE64_TARGET_AVX512VBMI __attribute__((target("avx512f,avx512bw,avx512vbmi")))
+#endif
+#endif
 #endif
 #endif
 #endif
@@ -377,6 +397,202 @@ static size_t hs_base64_avx2_decode(const uint8_t *src, size_t len, uint8_t *dst
 
 #endif /* HS_BASE64_AVX2 */
 
+#if defined(HS_BASE64_AVX2)
+
+/* Older compiler runtimes report hardware features without checking OS state.
+ * Cache that check once, keeping CPUID and XGETBV out of the hot path. */
+static unsigned hs_base64_x86_state;
+
+static void __attribute__((constructor)) hs_base64_init_x86_state(void)
+{
+    unsigned eax, ebx, ecx, edx;
+    unsigned xcr0_lo, xcr0_hi;
+    if (!__get_cpuid(1, &eax, &ebx, &ecx, &edx) ||
+        (ecx & ((1u << 27) | (1u << 28))) != ((1u << 27) | (1u << 28))) {
+        return;
+    }
+    __asm__ volatile("xgetbv" : "=a"(xcr0_lo), "=d"(xcr0_hi) : "c"(0));
+    (void)xcr0_hi;
+    hs_base64_x86_state = xcr0_lo;
+#if defined(__APPLE__)
+    /* Darwin enables AVX-512 context lazily. Ask the kernel whether promotion
+     * is supported, including when AVX-512 was disabled at boot. */
+    if ((xcr0_lo & 0x6u) == 0x6u) {
+        int enabled = 0;
+        size_t size = sizeof(enabled);
+        if (sysctlbyname("hw.optional.avx512f", &enabled, &size, NULL, 0) == 0 && enabled) {
+            hs_base64_x86_state |= 0xe0u;
+        }
+    }
+#endif
+}
+#endif
+
+#if defined(HS_BASE64_AVX512BW)
+
+HS_BASE64_TARGET_AVX512BW
+static size_t hs_base64_avx512bw_encode(const uint8_t *src, size_t len,
+                                      uint8_t *dst, const uint8_t *alphabet)
+{
+    size_t consumed = 0;
+    __m512i lookup[4];
+    const __m512i lanes = _mm512_setr_epi32(0, 1, 2, 0, 3, 4, 5, 0,
+                                           6, 7, 8, 0, 9, 10, 11, 0);
+    const __m512i gather = _mm512_broadcast_i32x4(
+        _mm_setr_epi8(2, 1, 0, -1, 5, 4, 3, -1, 8, 7, 6, -1, 11, 10, 9, -1));
+    if (len < 48) {
+        return 0;
+    }
+    for (size_t i = 0; i < 4; i++) {
+        lookup[i] = _mm512_broadcast_i32x4(
+            _mm_loadu_si128((const __m128i *)(alphabet + i * 16)));
+    }
+    while (len - consumed >= 48) {
+        /* Read exactly 48 bytes, then place 12 bytes in each 128-bit lane. */
+        __m512i input = _mm512_maskz_loadu_epi8(UINT64_C(0xffffffffffff), src + consumed);
+        __m512i indices;
+        __m512i output = _mm512_setzero_si512();
+        input = _mm512_shuffle_epi8(_mm512_permutexvar_epi32(lanes, input), gather);
+        indices = _mm512_and_si512(_mm512_srli_epi32(input, 18),
+                                   _mm512_set1_epi32(0x0000003f));
+        indices = _mm512_or_si512(indices, _mm512_and_si512(
+            _mm512_srli_epi32(input, 4), _mm512_set1_epi32(0x00003f00)));
+        indices = _mm512_or_si512(indices, _mm512_and_si512(
+            _mm512_slli_epi32(input, 10), _mm512_set1_epi32(0x003f0000)));
+        indices = _mm512_or_si512(indices, _mm512_and_si512(
+            _mm512_slli_epi32(input, 24), _mm512_set1_epi32(0x3f000000)));
+        const __m512i high = _mm512_and_si512(indices, _mm512_set1_epi8(0x30));
+        for (size_t i = 0; i < 4; i++) {
+            const __mmask64 matches = _mm512_cmpeq_epi8_mask(high,
+                _mm512_set1_epi8((char)(i * 16)));
+            output = _mm512_mask_mov_epi8(output, matches,
+                _mm512_shuffle_epi8(lookup[i], indices));
+        }
+        _mm512_storeu_si512((void *)dst, output);
+        consumed += 48;
+        dst += 64;
+    }
+    return consumed;
+}
+
+HS_BASE64_TARGET_AVX512BW
+static size_t hs_base64_avx512bw_decode(const uint8_t *src, size_t len,
+                                      uint8_t *dst, const uint8_t *table)
+{
+    size_t consumed = 0;
+    if (len < 68) {
+        return 0;
+    }
+    const int is_url = table['-'] == 62;
+    const __m512i valid_lo = _mm512_broadcast_i32x4(
+        _mm_loadu_si128((const __m128i *)hs_base64_valid_lo[is_url]));
+    const __m512i valid_hi = _mm512_broadcast_i32x4(
+        _mm_loadu_si128((const __m128i *)hs_base64_valid_hi));
+    const __m512i offsets = _mm512_broadcast_i32x4(
+        _mm_loadu_si128((const __m128i *)hs_base64_offsets[is_url]));
+    const __m512i scatter = _mm512_broadcast_i32x4(
+        _mm_setr_epi8(2, 1, 0, 6, 5, 4, 10, 9, 8, 14, 13, 12, -1, -1, -1, -1));
+    const __m512i compact = _mm512_setr_epi32(0, 1, 2, 4, 5, 6, 8, 9,
+                                             10, 12, 13, 14, 0, 0, 0, 0);
+    const __m512i nibble_mask = _mm512_set1_epi8(15);
+    const __m512i last_char = _mm512_set1_epi8(is_url ? '_' : '/');
+    const __m512i last_adjustment = _mm512_set1_epi8(is_url ? 33 : -3);
+    while (len - consumed >= 68) {
+        const __m512i input = _mm512_loadu_si512((const void *)(src + consumed));
+        const __m512i lo = _mm512_and_si512(input, nibble_mask);
+        const __m512i hi = _mm512_and_si512(_mm512_srli_epi16(input, 4), nibble_mask);
+        const __m512i valid = _mm512_and_si512(_mm512_shuffle_epi8(valid_lo, lo),
+                                               _mm512_shuffle_epi8(valid_hi, hi));
+        if (_mm512_cmpeq_epi8_mask(valid, _mm512_setzero_si512()) != 0) {
+            break;
+        }
+        const __m512i adjustment = _mm512_maskz_mov_epi8(
+            _mm512_cmpeq_epi8_mask(input, last_char), last_adjustment);
+        const __m512i value = _mm512_add_epi8(input,
+            _mm512_add_epi8(_mm512_shuffle_epi8(offsets, hi), adjustment));
+        __m512i output = _mm512_maddubs_epi16(value, _mm512_set1_epi32(0x01400140));
+        output = _mm512_madd_epi16(output, _mm512_set1_epi32(0x00011000));
+        output = _mm512_permutexvar_epi32(compact, _mm512_shuffle_epi8(output, scatter));
+        /* The final quartet and all uncommitted destination bytes are untouched. */
+        _mm512_mask_storeu_epi8(dst, UINT64_C(0xffffffffffff), output);
+        consumed += 64;
+        dst += 48;
+    }
+    return consumed;
+}
+
+#if defined(HS_BASE64_AVX512VBMI)
+
+HS_BASE64_TARGET_AVX512VBMI
+static size_t hs_base64_avx512vbmi_encode(const uint8_t *src, size_t len,
+                                        uint8_t *dst, const uint8_t *alphabet)
+{
+    size_t consumed = 0;
+    if (len < 48) {
+        return 0;
+    }
+    /* Each dword contains a reversed triple. Multishift selects bits
+     * 18,12,6,0 in each dword; VPERMB uses only the low six bits of each
+     * result to index the full alphabet. This is the Muła/Lemire VBMI
+     * approach, with controls derived from the existing big-endian triples. */
+    const __m512i gather = _mm512_setr_epi32(
+        0x00000102, 0x00030405, 0x00060708, 0x00090a0b,
+        0x000c0d0e, 0x000f1011, 0x00121314, 0x00151617,
+        0x0018191a, 0x001b1c1d, 0x001e1f20, 0x00212223,
+        0x00242526, 0x00272829, 0x002a2b2c, 0x002d2e2f);
+    const __m512i shifts = _mm512_set1_epi64(INT64_C(0x20262c3200060c12));
+    const __m512i lookup = _mm512_loadu_si512((const void *)alphabet);
+    while (len - consumed >= 48) {
+        const __m512i input = _mm512_maskz_loadu_epi8(
+            UINT64_C(0xffffffffffff), src + consumed);
+        const __m512i triples = _mm512_permutexvar_epi8(gather, input);
+        const __m512i indices = _mm512_multishift_epi64_epi8(shifts, triples);
+        _mm512_storeu_si512((void *)dst, _mm512_permutexvar_epi8(indices, lookup));
+        consumed += 48;
+        dst += 64;
+    }
+    return consumed;
+}
+
+HS_BASE64_TARGET_AVX512VBMI
+static size_t hs_base64_avx512vbmi_decode(const uint8_t *src, size_t len,
+                                        uint8_t *dst, const uint8_t *table)
+{
+    size_t consumed = 0;
+    if (len < 68) {
+        return 0;
+    }
+    const __m512i lower = _mm512_loadu_si512((const void *)table);
+    const __m512i upper = _mm512_loadu_si512((const void *)(table + 64));
+    /* Three significant bytes per dword, reversed into original byte order. */
+    static const uint8_t compact_bytes[64] = {
+         2,  1,  0,  6,  5,  4, 10,  9,  8, 14, 13, 12, 18, 17, 16, 22,
+        21, 20, 26, 25, 24, 30, 29, 28, 34, 33, 32, 38, 37, 36, 42, 41,
+        40, 46, 45, 44, 50, 49, 48, 54, 53, 52, 58, 57, 56, 62, 61, 60,
+         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+    };
+    const __m512i compact = _mm512_loadu_si512((const void *)compact_bytes);
+    while (len - consumed >= 68) {
+        const __m512i input = _mm512_loadu_si512((const void *)(src + consumed));
+        const __m512i value = _mm512_permutex2var_epi8(lower, input, upper);
+        /* VPERMI2B ignores bit 7: reject high-bit aliases separately. All
+         * table values >= 64, including either padding sentinel, are invalid. */
+        if ((_mm512_movepi8_mask(input) |
+             _mm512_cmpge_epu8_mask(value, _mm512_set1_epi8(64))) != 0) {
+            break;
+        }
+        __m512i output = _mm512_maddubs_epi16(value, _mm512_set1_epi32(0x01400140));
+        output = _mm512_madd_epi16(output, _mm512_set1_epi32(0x00011000));
+        output = _mm512_permutexvar_epi8(compact, output);
+        _mm512_mask_storeu_epi8(dst, UINT64_C(0xffffffffffff), output);
+        consumed += 64;
+        dst += 48;
+    }
+    return consumed;
+}
+#endif /* HS_BASE64_AVX512VBMI */
+#endif /* HS_BASE64_AVX512BW */
+
 #endif
 
 int hs_base64_simd_backend(void)
@@ -384,9 +600,21 @@ int hs_base64_simd_backend(void)
 #if defined(HS_BASE64_NEON)
     return 2;
 #elif defined(HS_BASE64_SSSE3)
+#if defined(HS_BASE64_AVX512BW)
+    if (__builtin_cpu_supports("avx512f") &&
+        __builtin_cpu_supports("avx512bw") &&
+        (hs_base64_x86_state & 0xe6u) == 0xe6u) {
+#if defined(HS_BASE64_AVX512VBMI)
+        if (__builtin_cpu_supports("avx512vbmi")) {
+            return 5;
+        }
+#endif
+        return 4;
+    }
+#endif
 #if defined(HS_BASE64_AVX2)
-    /* The compiler's CPU query also checks OS support for the AVX register state. */
-    if (__builtin_cpu_supports("avx2")) {
+    if (__builtin_cpu_supports("avx2") &&
+        (hs_base64_x86_state & 0x6u) == 0x6u) {
         return 3;
     }
 #endif
@@ -403,6 +631,16 @@ size_t hs_base64_simd_encode(const uint8_t *src, size_t len, uint8_t *dst,
     return hs_base64_neon_encode(src, len, dst, alphabet);
 #elif defined(HS_BASE64_SSSE3)
     const int backend = hs_base64_simd_backend();
+#if defined(HS_BASE64_AVX512VBMI)
+    if (backend == 5) {
+        return hs_base64_avx512vbmi_encode(src, len, dst, alphabet);
+    }
+#endif
+#if defined(HS_BASE64_AVX512BW)
+    if (backend == 4) {
+        return hs_base64_avx512bw_encode(src, len, dst, alphabet);
+    }
+#endif
 #if defined(HS_BASE64_AVX2)
     if (backend == 3) {
         return hs_base64_avx2_encode(src, len, dst, alphabet);
@@ -426,6 +664,16 @@ size_t hs_base64_simd_decode(const uint8_t *src, size_t len, uint8_t *dst,
     return hs_base64_neon_decode(src, len, dst, table);
 #elif defined(HS_BASE64_SSSE3)
     const int backend = hs_base64_simd_backend();
+#if defined(HS_BASE64_AVX512VBMI)
+    if (backend == 5) {
+        return hs_base64_avx512vbmi_decode(src, len, dst, table);
+    }
+#endif
+#if defined(HS_BASE64_AVX512BW)
+    if (backend == 4) {
+        return hs_base64_avx512bw_decode(src, len, dst, table);
+    }
+#endif
 #if defined(HS_BASE64_AVX2)
     if (backend == 3) {
         return hs_base64_avx2_decode(src, len, dst, table);

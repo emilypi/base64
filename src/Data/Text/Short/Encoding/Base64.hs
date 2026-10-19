@@ -28,14 +28,13 @@ module Data.Text.Short.Encoding.Base64
 import Data.Base64.Types
 
 import Data.Bifunctor (first)
-import qualified Data.ByteString.Base64 as B64
-import Data.ByteString.Short (ShortByteString)
+import Data.ByteString.Short (ShortByteString, fromShort)
 import qualified Data.ByteString.Short.Base64 as BS64
 import Data.Text (Text)
+import qualified Data.Text.Encoding as T
 import qualified Data.Text.Encoding.Base64 as B64T
 import Data.Text.Encoding.Base64.Error
 import Data.Text.Short
-import Data.Text.Short.Unsafe
 
 
 -- $setup
@@ -56,9 +55,7 @@ import Data.Text.Short.Unsafe
 -- "U3Vu"
 --
 encodeBase64 :: ShortText -> Base64 'StdPadded ShortText
-encodeBase64 = fmap fromByteStringUnsafe
-  . B64.encodeBase64'
-  . toByteString
+encodeBase64 = BS64.encodeBase64 . toShortByteString
 {-# INLINE encodeBase64 #-}
 
 -- | Decode a padded Base64-encoded 'ShortText' value
@@ -71,7 +68,7 @@ encodeBase64 = fmap fromByteStringUnsafe
 -- "Sun"
 --
 decodeBase64 :: StdAlphabet k => Base64 k ShortText -> ShortText
-decodeBase64 = fromText . B64T.decodeBase64 . fmap toText
+decodeBase64 = decodeShortUtf8 . BS64.decodeBase64 . fmap toShortByteString
 {-# INLINE decodeBase64 #-}
 
 -- | Decode a padded Base64-encoded 'ShortText' value
@@ -90,7 +87,7 @@ decodeBase64 = fromText . B64T.decodeBase64 . fmap toText
 -- Left "non-canonical encoding detected at offset: 2"
 --
 decodeBase64Untyped :: ShortText -> Either Text ShortText
-decodeBase64Untyped = fmap fromText . B64T.decodeBase64Untyped . toText
+decodeBase64Untyped = fmap decodeShortUtf8 . BS64.decodeBase64Untyped . toShortByteString
 {-# INLINE decodeBase64Untyped #-}
 
 -- | Attempt to decode an untyped 'ShortByteString' value as Base64, converting from
@@ -165,5 +162,13 @@ decodeBase64Lenient = fromText . B64T.decodeBase64Lenient . toText
 -- @since 2.0
 --
 parseBase64 :: ShortText -> Either Text (Base64 'StdPadded ShortText)
-parseBase64 bs = assertBase64 bs <$ B64.parseBase64 (toByteString bs)
+parseBase64 bs = assertBase64 bs <$ BS64.parseBase64 (toShortByteString bs)
 {-# INLINE parseBase64 #-}
+
+-- Share valid UTF-8 storage directly. Preserve the existing decodeUtf8
+-- exception for invalid decoded payloads instead of constructing invalid text.
+decodeShortUtf8 :: ShortByteString -> ShortText
+decodeShortUtf8 bytes = case fromShortByteString bytes of
+  Just text -> text
+  Nothing -> fromText (T.decodeUtf8 (fromShort bytes))
+{-# INLINE decodeShortUtf8 #-}

@@ -154,19 +154,19 @@ static void check_decode(const uint8_t *src, size_t len, size_t offset,
 static void test_lengths_and_alignment(void)
 {
     uint8_t table[256];
-    uint8_t source[1056];
-    uint8_t encoded[1408];
+    uint8_t source[2112];
+    uint8_t encoded[2816];
 
     for (size_t alphabet = 0; alphabet < 2; alphabet++) {
         make_table(alphabets[alphabet], table);
-        for (size_t offset = 0; offset < 32; offset++) {
+        for (size_t offset = 0; offset < 64; offset++) {
             for (size_t i = 0; i < sizeof(source); i++) {
                 source[i] = (uint8_t)(i * 73 + offset * 19);
             }
             scalar_encode(source, sizeof(source), encoded, alphabets[alphabet]);
-            for (size_t len = 0; len <= 1024; len++) {
-                check_encode(source + offset, len, 31 - offset, alphabets[alphabet]);
-                check_decode(encoded + offset, len, 31 - offset, table);
+            for (size_t len = 0; len <= 2048; len++) {
+                check_encode(source + offset, len, 63 - offset, alphabets[alphabet]);
+                check_decode(encoded + offset, len, 63 - offset, table);
             }
         }
     }
@@ -192,7 +192,7 @@ static void test_all_byte_values(void)
 
 static void test_invalid_and_padding_stops(void)
 {
-    uint8_t source[580];
+    uint8_t source[1028];
     uint8_t table[256];
 
     for (size_t alphabet = 0; alphabet < 2; alphabet++) {
@@ -201,7 +201,7 @@ static void test_invalid_and_padding_stops(void)
             for (unsigned value = 0; value <= 255; value++) {
                 memset(source, 'A', sizeof(source));
                 source[position] = (uint8_t)value;
-                check_decode(source, sizeof(source), position % 32, table);
+                check_decode(source, sizeof(source), position % 64, table);
             }
         }
         /* In particular, every kind of final padding stays with the caller. */
@@ -237,7 +237,7 @@ static void test_random_mixed_inputs(void)
         for (size_t sample = 0; sample < 256; sample++) {
             const size_t len = next_random(&state) % (sizeof(source) + 1);
             const size_t encoded_len = len / 3 * 4;
-            const size_t offset = next_random(&state) % 32;
+            const size_t offset = next_random(&state) % 64;
 
             for (size_t i = 0; i < len; i++) {
                 source[i] = (uint8_t)next_random(&state);
@@ -260,7 +260,7 @@ static void test_tight_allocations(void)
 
     for (size_t alphabet = 0; alphabet < 2; alphabet++) {
         make_table(alphabets[alphabet], table);
-        for (size_t len = 1; len <= 1024; len++) {
+        for (size_t len = 1; len <= 2048; len++) {
             uint8_t *source = malloc(len);
             const size_t encode_len = encode_prefix(len) / 3 * 4;
             uint8_t *encoded = malloc(encode_len == 0 ? 1 : encode_len);
@@ -311,7 +311,7 @@ static void test_guard_pages(void)
 
     for (size_t alphabet = 0; alphabet < 2; alphabet++) {
         make_table(alphabets[alphabet], table);
-        for (size_t len = 0; len <= 1024; len++) {
+        for (size_t len = 0; len <= 2048; len++) {
             for (size_t at_end = 0; at_end < 2; at_end++) {
                 uint8_t *source = source_mapping + page_size +
                                   (at_end ? page_size - len : 0);
@@ -333,6 +333,27 @@ static void test_guard_pages(void)
             }
         }
     }
+    /* An invalid block must not write even a speculative byte. Position the
+     * end of the committed prefix directly against an inaccessible page.
+     * Check both the native harness's and Haskell's padding sentinel. */
+    for (size_t alphabet = 0; alphabet < 2; alphabet++) {
+        make_table(alphabets[alphabet], table);
+        for (unsigned sentinel = 64; sentinel <= 99; sentinel += 35) {
+            table['='] = (uint8_t)sentinel;
+            for (size_t position = 0; position < 256; position++) {
+                const uint8_t invalid[] = {'=', '!', 0, 0x80, 0xc1, 0xff};
+                for (size_t i = 0; i < sizeof(invalid); i++) {
+                    uint8_t *source = source_mapping + page_size;
+                    memset(source, 'A', 260);
+                    source[position] = invalid[i];
+                    const size_t expected = decode_prefix(source, 260, table);
+                    uint8_t *output = output_mapping + page_size * 2 - expected / 4 * 3;
+                    CHECK(hs_base64_simd_decode(source, 260, output, table) == expected);
+                    checks++;
+                }
+            }
+        }
+    }
     CHECK(munmap(source_mapping, page_size * 3) == 0);
     CHECK(munmap(output_mapping, page_size * 3) == 0);
 }
@@ -344,8 +365,8 @@ int main(int argc, char **argv)
 
     if (argc != 1) {
         if (argc != 3 || strcmp(argv[1], "--require-backend") != 0 ||
-            strlen(argv[2]) != 1 || argv[2][0] < '0' || argv[2][0] > '3') {
-            fprintf(stderr, "usage: %s [--require-backend 0|1|2|3]\n", argv[0]);
+            strlen(argv[2]) != 1 || argv[2][0] < '0' || argv[2][0] > '5') {
+            fprintf(stderr, "usage: %s [--require-backend 0|1|2|3|4|5]\n", argv[0]);
             return EXIT_FAILURE;
         }
         if (backend != argv[2][0] - '0') {
@@ -353,18 +374,23 @@ int main(int argc, char **argv)
             return EXIT_FAILURE;
         }
     }
-    CHECK(backend >= 0 && backend <= 3);
+    CHECK(backend >= 0 && backend <= 5);
 #if defined(HS_BASE64_SIMD_FORCE_SCALAR)
     CHECK(backend == 0);
 #elif defined(HS_BASE64_SIMD_FORCE_SSSE3) && defined(__x86_64__)
     CHECK(backend == 0 || backend == 1);
+#elif defined(HS_BASE64_SIMD_FORCE_AVX2) && defined(__x86_64__)
+    CHECK(backend == 0 || backend == 1 || backend == 3);
+#elif defined(HS_BASE64_SIMD_FORCE_AVX512BW) && defined(__x86_64__)
+    CHECK(backend != 5);
 #elif defined(__aarch64__) && defined(__ARM_NEON) && \
       (defined(__GNUC__) || defined(__clang__)) && !defined(HS_BASE64_SIMD_EMULATED_X86)
     CHECK(backend == 2);
 #endif
-    encode_block = backend == 3 ? 24 : backend == 2 ? 48 : backend == 1 ? 12 : 0;
-    decode_block = backend == 3 ? 32 : backend == 2 ? 64 : backend == 1 ? 16 : 0;
+    encode_block = backend >= 4 ? 48 : backend == 3 ? 24 : backend == 2 ? 48 : backend == 1 ? 12 : 0;
+    decode_block = backend >= 4 ? 64 : backend == 3 ? 32 : backend == 2 ? 64 : backend == 1 ? 16 : 0;
     printf("SIMD backend: %d (%s)\n", backend,
+           backend == 5 ? "AVX512VBMI" : backend == 4 ? "AVX512BW" :
            backend == 3 ? "AVX2" : backend == 2 ? "NEON" :
            backend == 1 ? "SSSE3" : "scalar fallback");
     test_lengths_and_alignment();

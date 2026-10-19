@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
+{-# LANGUAGE TypeApplications #-}
 -- |
 -- Module       : Simd
 -- Copyright    : (c) 2026 Emily Pillmore
@@ -15,43 +17,60 @@
 -- typed decoding: matching mistakes in our encoder and decoder cannot cancel.
 module Simd (tests) where
 
-import Control.Monad (forM_)
-import "base64" Data.Base64.Types (assertBase64, extractBase64)
+import Control.Concurrent (forkIO, killThread, threadDelay)
+import Control.Exception (bracket, evaluate, try)
+import Control.Monad (forM_, forever)
+import "base64" Data.Base64.Types (Alphabet(StdPadded, UrlPadded, UrlUnpadded), assertBase64, extractBase64)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Short as SBS
+import qualified Data.ByteString.Short.Internal as SBSI
+import qualified "base64" Data.ByteString.Short.Base64 as SB64
+import qualified "base64" Data.ByteString.Short.Base64.URL as SB64U
 import qualified "base64" Data.ByteString.Base64 as B64
 import qualified "base64" Data.ByteString.Base64.URL as B64U
+import "base64" Data.ByteString.Base64.Internal.Head (decodeBase64_)
+import "base64" Data.ByteString.Base64.Internal.Tables (decodeB64Table, decodeB64UrlTable)
 import qualified "base64-bytestring" Data.ByteString.Base64 as Bos
 import qualified "base64-bytestring" Data.ByteString.Base64.URL as BosU
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Short as TS
+import qualified "base64" Data.Text.Short.Encoding.Base64 as TS64
+import qualified "base64" Data.Text.Short.Encoding.Base64.URL as TS64U
+import Data.Text.Encoding.Error (UnicodeException)
+import Data.Either (isLeft)
 import Data.Word (Word8)
+import GHC.Exts (isByteArrayPinned#, isTrue#)
 import Internal (Harness(..), b64, lb64, sb64, t64, tl64, ts64)
+import System.Mem (performGC)
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (Assertion, assertEqual, testCase)
+import Test.Tasty.HUnit (Assertion, assertBool, assertEqual, testCase)
 
 
 tests :: TestTree
 tests = testGroup "SIMD compatibility"
   [ testCase "vector boundaries and every slice alignment" $
       forM_ sizes $ \n ->
-        forM_ [0 .. 31] $ \offset ->
+        forM_ [0 .. 63] $ \offset ->
           checkHarness (context n offset) b64 (sliceAt offset) (payload n)
   , testCase "every input byte across vector blocks" $
       forM_ [0 .. 255] $ \byte ->
         checkHarness ("repeated byte=" ++ show byte) b64
-          (sliceAt (fromIntegral byte `mod` 32)) (BS.replicate 257 byte)
+          (sliceAt (fromIntegral byte `mod` 64)) (BS.replicate 257 byte)
   , testCase "invalid characters retain absolute offsets" invalidCharacters
   , testCase "all high bytes are invalid in both alphabets" highBytes
   , testCase "padding and canonical tails after vector prefixes" paddingAndTails
   , testCase "padding errors precede invalid bytes in the same quartet" mixedErrors
   , testCase "lazy chunks split input and encoded quartets" lazyChunks
   , testCase "short bytestrings preserve large buffers and tails" $
-      forM_ [0, 1, 2, 47, 48, 49, 127, 128, 129, 4096, 65536] $ \n ->
+      forM_ sizes $ \n ->
         checkHarness ("short length=" ++ show n) sb64 SBS.toShort (payload n)
+  , testCase "short unpinned arrays remain valid across garbage collections" shortUnpinned
+  , testCase "short decoders retain exact length and padding errors" shortErrors
+  , testCase "short parsers retain bytes and text decoders reject invalid UTF-8" shortParsersAndUtf8
+  , testCase "exposed checked decoder validates empty and incomplete inputs" checkedEntryPoint
   , testCase "Unicode text wrappers preserve long values and UTF-8" textWrappers
   ]
   where
@@ -91,6 +110,10 @@ checkHarness note harness convert raw = do
   equal "URL unpadded untyped decode" (Right input) (decodeUrlNopad harness unpadded)
   equal "URL generic padded decode" (Right input) (decodeUrl harness url)
   equal "URL generic unpadded decode" (Right input) (decodeUrl harness unpadded)
+  equal "URL generic padded typed decode" input
+    (decodeUrlTyped harness (assertBase64 @'UrlPadded url))
+  equal "URL generic unpadded typed decode" input
+    (decodeUrlTyped harness (assertBase64 @'UrlUnpadded unpadded))
   where
     input = convert raw
     std = convert (Bos.encode raw)
@@ -102,14 +125,14 @@ checkHarness note harness convert raw = do
 -- well after a valid SIMD prefix. A valid suffix prevents tail-only coverage.
 invalidCharacters :: Assertion
 invalidCharacters =
-  forM_ [0, 1, 15, 31] $ \offset ->
+  forM_ [0, 1, 15, 31, 32, 47, 63] $ \offset ->
     forM_ positions $ \position -> do
       forM_ [35, 128, 255] $ \byte ->
         forM_ decoders $ \(name, decoder) ->
           checkInvalid name decoder offset position byte
       forM_ [45, 95] $ \byte ->
-        checkInvalid "standard rejects URL alphabet" B64.decodeBase64Untyped
-          offset position byte
+        forM_ standardDecoders $ \(name, decoder) ->
+          checkInvalid (name ++ " rejects URL alphabet") decoder offset position byte
       forM_ [43, 47] $ \byte ->
         forM_ urlDecoders $ \(name, decoder) ->
           checkInvalid name decoder offset position byte
@@ -123,19 +146,43 @@ highBytes =
   forM_ [128 .. 255] $ \byte ->
     forM_ [15, 16, 31, 32, 63, 64, 127, 255, 256, 4096] $ \position ->
       forM_ decoders $ \(name, decoder) ->
-        checkInvalid name decoder (fromIntegral byte `mod` 32) position byte
+        checkInvalid name decoder (fromIntegral byte `mod` 64) position byte
 
 type Decoder = BS.ByteString -> Either T.Text BS.ByteString
 
 decoders :: [(String, Decoder)]
-decoders = ("standard", B64.decodeBase64Untyped) : urlDecoders
+decoders = standardDecoders ++ urlDecoders
+
+standardDecoders :: [(String, Decoder)]
+standardDecoders =
+  [ ("standard", B64.decodeBase64Untyped)
+  , ("short standard", fromShortDecoder SB64.decodeBase64Untyped)
+  ]
 
 urlDecoders :: [(String, Decoder)]
-urlDecoders =
+urlDecoders = urlPaddedDecoders ++ urlUnpaddedDecoders ++ urlGenericDecoders
+
+urlPaddedDecoders :: [(String, Decoder)]
+urlPaddedDecoders =
   [ ("URL padded", B64U.decodeBase64PaddedUntyped)
-  , ("URL unpadded", B64U.decodeBase64UnpaddedUntyped)
-  , ("URL generic", B64U.decodeBase64Untyped)
+  , ("short URL padded", fromShortDecoder SB64U.decodeBase64PaddedUntyped)
   ]
+
+urlUnpaddedDecoders :: [(String, Decoder)]
+urlUnpaddedDecoders =
+  [ ("URL unpadded", B64U.decodeBase64UnpaddedUntyped)
+  , ("short URL unpadded", fromShortDecoder SB64U.decodeBase64UnpaddedUntyped)
+  ]
+
+urlGenericDecoders :: [(String, Decoder)]
+urlGenericDecoders =
+  [ ("URL generic", B64U.decodeBase64Untyped)
+  , ("short URL generic", fromShortDecoder SB64U.decodeBase64Untyped)
+  ]
+
+fromShortDecoder
+  :: (SBS.ShortByteString -> Either T.Text SBS.ShortByteString) -> Decoder
+fromShortDecoder decoder = fmap SBS.fromShort . decoder . SBS.toShort
 
 checkInvalid :: String -> Decoder -> Int -> Int -> Word8 -> Assertion
 checkInvalid name decoder offset position byte =
@@ -180,8 +227,7 @@ paddingAndTails =
             (Left (atOffset "invalid padding near offset: " (prefixLength + position)))
             (decoder (input (BS.replicate position 65 <> "="
               <> BS.replicate (7 - position) 65)))
-      forM_ (("standard", B64.decodeBase64Untyped) : take 1 urlDecoders
-             ++ [("URL generic", B64U.decodeBase64Untyped)]) $ \(name, decoder) -> do
+      forM_ (standardDecoders ++ urlPaddedDecoders ++ urlGenericDecoders) $ \(name, decoder) -> do
         assertEqual (note name ++ ", one-byte tail") (expected "d")
           (decoder (input "ZA=="))
         assertEqual (note name ++ ", two-byte tail") (expected "f`")
@@ -190,7 +236,7 @@ paddingAndTails =
           assertEqual (note name ++ ", noncanonical tail=" ++ show suffix)
             (Left (atOffset "non-canonical encoding detected at offset: "
               (prefixLength + position))) (decoder (input suffix))
-      forM_ (drop 1 urlDecoders) $ \(name, decoder) -> do
+      forM_ (urlUnpaddedDecoders ++ urlGenericDecoders) $ \(name, decoder) -> do
         assertEqual (note name ++ ", unpadded one-byte tail") (expected "d")
           (decoder (input "ZA"))
         assertEqual (note name ++ ", unpadded two-byte tail") (expected "f`")
@@ -208,6 +254,80 @@ paddingAndTails =
       forM_ decoders $ \(name, decoder) ->
         assertEqual (note name ++ ", invalid length")
           (Left "Base64-encoded bytestring has invalid size") (decoder (input "A"))
+
+-- Force truly movable arrays on both sides of the native call, while another
+-- capability requests collections. Every iteration has distinct contents.
+shortUnpinned :: Assertion
+shortUnpinned = bracket (forkIO (forever (performGC >> threadDelay 1000))) killThread $ \_ ->
+  forM_ [0 .. 63 :: Int] $ \salt -> do
+    let raw = BS.pack [fromIntegral (i + salt) | i <- [0 .. 256 + salt `mod` 3]]
+        input = SBS.toShort raw
+        encoded = extractBase64 (SB64.encodeBase64' input)
+    assertUnpinned "source" input
+    assertUnpinned "encoded destination" encoded
+    assertEqual "direct encoding under GC" (SBS.toShort (Bos.encode raw)) encoded
+    performGC
+    checkHarness ("unpinned salt=" ++ show salt) sb64 SBS.toShort raw
+    assertUnpinned "decoded destination" (SB64.decodeBase64 (assertBase64 @'StdPadded encoded))
+  where
+    assertUnpinned note (SBSI.SBS bytes#) =
+      assertBool note (not (isTrue# (isByteArrayPinned# bytes#)))
+
+-- Compare every checked short flavor with the established strict contract,
+-- including incomplete quartets whose padding must remain virtual.
+shortErrors :: Assertion
+shortErrors =
+  forM_ [0, 64, 128, 256, 4096] $ \prefixLength ->
+    forM_ ["A", "AA", "AAA", "=", "A=", "AA=", "A==", "====", "AA=A", "#=AA",
+           "ZA==", "ZE==", "ZmA=", "ZmC=", "ZE", "ZmC", "####", "\xff\x80\&AA"] $ \suffix ->
+      forM_ pairs $ \(name, strict, short) -> do
+        let input = BS.replicate prefixLength 65 <> suffix
+        assertEqual (name ++ ": prefix=" ++ show prefixLength ++ ", suffix=" ++ show suffix)
+          (strict input) (fromShortDecoder short input)
+  where
+    pairs =
+      [ ("standard", B64.decodeBase64Untyped, SB64.decodeBase64Untyped)
+      , ("URL padded", B64U.decodeBase64PaddedUntyped, SB64U.decodeBase64PaddedUntyped)
+      , ("URL unpadded", B64U.decodeBase64UnpaddedUntyped, SB64U.decodeBase64UnpaddedUntyped)
+      , ("URL generic", B64U.decodeBase64Untyped, SB64U.decodeBase64Untyped)
+      ]
+
+shortParsersAndUtf8 :: Assertion
+shortParsersAndUtf8 = do
+  forM_ ["ZA==", "ZE==", "ZmA=", "ZmC=", "A", "####"] $ \suffix -> do
+    let bytes = BS.replicate 256 65 <> suffix
+        short = SBS.toShort bytes
+        text = TS.fromText (T.decodeUtf8 bytes)
+        expected = bytes <$ B64.decodeBase64Untyped bytes
+    assertEqual "short parser exact errors and retained input"
+      expected (SBS.fromShort . extractBase64 <$> SB64.parseBase64 short)
+    assertEqual "short text parser exact errors and retained input"
+      expected (TS.toByteString . extractBase64 <$> TS64.parseBase64 text)
+  let std = TS.fromText (T.replicate 64 "AAAA" <> "/w==")
+      url = TS.fromText (T.replicate 64 "AAAA" <> "_w==")
+      unpadded = TS.fromText (T.replicate 64 "AAAA" <> "_w")
+  assertEqual "parser does not decode invalid UTF-8 payloads" (Right std)
+    (extractBase64 <$> TS64.parseBase64 std)
+  forM_
+    [ TS64.decodeBase64 (assertBase64 @'StdPadded std)
+    , either (error . T.unpack) id (TS64.decodeBase64Untyped std)
+    , TS64U.decodeBase64Padded (assertBase64 url)
+    , either (error . T.unpack) id (TS64U.decodeBase64PaddedUntyped url)
+    , TS64U.decodeBase64Unpadded (assertBase64 unpadded)
+    , either (error . T.unpack) id (TS64U.decodeBase64UnpaddedUntyped unpadded)
+    , either (error . T.unpack) id (TS64U.decodeBase64Untyped url)
+    ] $ \decoded -> do
+      result <- try (evaluate (TS.length decoded)) :: IO (Either UnicodeException Int)
+      assertBool "invalid UTF-8 still raises UnicodeException" (isLeft result)
+
+checkedEntryPoint :: Assertion
+checkedEntryPoint =
+  forM_ [decodeB64Table, decodeB64UrlTable] $ \table ->
+    forM_ [0, 1, 2, 3, 5, 6, 7, 125, 126, 127, 129, 130, 131] $ \size -> do
+      let bytes = BS.replicate size 65
+      actual <- decodeBase64_ table bytes
+      assertEqual ("checked entry point length=" ++ show size)
+        (B64.decodeBase64Untyped bytes) actual
 
 lazyChunks :: Assertion
 lazyChunks =

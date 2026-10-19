@@ -37,13 +37,13 @@ import Data.Base64.Types
 
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Base64.URL as B64U
-import Data.ByteString.Short (ShortByteString)
+import Data.ByteString.Short (ShortByteString, fromShort)
 import qualified Data.ByteString.Short.Base64.URL as BS64U
 import Data.Text (Text)
+import qualified Data.Text.Encoding as T
 import qualified Data.Text.Encoding.Base64.URL as B64TU
 import Data.Text.Encoding.Base64.Error
 import Data.Text.Short
-import Data.Text.Short.Unsafe
 
 
 -- $setup
@@ -65,9 +65,7 @@ import Data.Text.Short.Unsafe
 -- "PDw_Pj4="
 --
 encodeBase64 :: ShortText -> Base64 'UrlPadded ShortText
-encodeBase64 = fmap fromByteStringUnsafe
-  . B64U.encodeBase64'
-  . toByteString
+encodeBase64 = BS64U.encodeBase64 . toShortByteString
 {-# INLINE encodeBase64 #-}
 
 -- | Decode an arbitrarily padded Base64url-encoded 'ShortText' value.
@@ -87,7 +85,7 @@ encodeBase64 = fmap fromByteStringUnsafe
 -- "<<?>>"
 --
 decodeBase64 :: UrlAlphabet k => Base64 k ShortText -> ShortText
-decodeBase64 = fromText . B64TU.decodeBase64 . fmap toText
+decodeBase64 = decodeShortUtf8 . BS64U.decodeBase64 . fmap toShortByteString
 {-# INLINE decodeBase64 #-}
 
 -- | Decode an untyped padded Base64url-encoded 'ShortText' value. If its length is not a multiple
@@ -119,7 +117,7 @@ decodeBase64 = fromText . B64TU.decodeBase64 . fmap toText
 -- Right "<<>>"
 --
 decodeBase64Untyped :: ShortText -> Either Text ShortText
-decodeBase64Untyped = fmap fromText . B64TU.decodeBase64Untyped . toText
+decodeBase64Untyped = fmap decodeShortUtf8 . BS64U.decodeBase64Untyped . toShortByteString
 {-# INLINE decodeBase64Untyped #-}
 
 -- | Attempt to decode an untyped 'ShortByteString' value as Base64url, converting from
@@ -156,9 +154,7 @@ decodeBase64UntypedWith f t = case BS64U.decodeBase64Untyped t of
 -- "PDw_Pj4"
 --
 encodeBase64Unpadded :: ShortText -> Base64 'UrlUnpadded ShortText
-encodeBase64Unpadded = fmap fromByteStringUnsafe
-  . B64U.encodeBase64Unpadded'
-  . toByteString
+encodeBase64Unpadded = BS64U.encodeBase64Unpadded . toShortByteString
 {-# INLINE encodeBase64Unpadded #-}
 
 -- | Decode an unpadded Base64url encoded 'ShortText' value.
@@ -171,7 +167,7 @@ encodeBase64Unpadded = fmap fromByteStringUnsafe
 -- "<<?>>"
 --
 decodeBase64Unpadded :: Base64 'UrlUnpadded ShortText -> ShortText
-decodeBase64Unpadded = fromText . B64TU.decodeBase64Unpadded . fmap toText
+decodeBase64Unpadded = decodeShortUtf8 . BS64U.decodeBase64Unpadded . fmap toShortByteString
 {-# INLINE decodeBase64Unpadded #-}
 
 -- | Decode an untyped, unpadded Base64url encoded 'ShortText' value.
@@ -187,9 +183,9 @@ decodeBase64Unpadded = fromText . B64TU.decodeBase64Unpadded . fmap toText
 -- Left "Base64-encoded bytestring has invalid padding"
 --
 decodeBase64UnpaddedUntyped :: ShortText -> Either Text ShortText
-decodeBase64UnpaddedUntyped = fmap fromText
-  . B64TU.decodeBase64UnpaddedUntyped
-  . toText
+decodeBase64UnpaddedUntyped = fmap decodeShortUtf8
+  . BS64U.decodeBase64UnpaddedUntyped
+  . toShortByteString
 {-# INLINE decodeBase64UnpaddedUntyped #-}
 
 -- | Attempt to decode an untyped, unpadded 'ShortByteString' value as Base64url, converting from
@@ -226,7 +222,7 @@ decodeBase64UnpaddedUntypedWith f t = case BS64U.decodeBase64UnpaddedUntyped t o
 -- "<<?>>"
 --
 decodeBase64Padded :: Base64 'UrlPadded ShortText -> ShortText
-decodeBase64Padded = fromText . B64TU.decodeBase64Padded . fmap toText
+decodeBase64Padded = decodeShortUtf8 . BS64U.decodeBase64Padded . fmap toShortByteString
 {-# INLINE decodeBase64Padded #-}
 
 -- | Decode an untyped, padded Base64url encoded 'ShortText' value
@@ -242,7 +238,7 @@ decodeBase64Padded = fromText . B64TU.decodeBase64Padded . fmap toText
 -- Left "Base64-encoded bytestring requires padding"
 --
 decodeBase64PaddedUntyped :: ShortText -> Either Text ShortText
-decodeBase64PaddedUntyped = fmap fromText . B64TU.decodeBase64PaddedUntyped . toText
+decodeBase64PaddedUntyped = fmap decodeShortUtf8 . BS64U.decodeBase64PaddedUntyped . toShortByteString
 {-# INLINE decodeBase64PaddedUntyped #-}
 
 -- | Attempt to decode an untyped, padded 'ShortByteString' value as Base64url, converting from
@@ -324,3 +320,11 @@ isBase64Url = B64U.isBase64Url . toByteString
 isValidBase64Url :: ShortText -> Bool
 isValidBase64Url = B64U.isValidBase64Url . toByteString
 {-# INLINE isValidBase64Url #-}
+
+-- Share valid UTF-8 storage directly while retaining decodeUtf8 exceptions
+-- for invalid decoded payloads, as in the strict text API.
+decodeShortUtf8 :: ShortByteString -> ShortText
+decodeShortUtf8 bytes = case fromShortByteString bytes of
+  Just text -> text
+  Nothing -> fromText (T.decodeUtf8 (fromShort bytes))
+{-# INLINE decodeShortUtf8 #-}

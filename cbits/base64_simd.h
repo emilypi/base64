@@ -32,8 +32,11 @@ size_t hs_base64_simd_decode(const uint8_t *src, size_t len, uint8_t *dst,
                             const uint8_t *table);
 
 /*
- * 0: scalar fallback; 1: x86-64 SSSE3; 2: ARM64 NEON; 3: x86-64 AVX2.
- * x86 features are detected at runtime; AVX2 is preferred when supported.
+ * 0: scalar fallback; 1: x86-64 SSSE3; 2: ARM64 NEON; 3: x86-64 AVX2;
+ * 4: x86-64 AVX512F/BW; 5: x86-64 AVX512F/BW/VBMI.
+ * Runtime dispatch requires CPU and OS support, preferring VBMI, BW, AVX2,
+ * then SSSE3. FORCE_SCALAR, FORCE_SSSE3, FORCE_AVX2 and FORCE_AVX512BW
+ * (prefixed HS_BASE64_SIMD_) cap selection for tests and measurements.
  */
 int hs_base64_simd_backend(void);
 

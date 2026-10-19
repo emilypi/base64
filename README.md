@@ -69,10 +69,17 @@ cabal build -fsimd
 cabal test -fsimd --test-show-details=direct
 ```
 
-The flag is **off by default**. ARM64 uses NEON; x86-64 selects AVX2 when
-the CPU and operating system support it, then SSSE3 on older processors.
-Other targets and short inputs use the existing
-Haskell loops. No external C library is required. Remainders, padding checks,
+The flag is **off by default**. ARM64 uses NEON; x86-64 selects AVX512F/BW/VBMI,
+then AVX512F/BW, AVX2, or SSSE3 according to CPU and operating-system support.
+AVX-512 additionally requires OS support for opmask and ZMM register state. Its
+functions use local compiler targets, so no global ISA flags are needed.
+Compilers without the required AVX-512 intrinsics retain older backends.
+Strict and short ByteStrings use the same kernels, including their Text
+wrappers. Short variants pass byte arrays directly to SIMD, without pinning
+or intermediate copies. Small inputs use direct Haskell byte-array loops;
+larger inputs on scalar-only targets retain the existing optimized strict
+ByteString fallback.
+No external C library is required. Remainders, padding checks,
 canonical-encoding checks, and error messages still use the Haskell code.
 Lenient decoding remains scalar.
 
@@ -91,7 +98,11 @@ decoding, short and large buffers, and sliced inputs. The test suite exercises
 block boundaries, scalar tails, slices, invalid input, and wrapper types in
 both configurations; CI also runs native memory checks on x86-64 and ARM64,
 explicitly requiring AVX2 on Linux x86-64 and checking the SSSE3 and scalar
-fallbacks separately.
+fallbacks separately. The optional `avx512-hardware` workflow job requires an
+explicit `avx512-runner` label when dispatched manually. It fails if that runner
+cannot execute AVX512F/BW; `avx512-vbmi` also requires VBMI when enabled.
+The job runs native memory checks, Haskell integration tests, and comparative
+benchmarks. A skipped hardware job provides no AVX-512 execution evidence.
 
 For native kernel measurements, a standalone benchmark validates every case
 against scalar output and checks both alphabets. It times pseudorandom,
@@ -104,7 +115,17 @@ cc -O2 -std=c99 -Icbits cbits/base64_simd.c benchmarks/simd-native.c -o base64-n
 ```
 
 Add `--url` to time the URL alphabet, or `--pattern random` to select one
-input distribution. On x86-64, compile a second executable with
-`-DHS_BASE64_SIMD_FORCE_SSSE3` to compare the older backend on the same CPU.
+input distribution. On x86-64, compile additional executables with
+`-DHS_BASE64_SIMD_FORCE_AVX512BW`, `-DHS_BASE64_SIMD_FORCE_AVX2`, or
+`-DHS_BASE64_SIMD_FORCE_SSSE3` to compare backends on the same CPU.
+These definitions cap dispatch and never bypass feature checks. Add
+`--require-backend 5`, `4`, `3`, or `1` respectively to the uncapped VBMI,
+capped BW, AVX2, or SSSE3 benchmark to reject an unexpected fallback.
+The native memory-check executable accepts the same option, plus `0` for
+scalar fallback and `2` for NEON. AVX-512 block sizes are 48 input bytes for
+encoding and 64 for decoding; decoding reserves at least the final quartet.
+Benchmark results include consumed bytes because backends can leave different
+scalar tails. Native AVX-512 throughput must be measured on capable hardware;
+portable instruction emulation establishes algorithmic correctness only.
 These measurements cover native prefixes only; use the Cabal benchmarks above
 to include Haskell allocation and scalar tails.

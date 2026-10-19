@@ -27,6 +27,8 @@ module Data.ByteString.Short.Base64
 
 import Data.Base64.Types
 import qualified Data.ByteString.Base64 as B64
+import Data.ByteString.Base64.Internal.Short
+import Data.ByteString.Base64.Internal.Tables
 import Data.ByteString.Short (ShortByteString, fromShort, toShort)
 import Data.Text (Text)
 import Data.Text.Short (ShortText)
@@ -64,7 +66,7 @@ encodeBase64 = fmap fromShortByteStringUnsafe . encodeBase64'
 -- "U3Vu"
 --
 encodeBase64' :: ShortByteString -> Base64 'StdPadded ShortByteString
-encodeBase64' = fmap toShort . B64.encodeBase64' . fromShort
+encodeBase64' = assertBase64 . encodeShort True base64Table
 {-# INLINE encodeBase64' #-}
 
 -- | Decode a padded Base64-encoded 'ShortByteString' value.
@@ -80,7 +82,7 @@ decodeBase64
   :: StdAlphabet k
   => Base64 k ShortByteString
   -> ShortByteString
-decodeBase64 = toShort . B64.decodeBase64 . fmap fromShort
+decodeBase64 = decodeShortTyped decodeB64Table
 {-# INLINE decodeBase64 #-}
 
 -- | Decode a padded Base64-encoded 'ShortByteString' value.
@@ -99,7 +101,7 @@ decodeBase64 = toShort . B64.decodeBase64 . fmap fromShort
 -- Left "non-canonical encoding detected at offset: 2"
 --
 decodeBase64Untyped :: ShortByteString -> Either Text ShortByteString
-decodeBase64Untyped = fmap toShort . B64.decodeBase64Untyped . fromShort
+decodeBase64Untyped = decodeShort Required decodeB64Table
 {-# inline decodeBase64Untyped #-}
 
 -- | Leniently decode an unpadded Base64-encoded 'ShortByteString' value. This function
@@ -147,5 +149,5 @@ decodeBase64Lenient = toShort . B64.decodeBase64Lenient . fromShort
 -- @since 2.0
 --
 parseBase64 :: ShortByteString -> Either Text (Base64 'StdPadded ShortByteString)
-parseBase64 bs = assertBase64 bs <$ B64.parseBase64 (fromShort bs)
+parseBase64 bs = assertBase64 bs <$ decodeBase64Untyped bs
 {-# INLINE parseBase64 #-}

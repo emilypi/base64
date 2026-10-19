@@ -18,8 +18,11 @@ module Main (main) where
 import Criterion.Main
 import "base64" Data.Base64.Types (Alphabet(StdPadded), assertBase64)
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Short as SBS
 import qualified "base64" Data.ByteString.Base64 as B64
 import qualified "base64" Data.ByteString.Base64.URL as B64U
+import qualified "base64" Data.ByteString.Short.Base64 as SB64
+import qualified "base64" Data.ByteString.Short.Base64.URL as SB64U
 import qualified "base64-bytestring" Data.ByteString.Base64 as Bos
 import qualified "base64-bytestring" Data.ByteString.Base64.URL as BosU
 
@@ -72,6 +75,40 @@ main = defaultMain
           ]
       | size <- [11, 12, 24, 32, 48, 64, 128, 4096, 1048576]
       ]
+  , bgroup (implementation ++ "-short")
+      [ env (shortInputs size) $ \ ~(raw, std, url, unpadded) ->
+          bgroup (show size)
+            [ bgroup "standard"
+                [ bench "encode-direct" $ nf SB64.encodeBase64' raw
+                , bench "encode-via-strict" $
+                    nf (fmap SBS.toShort . B64.encodeBase64' . SBS.fromShort) raw
+                , bench "decode-typed-direct" $
+                    nf (SB64.decodeBase64 . assertBase64 @'StdPadded) std
+                , bench "decode-typed-via-strict" $
+                    nf (SBS.toShort . B64.decodeBase64 . assertBase64 @'StdPadded . SBS.fromShort) std
+                , bench "decode-untyped-direct" $ nf SB64.decodeBase64Untyped std
+                , bench "decode-untyped-via-strict" $
+                    nf (fmap SBS.toShort . B64.decodeBase64Untyped . SBS.fromShort) std
+                ]
+            , bgroup "url-padded"
+                [ bench "encode-direct" $ nf SB64U.encodeBase64' raw
+                , bench "encode-via-strict" $
+                    nf (fmap SBS.toShort . B64U.encodeBase64' . SBS.fromShort) raw
+                , bench "decode-typed-direct" $
+                    nf (SB64U.decodeBase64Padded . assertBase64) url
+                , bench "decode-untyped-direct" $ nf SB64U.decodeBase64PaddedUntyped url
+                ]
+            , bgroup "url-unpadded"
+                [ bench "encode-direct" $ nf SB64U.encodeBase64Unpadded' raw
+                , bench "encode-via-strict" $
+                    nf (fmap SBS.toShort . B64U.encodeBase64Unpadded' . SBS.fromShort) raw
+                , bench "decode-typed-direct" $
+                    nf (SB64U.decodeBase64Unpadded . assertBase64) unpadded
+                , bench "decode-untyped-direct" $ nf SB64U.decodeBase64UnpaddedUntyped unpadded
+                ]
+            ]
+      | size <- [1, 2, 47, 48, 49, 95, 96, 97, 127, 128, 129, 4096, 1048576]
+      ]
   ]
 
 implementation :: String
@@ -95,3 +132,10 @@ inputs size offset = pure
     raw = BS.pack (take size (cycle [0 .. 255]))
     sliced bytes = BS.take (BS.length bytes) . BS.drop offset $
       BS.replicate offset 0xe5 <> bytes <> BS.replicate 32 0xff
+
+shortInputs
+  :: Int
+  -> IO (SBS.ShortByteString, SBS.ShortByteString, SBS.ShortByteString, SBS.ShortByteString)
+shortInputs size = do
+  (raw, std, url, unpadded) <- inputs size 0
+  pure (SBS.toShort raw, SBS.toShort std, SBS.toShort url, SBS.toShort unpadded)

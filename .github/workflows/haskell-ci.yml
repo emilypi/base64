@@ -6,7 +6,16 @@ on:
       - emily/ghc-9.14.x
       - emily/simd
   pull_request: {} # Validate all PRs
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      avx512-runner:
+        description: 'Runner label with AVX512F/BW hardware; empty skips hardware job'
+        type: string
+        default: ''
+      avx512-vbmi:
+        description: 'Also require and test AVX512VBMI on that runner'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -70,7 +79,8 @@ jobs:
         cc -std=c99 -O2 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Icbits cbits/base64_simd.c test/simd-native.c -o "$RUNNER_TEMP/base64-simd-check"
         "$RUNNER_TEMP/base64-simd-check"
         if [[ "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]; then
-          "$RUNNER_TEMP/base64-simd-check" --require-backend 3
+          cc -std=c99 -O2 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -DHS_BASE64_SIMD_FORCE_AVX2 -Icbits cbits/base64_simd.c test/simd-native.c -o "$RUNNER_TEMP/base64-avx2-check"
+          "$RUNNER_TEMP/base64-avx2-check" --require-backend 3
           cc -std=c99 -O2 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -DHS_BASE64_SIMD_FORCE_SSSE3 -Icbits cbits/base64_simd.c test/simd-native.c -o "$RUNNER_TEMP/base64-ssse3-check"
           "$RUNNER_TEMP/base64-ssse3-check" --require-backend 1
         fi
@@ -82,6 +92,48 @@ jobs:
       run: |
         cd base64-*/
         cabal check
+
+  avx512-hardware:
+    if: github.event_name == 'workflow_dispatch' && inputs.avx512-runner != ''
+    runs-on: ${{ inputs.avx512-runner }}
+    env:
+      UBSAN_OPTIONS: halt_on_error=1
+      REQUIRE_VBMI: ${{ inputs.avx512-vbmi }}
+    steps:
+    - uses: actions/checkout@v7
+    - uses: haskell-actions/setup@v2.12.1
+      with:
+        ghc-version: '9.14.1'
+        cabal-version: 'latest'
+    - name: Require AVX-512 and check native memory safety
+      run: |
+        cc -std=c99 -O2 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -DHS_BASE64_SIMD_FORCE_AVX512BW -Icbits cbits/base64_simd.c test/simd-native.c -o "$RUNNER_TEMP/base64-bw-check"
+        "$RUNNER_TEMP/base64-bw-check" --require-backend 4
+        if [[ "$REQUIRE_VBMI" == true ]]; then
+          cc -std=c99 -O2 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Icbits cbits/base64_simd.c test/simd-native.c -o "$RUNNER_TEMP/base64-vbmi-check"
+          "$RUNNER_TEMP/base64-vbmi-check" --require-backend 5
+        fi
+    - name: Check Haskell integration on AVX-512 hardware
+      run: |
+        cabal update
+        cabal test -j2 -fsimd --test-show-details=direct --test-options='+RTS -N2 -RTS' --ghc-options='-fcheck-prim-bounds -fno-ignore-asserts'
+        cabal test -j2 -fsimd --builddir=dist-avx512bw --test-show-details=direct --test-options='+RTS -N2 -RTS' --ghc-options='-fcheck-prim-bounds -fno-ignore-asserts -optc-DHS_BASE64_SIMD_FORCE_AVX512BW'
+    - name: Compare native backends
+      run: |
+        for spec in AVX2:3 AVX512BW:4; do
+          backend="${spec%:*}"
+          required="${spec#*:}"
+          cc -std=c99 -O2 -Wall -Wextra -Werror -DHS_BASE64_SIMD_FORCE_$backend -Icbits cbits/base64_simd.c benchmarks/simd-native.c -o "$RUNNER_TEMP/base64-bench-$backend"
+          "$RUNNER_TEMP/base64-bench-$backend" --require-backend "$required" --seconds 0.05 --rounds 5 > "$RUNNER_TEMP/base64-$backend.csv"
+        done
+        if [[ "$REQUIRE_VBMI" == true ]]; then
+          cc -std=c99 -O2 -Wall -Wextra -Werror -Icbits cbits/base64_simd.c benchmarks/simd-native.c -o "$RUNNER_TEMP/base64-bench-vbmi"
+          "$RUNNER_TEMP/base64-bench-vbmi" --require-backend 5 --seconds 0.05 --rounds 5 > "$RUNNER_TEMP/base64-VBMI.csv"
+        fi
+    - uses: actions/upload-artifact@v4
+      with:
+        name: base64-avx512-benchmarks
+        path: ${{ runner.temp }}/base64-*.csv
 
   bounds-checking:
     needs: build

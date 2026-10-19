@@ -76,14 +76,20 @@ int main(int argc, char **argv)
     double seconds = 0.02;
     unsigned rounds = 3, timed_alphabet = 0;
     const char *only_pattern = NULL;
-    const size_t sizes[] = {128, 4096, 1048576};
+    int required_backend = -1;
+    const size_t sizes[] = {47, 48, 49, 63, 64, 65, 95, 96, 97, 127, 128, 129, 4096, 1048576};
     const char *patterns[] = {"random", "cycle256", "repeated"};
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--seconds") == 0 && i + 1 < argc) seconds = strtod(argv[++i], NULL);
         else if (strcmp(argv[i], "--rounds") == 0 && i + 1 < argc) rounds = (unsigned)strtoul(argv[++i], NULL, 10);
         else if (strcmp(argv[i], "--pattern") == 0 && i + 1 < argc) only_pattern = argv[++i];
         else if (strcmp(argv[i], "--url") == 0) timed_alphabet = 1;
-        else { fprintf(stderr, "usage: %s [--seconds 0.02] [--rounds 3] [--url] [--pattern random|cycle256|repeated]\n", argv[0]); return 1; }
+        else if (strcmp(argv[i], "--require-backend") == 0 && i + 1 < argc) {
+            const char *value = argv[++i];
+            require(strlen(value) == 1 && value[0] >= '0' && value[0] <= '5', "invalid backend");
+            required_backend = value[0] - '0';
+        }
+        else { fprintf(stderr, "usage: %s [--seconds 0.02] [--rounds 3] [--url] [--pattern random|cycle256|repeated] [--require-backend 0|1|2|3|4|5]\n", argv[0]); return 1; }
     }
     require(seconds >= 0.001 && seconds <= 10 && rounds > 0 && rounds <= 50, "invalid timing options");
     if (only_pattern) {
@@ -92,7 +98,8 @@ int main(int argc, char **argv)
         require(found, "unknown --pattern (use random, cycle256, or repeated)");
     }
     const int backend = hs_base64_simd_backend();
-    fprintf(stderr, "native backend=%d (0 scalar, 1 SSSE3, 2 NEON, 3 AVX2)\n", backend);
+    fprintf(stderr, "native backend=%d (0 scalar, 1 SSSE3, 2 NEON, 3 AVX2, 4 AVX512BW, 5 AVX512VBMI)\n", backend);
+    require(required_backend < 0 || backend == required_backend, "required backend is unavailable");
     require(backend != 0, "no native SIMD backend is available to time");
 
     puts("variant,operation,alphabet,data,raw_bytes,input_bytes,consumed,offset,round,iterations,ns_per_call,input_gib_per_second");

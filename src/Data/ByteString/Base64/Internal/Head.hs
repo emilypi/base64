@@ -97,8 +97,11 @@ decodeBase64_
     :: ForeignPtr Word8
     -> ByteString
     -> IO (Either Text ByteString)
-decodeBase64_ !dtfp (PS !sfp !soff !slen) =
-    withForeignPtr dtfp $ \dtable ->
+decodeBase64_ !dtfp (PS !sfp !soff !slen)
+  | slen == 0 = pure (Right mempty)
+  | remainder == 1 = pure (Left "Base64-encoded bytestring has invalid size")
+  | remainder /= 0 = pure (Left "Base64-encoded bytestring requires padding")
+  | otherwise = withForeignPtr dtfp $ \dtable ->
     withForeignPtr sfp $ \sptr -> do
       dfp <- mallocPlainForeignPtrBytes dlen
       withForeignPtr dfp $ \dptr -> do
@@ -111,6 +114,7 @@ decodeBase64_ !dtfp (PS !sfp !soff !slen) =
 #endif
   where
     !dlen = (slen `quot` 4) * 3
+    !remainder = slen `rem` 4
 {-# inline decodeBase64_ #-}
 
 -- | The main decode function for typed base64 values.

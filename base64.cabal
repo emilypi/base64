@@ -54,10 +54,10 @@ library
     Data.Text.Short.Encoding.Base64
     Data.Text.Short.Encoding.Base64.URL
 
-  other-modules:
     Data.Base64.Types.Internal
     Data.ByteString.Base64.Internal
     Data.ByteString.Base64.Internal.Head
+    Data.ByteString.Base64.Internal.Short
     Data.ByteString.Base64.Internal.Tables
     Data.ByteString.Base64.Internal.Tail
     Data.ByteString.Base64.Internal.Utils
@@ -65,7 +65,7 @@ library
     Data.ByteString.Base64.Internal.W64.Loop
 
   if flag(simd)
-    other-modules:  Data.ByteString.Base64.Internal.SIMD
+    exposed-modules: Data.ByteString.Base64.Internal.SIMD
     cpp-options:    -DBASE64_SIMD
     c-sources:      cbits/base64_simd.c
     include-dirs:   cbits
@@ -75,6 +75,7 @@ library
       base           >=4.18     && <4.23
     , bytestring     >=0.11     && <0.13
     , deepseq        >=1.4.4.0  && <1.6
+    , primitive      >=0.7      && <0.10
     , text           >=2.0      && <2.3
     , text-short     ^>=0.1
 

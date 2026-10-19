@@ -16,11 +16,15 @@ for replacement examples and the stricter validation behavior.
   published direct dependents found no occurrences of either function;
   private projects and other historical versions were not covered.
 * Add an optional, manual `simd` flag (off by default) for bundled ARM64 NEON
-  and runtime-detected x86-64 AVX2/SSSE3 encoding and strict decoding.
+  and runtime-detected x86-64 AVX512F/BW/VBMI, AVX512F/BW, AVX2, and SSSE3
+  encoding and strict decoding, with CPU and OS register-state checks.
+* Use direct byte-array SIMD bindings for ShortByteString and ShortText
+  encoding and checked/typed decoding, without pinning or intermediate copies.
 * The SIMD path retains scalar fallbacks, encoding and decoding behavior,
   padding/canonicity checks, and decoding error offsets.
 * Add flag-on/off test and benchmark variants, SIMD boundary regressions,
-  and native memory checks in CI.
+  and native memory checks in CI, including explicit backend selection and an
+  opt-in AVX-512 hardware job with comparative benchmarks.
 
 ## 1.0.1
 
