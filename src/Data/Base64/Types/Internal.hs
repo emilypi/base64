@@ -32,17 +32,17 @@ import Control.DeepSeq (NFData, rnf)
 data Alphabet
   = StdPadded
     -- ^ Standard base64 according to [RFC 4648 §4](https://datatracker.ietf.org/doc/html/rfc4648#section-4)
-    -- Padding is always inserted when encoding, and required when decoding
+    -- Padding is inserted when needed and required by the standard parser and decoder.
   | UrlPadded
-    -- ^ Standard base64 according to [RFC 4648 §4](https://datatracker.ietf.org/doc/html/rfc4648#section-4)
-    -- Padding is never inserted when encoding, and optional when decoding per
-    -- [RFC 7049](https://datatracker.ietf.org/doc/html/rfc7049#section-2.4.4.2).
+    -- ^ URL-safe base64 according to [RFC 4648 §5](https://datatracker.ietf.org/doc/html/rfc4648#section-5) aka base64url.
+    -- Padding is inserted when needed and required by the padded parser and decoder.
   | UrlUnpadded
     -- ^ URL-safe base64 according to [RFC 4648 §5](https://datatracker.ietf.org/doc/html/rfc4648#section-5) aka base64url
-    -- Padding is never inserted when encoding, and optional when decoding
+    -- Padding is never inserted and is rejected by the unpadded parser and decoder.
   | NonStandard
     -- ^ Any non-standard, non RFC 4648-compliant base64 encoding.
     -- Can only be decoded using lenient decoders.
+    -- This marker does not define an alphabet or canonical validation rules.
 
 -- | Wraps a value, asserting that it is or is intended to be
 -- in a particular kind of Base64 encoding use 'extractBase64'

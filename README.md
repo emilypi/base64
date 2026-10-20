@@ -29,7 +29,7 @@ The library supports GHC 9.6 through 9.14. Its dependencies are `base`,
 `bytestring`, `deepseq`, `text`, and `text-short`.
 
 Upgrading to 2.0? See the [migration guide](MIGRATION-2.0.md) for the replacement
-of `isBase64` and `isValidBase64`, and the [release notes](CHANGELOG.md#20) for
+of the standard and URL-safe Boolean validators, and the [release notes](CHANGELOG.md#20) for
 the optional SIMD implementation.
 
 ### Parsing existing Base64
@@ -56,8 +56,51 @@ UTF-8 validity; use `decodeBase64UntypedWith` to check that conversion.
 
 `parseBase64` replaces `isBase64` and `isValidBase64`. For a Boolean check, use
 `isRight . parseBase64` from `Data.Either`. Unlike the old `isValidBase64`, this
-rejects missing padding and non-canonical encodings. The URL-specific validators
-`isBase64Url` and `isValidBase64Url` retain their existing behavior.
+rejects missing padding and non-canonical encodings.
+
+Each URL-safe module likewise replaces `isBase64Url` and `isValidBase64Url`
+with two parsers:
+
+```haskell
+parseBase64Padded   :: a -> Either Text (Base64 'UrlPadded a)
+parseBase64Unpadded :: a -> Either Text (Base64 'UrlUnpadded a)
+```
+
+Choose the parser for the required padding policy. Both preserve the input
+and check canonicity; the padded parser requires complete padding when needed,
+and the unpadded parser rejects any padding.
+
+```haskell
+>>> import qualified Data.ByteString.Base64.URL as B64U
+>>> B64U.parseBase64Padded "PDw_Pj4="
+Right "PDw_Pj4="
+>>> B64U.parseBase64Unpadded "PDw_Pj4"
+Right "PDw_Pj4"
+>>> fmap B64U.decodeBase64Unpadded (B64U.parseBase64Unpadded "PDw_Pj4")
+Right "<<?>>"
+```
+
+For a Boolean check that accepts either padding policy, use
+`isRight (B64U.parseBase64Padded input) || isRight (B64U.parseBase64Unpadded input)`.
+See the [migration guide](MIGRATION-2.0.md#url-safe-encodings) for typed use.
+
+The complete parser API covers all six string representations:
+
+| Representation | Standard module | URL-safe module |
+| --- | --- | --- |
+| Strict `ByteString` | `Data.ByteString.Base64` | `Data.ByteString.Base64.URL` |
+| Lazy `ByteString` | `Data.ByteString.Lazy.Base64` | `Data.ByteString.Lazy.Base64.URL` |
+| `ShortByteString` | `Data.ByteString.Short.Base64` | `Data.ByteString.Short.Base64.URL` |
+| Strict `Text` | `Data.Text.Encoding.Base64` | `Data.Text.Encoding.Base64.URL` |
+| Lazy `Text` | `Data.Text.Lazy.Encoding.Base64` | `Data.Text.Lazy.Encoding.Base64.URL` |
+| `ShortText` | `Data.Text.Short.Encoding.Base64` | `Data.Text.Short.Encoding.Base64.URL` |
+
+Every standard module exports `parseBase64` for `StdPadded`. Every URL-safe
+module exports both `parseBase64Padded` for `UrlPadded` and
+`parseBase64Unpadded` for `UrlUnpadded`. All 18 combinations validate the whole
+input and preserve its encoded representation, including lazy chunk boundaries.
+`NonStandard` is a marker for input handled by lenient decoders; it does not
+define an alphabet or canonical validation rules.
 
 ### Optional SIMD
 

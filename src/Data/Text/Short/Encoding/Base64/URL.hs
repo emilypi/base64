@@ -28,9 +28,9 @@ module Data.Text.Short.Encoding.Base64.URL
 , decodeBase64PaddedUntyped
 , decodeBase64PaddedUntypedWith
 , decodeBase64Lenient
-  -- * Validation
-, isBase64Url
-, isValidBase64Url
+  -- * Parsing
+, parseBase64Padded
+, parseBase64Unpadded
 ) where
 
 import Data.Base64.Types
@@ -287,40 +287,64 @@ decodeBase64Lenient :: ShortText -> ShortText
 decodeBase64Lenient = fromText . B64TU.decodeBase64Lenient . toText
 {-# INLINE decodeBase64Lenient #-}
 
--- | Tell whether an untyped 'ShortText' value is Base64url-encoded.
+-- | Parse a canonical, padded Base64url-encoded 'ShortText' value.
+--
+-- Checks the URL-safe alphabet, length, padding, and unused padding bits.
+-- Returns the original encoded value wrapped in 'Base64', ready for
+-- 'decodeBase64Padded' or 'decodeBase64'. Errors match the strict ByteString
+-- 'Data.ByteString.Base64.URL.decodeBase64PaddedUntyped' decoder.
+-- The input is neither decoded nor normalized in the returned value.
+--
+-- This validates the Base64url encoding, independently of whether the
+-- decoded payload is valid UTF-8.
 --
 -- === __Examples__:
 --
--- >>> isBase64Url "PDw_Pj4="
--- True
+-- >>> parseBase64Padded "PDw_Pj4="
+-- Right "PDw_Pj4="
 --
--- >>> isBase64Url "PDw_Pj4"
--- True
+-- >>> fmap decodeBase64Padded (parseBase64Padded "PDw_Pj4=")
+-- Right "<<?>>"
 --
--- >>> isBase64Url "PDw_Pj"
--- False
+-- >>> parseBase64Padded "PDw_Pj4"
+-- Left "Base64-encoded bytestring requires padding"
 --
-isBase64Url :: ShortText -> Bool
-isBase64Url = B64U.isBase64Url . toByteString
-{-# INLINE isBase64Url #-}
+-- >>> parseBase64Padded "ZE=="
+-- Left "non-canonical encoding detected at offset: 1"
+--
+-- @since 2.0
+--
+parseBase64Padded :: ShortText -> Either Text (Base64 'UrlPadded ShortText)
+parseBase64Padded bs = assertBase64 bs <$ B64U.parseBase64Padded (toByteString bs)
+{-# INLINE parseBase64Padded #-}
 
--- | Tell whether an untyped 'ShortText' value is a valid Base64url format.
+-- | Parse a canonical, unpadded Base64url-encoded 'ShortText' value.
 --
--- This will not tell you whether or not this is a correct Base64url representation,
--- only that it conforms to the correct shape. To check whether it is a true
--- Base64 encoded 'ShortText' value, use 'isBase64Url'.
+-- Checks the URL-safe alphabet, length, padding, and unused padding bits.
+-- Returns the original encoded value wrapped in 'Base64', ready for
+-- 'decodeBase64Unpadded' or 'decodeBase64'. Errors match the strict ByteString
+-- 'Data.ByteString.Base64.URL.decodeBase64UnpaddedUntyped' decoder.
+-- The input is neither decoded nor normalized in the returned value.
+--
+-- This validates the Base64url encoding, independently of whether the
+-- decoded payload is valid UTF-8.
 --
 -- === __Examples__:
 --
--- >>> isValidBase64Url "PDw_Pj4="
--- True
+-- >>> parseBase64Unpadded "PDw_Pj4"
+-- Right "PDw_Pj4"
 --
--- >>> isValidBase64Url "PDw_Pj"
--- True
+-- >>> fmap decodeBase64Unpadded (parseBase64Unpadded "PDw_Pj4")
+-- Right "<<?>>"
 --
--- >>> isValidBase64Url "%"
--- False
+-- >>> parseBase64Unpadded "PDw_Pj4="
+-- Left "Base64-encoded bytestring has invalid padding"
 --
-isValidBase64Url :: ShortText -> Bool
-isValidBase64Url = B64U.isValidBase64Url . toByteString
-{-# INLINE isValidBase64Url #-}
+-- >>> parseBase64Unpadded "ZE"
+-- Left "non-canonical encoding detected at offset: 1"
+--
+-- @since 2.0
+--
+parseBase64Unpadded :: ShortText -> Either Text (Base64 'UrlUnpadded ShortText)
+parseBase64Unpadded bs = assertBase64 bs <$ B64U.parseBase64Unpadded (toByteString bs)
+{-# INLINE parseBase64Unpadded #-}

@@ -75,8 +75,8 @@ data Harness bs = Harness
   , lenientUrl :: bs -> bs
   , lenient :: bs -> bs
   , parse :: bs -> Either Text (Base64 'StdPadded bs)
-  , correctUrl :: bs -> Bool
-  , validateUrl :: bs -> Bool
+  , parseUrlPad :: bs -> Either Text (Base64 'UrlPadded bs)
+  , parseUrlNopad :: bs -> Either Text (Base64 'UrlUnpadded bs)
   }
 
 
@@ -97,8 +97,8 @@ b64 = Harness
   , decodeUrlTypedPad = B64U.decodeBase64Padded
   , decodeUrlTypedNopad = B64U.decodeBase64Unpadded
   , lenientUrl = B64U.decodeBase64Lenient
-  , correctUrl = B64U.isBase64Url
-  , validateUrl = B64U.isValidBase64Url
+  , parseUrlPad = B64U.parseBase64Padded
+  , parseUrlNopad = B64U.parseBase64Unpadded
   }
 
 lb64 :: Harness LBS.ByteString
@@ -118,8 +118,8 @@ lb64 = Harness
   , decodeUrlTypedPad = LB64U.decodeBase64Padded
   , decodeUrlTypedNopad = LB64U.decodeBase64Unpadded
   , lenientUrl = LB64U.decodeBase64Lenient
-  , correctUrl = LB64U.isBase64Url
-  , validateUrl = LB64U.isValidBase64Url
+  , parseUrlPad = LB64U.parseBase64Padded
+  , parseUrlNopad = LB64U.parseBase64Unpadded
   }
 
 sb64 :: Harness SBS.ShortByteString
@@ -139,8 +139,8 @@ sb64 = Harness
   , decodeUrlTypedPad = SB64U.decodeBase64Padded
   , decodeUrlTypedNopad = SB64U.decodeBase64Unpadded
   , lenientUrl = SB64U.decodeBase64Lenient
-  , correctUrl = SB64U.isBase64Url
-  , validateUrl = SB64U.isValidBase64Url
+  , parseUrlPad = SB64U.parseBase64Padded
+  , parseUrlNopad = SB64U.parseBase64Unpadded
   }
 
 t64 :: Harness Text
@@ -160,8 +160,8 @@ t64 = Harness
   , decodeUrlTypedPad = T64U.decodeBase64Padded
   , decodeUrlTypedNopad = T64U.decodeBase64Unpadded
   , lenientUrl = T64U.decodeBase64Lenient
-  , correctUrl = T64U.isBase64Url
-  , validateUrl = T64U.isValidBase64Url
+  , parseUrlPad = T64U.parseBase64Padded
+  , parseUrlNopad = T64U.parseBase64Unpadded
   }
 
 tl64 :: Harness TL.Text
@@ -181,8 +181,8 @@ tl64 = Harness
   , decodeUrlTypedPad = TL64U.decodeBase64Padded
   , decodeUrlTypedNopad = TL64U.decodeBase64Unpadded
   , lenientUrl = TL64U.decodeBase64Lenient
-  , correctUrl = TL64U.isBase64Url
-  , validateUrl = TL64U.isValidBase64Url
+  , parseUrlPad = TL64U.parseBase64Padded
+  , parseUrlNopad = TL64U.parseBase64Unpadded
   }
 
 ts64 :: Harness TS.ShortText
@@ -202,8 +202,8 @@ ts64 = Harness
   , decodeUrlTypedPad = TS64U.decodeBase64Padded
   , decodeUrlTypedNopad = TS64U.decodeBase64Unpadded
   , lenientUrl = TS64U.decodeBase64Lenient
-  , correctUrl = TS64U.isBase64Url
-  , validateUrl = TS64U.isValidBase64Url
+  , parseUrlPad = TS64U.parseBase64Padded
+  , parseUrlNopad = TS64U.parseBase64Unpadded
   }
 
 -- -------------------------------------------------------------------- --

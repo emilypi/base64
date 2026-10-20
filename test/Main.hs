@@ -49,7 +49,7 @@ import qualified Simd
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck (testProperty)
-import Data.String (IsString)
+import Data.String (IsString, fromString)
 import Test.QuickCheck hiding (label)
 
 
@@ -93,6 +93,8 @@ tests = testGroup "Base64 Tests (scalar)"
       (second TS.fromText . T.decodeUtf8' . SBS.fromShort) tts64 sb64
     ]
   , parseRepresentationTests
+  , urlParseRepresentationTests
+  , parserCoherenceTests
   ]
 
 -- ---------------------------------------------------------------- --
@@ -132,7 +134,7 @@ mkPropTree :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
 mkPropTree = mkTests "Property Tests"
   [ prop_roundtrip
   , prop_parse
-  , prop_correctness
+  , prop_parse_url
   , prop_url_padding
   , const prop_bos_coherence
   ]
@@ -149,7 +151,7 @@ mkUnitTree last_ length_ = mkTests "Unit tests"
   [ paddingTests last_ length_
   , rfcVectors
   , offsetVectors
-  , validityTests
+  , urlParseTests
   , canonicityTests
   , parseTests
   ]
@@ -189,14 +191,6 @@ prop_roundtrip Harness{..} = testGroup "prop_roundtrip"
       bs == lenient (extractBase64 $ encode bs)
   , testProperty "prop_url_lenient_roundtrip" $ \(bs :: a) ->
       bs == lenientUrl (extractBase64 $ encodeUrl bs)
-  ]
-
-prop_correctness :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
-prop_correctness Harness{..} = testGroup "prop_validity"
-  [ testProperty "prop_url_valid" $ \(bs :: a) ->
-    validateUrl (extractBase64 $ encodeUrl bs)
-  , testProperty "prop_url_correct" $ \(bs :: a) ->
-    correctUrl (extractBase64 $ encodeUrl bs)
   ]
 
 prop_parse :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
@@ -292,6 +286,193 @@ parseRepresentationTests = testGroup "Parsing representations"
       fmap (TL.toChunks . extractBase64) (parse tl64 $ TL.fromChunks chunks)
         @?= Right chunks
   ]
+
+prop_parse_url :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
+prop_parse_url Harness{..} = testGroup "URL parsing properties"
+  [ parserProperties "padded" parseUrlPad encodeUrl decodeUrlTypedPad decodeUrlPad
+  , parserProperties "unpadded" parseUrlNopad encodeUrlNopad decodeUrlTypedNopad decodeUrlNopad
+  ]
+  where
+    parserProperties name parser encoder decoder untyped = testGroup name
+      [ testProperty "parse an encoded value" $ \bs ->
+          parser (extractBase64 $ encoder bs) === Right (encoder bs)
+      , testProperty "decode a parsed value" $ \bs ->
+          fmap decoder (parser $ extractBase64 $ encoder bs) === Right bs
+      , testProperty "preserve arbitrary accepted input" $ \bs ->
+          case parser bs of
+            Left _ -> property True
+            Right encoded -> extractBase64 encoded === bs
+      , testProperty "agree with untyped decoding errors" $ \bs ->
+          -- Do not force a possible UTF-8 conversion of the decoded payload.
+          (() <$ parser bs) === (() <$ untyped bs)
+      , testProperty "validate arbitrary alphabet and padding combinations" $
+          forAll (listOf $ elements "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_=+/% \n") $ \s ->
+            let input = fromString s
+            in (extractBase64 <$> parser input) === (input <$ untyped input)
+      ]
+
+urlParseTests :: (IsString a, Eq a, Show a) => Harness a -> TestTree
+urlParseTests Harness{..} = testGroup "URL parsing unit tests"
+  [ testGroup "Preserve valid padded values"
+      [ testCase (show input) $ parseUrlPad input @?= Right (assertBase64 input)
+      | input <- ["", "Zg==", "Zm8=", "Zm9v", "Zm9vYg==", "Zm9vYmE=", "Zm9vYmFy"
+                 , "PDw_Pj4=", "PDw_Pz4-", "_w==", "-_8=", "PA==", "PDw=", "PDw_"
+                 , "ZA==", "ZmA=", "Zm9vYmA="]
+      ]
+  , testGroup "Preserve valid unpadded values"
+      [ testCase (show input) $ parseUrlNopad input @?= Right (assertBase64 input)
+      | input <- ["", "Zg", "Zm8", "Zm9v", "Zm9vYg", "Zm9vYmE", "Zm9vYmFy"
+                 , "PDw_Pj4", "PDw_Pz4-", "_w", "-_8", "PA", "PDw", "PDw_"
+                 , "ZA", "ZmA", "Zm9vYmA"]
+      ]
+  , testGroup "Require complete padding for UrlPadded"
+      [ testCase (show input) $
+          parseUrlPad input @?= Left "Base64-encoded bytestring requires padding"
+      | input <- ["Zg", "Zm8", "Zg=", "PDw_Pj4"]
+      ]
+  , testGroup "Reject padding for UrlUnpadded"
+      [ testCase (show input) $
+          parseUrlNopad input @?= Left "Base64-encoded bytestring has invalid padding"
+      | input <- ["Zg==", "Zm8=", "Zg=", "==", "====", "PDw_Pj4="]
+      ]
+  , testGroup "Reject malformed values in both modes"
+      [ testGroup name
+          [ testCase (show input) $ parser input @?= Left err
+          | (input, err) <-
+              [ ("Z", "Base64-encoded bytestring has invalid size")
+              , ("Zg===", "Base64-encoded bytestring has invalid size")
+              , ("AA=A", "invalid base64 encoding near offset: 3")
+              , ("Zg==AAAA", "invalid padding near offset: 2")
+              , ("Zm8=AAAA", "invalid padding near offset: 3")
+              , ("%AAA", "invalid base64 encoding near offset: 0")
+              , ("A%AA", "invalid base64 encoding near offset: 1")
+              , ("AA%A", "invalid base64 encoding near offset: 2")
+              , ("AAA%", "invalid base64 encoding near offset: 3")
+              , ("AAAA%AAA", "invalid base64 encoding near offset: 4")
+              , ("PDw/", "invalid base64 encoding near offset: 3")
+              , ("PDw+", "invalid base64 encoding near offset: 3")
+              , ("AAA ", "invalid base64 encoding near offset: 3")
+              , ("AAA\n", "invalid base64 encoding near offset: 3")
+              ]
+          ]
+      | (name, parser) <- [("padded", fmap extractBase64 . parseUrlPad)
+                          , ("unpadded", fmap extractBase64 . parseUrlNopad)]
+      ]
+  , testGroup "Reject invalid padded quanta"
+      [ testCase (show input) $ parseUrlPad input @?= Left err
+      | (input, err) <- [("====", "invalid padding near offset: 0")
+                        , ("A===", "invalid padding near offset: 1")]
+      ]
+  , testGroup "Reject non-canonical values in both modes"
+      [ testCase (show (padded, unpadded)) $ do
+          parseUrlPad padded @?= Left err
+          parseUrlNopad unpadded @?= Left err
+      | (padded, unpadded, err) <-
+          [ ("ZE==", "ZE", "non-canonical encoding detected at offset: 1")
+          , ("ZK==", "ZK", "non-canonical encoding detected at offset: 1")
+          , ("ZmC=", "ZmC", "non-canonical encoding detected at offset: 2")
+          , ("ZmD=", "ZmD", "non-canonical encoding detected at offset: 2")
+          , ("_x==", "_x", "non-canonical encoding detected at offset: 1")
+          , ("-_9=", "-_9", "non-canonical encoding detected at offset: 2")
+          , ("Zm9vYE==", "Zm9vYE", "non-canonical encoding detected at offset: 5")
+          , ("Zm9vYmC=", "Zm9vYmC", "non-canonical encoding detected at offset: 6")
+          ]
+      ]
+  , testCase "reject non-ASCII input in both modes" $ do
+      assertBool "padded parser accepted non-ASCII input" $
+        isLeft (parseUrlPad "\255\255\255\255")
+      assertBool "unpadded parser accepted non-ASCII input" $
+        isLeft (parseUrlNopad "\255\255\255\255")
+  ]
+
+urlParseRepresentationTests :: TestTree
+urlParseRepresentationTests = testGroup "URL parsing representations"
+  [ testGroup name
+      [ testProperty "parse sliced ByteStrings" $ \bs ->
+          let input = encoder bs
+              sliced = BS.take (BS.length input) $ BS.drop 2 ("!!" <> input <> "!!")
+          in parser sliced === Right input
+      , testCase "error offsets are relative to the ByteString slice" $
+          parser (BS.take 4 $ BS.drop 2 "!!AA%A!!")
+            @?= Left "invalid base64 encoding near offset: 2"
+      , testGroup "Lazy ByteString chunk boundaries"
+          [ testCase (show (input, n)) $
+              let splitChunks = [BS.take n input, BS.drop n input]
+              in fmap LBS.toStrict (lazyParser $ LBS.fromChunks splitChunks) @?= parser input
+          | input <- inputs
+          , n <- [0 .. BS.length input]
+          ]
+      , testGroup "Lazy Text chunk boundaries"
+          [ testCase (show (input, n)) $
+              let txt = T.decodeUtf8 input
+                  splitChunks = [T.take n txt, T.drop n txt]
+              in fmap TL.toStrict (lazyTextParser $ TL.fromChunks splitChunks) @?= textParser txt
+          | input <- inputs
+          , n <- [0 .. BS.length input]
+          ]
+      , testCase "preserve lazy ByteString chunks" $
+          fmap LBS.toChunks (lazyParser $ LBS.fromChunks chunks) @?= Right chunks
+      , testCase "preserve lazy Text chunks" $
+          let textChunks = fmap T.decodeUtf8 chunks
+          in fmap TL.toChunks (lazyTextParser $ TL.fromChunks textChunks) @?= Right textChunks
+      ]
+  | (name, encoder, parser, lazyParser, textParser, lazyTextParser, chunks) <-
+      [ ("padded", extractBase64 . B64U.encodeBase64'
+        , fmap extractBase64 . parseUrlPad b64, fmap extractBase64 . parseUrlPad lb64
+        , fmap extractBase64 . parseUrlPad t64, fmap extractBase64 . parseUrlPad tl64
+        , ["_", "w=", "="])
+      , ("unpadded", extractBase64 . B64U.encodeBase64Unpadded'
+        , fmap extractBase64 . parseUrlNopad b64, fmap extractBase64 . parseUrlNopad lb64
+        , fmap extractBase64 . parseUrlNopad t64, fmap extractBase64 . parseUrlNopad tl64
+        , ["P", "Dw_", "Pj4"])
+      ]
+  ]
+  where
+    inputs =
+      [ "", "_w==", "_w", "PDw_Pj4=", "PDw_Pj4", "PDw_Pz4-", "Zg==AAAA"
+      , "Zm9vYmC=", "Zm9vYmC", "Zg=", "A", "AAAA%AAA", "AA=A", "===="
+      , BS.replicate 64 65 <> "-_8=", BS.replicate 64 65 <> "-_8"
+      , BS.replicate 64 65 <> "AA%A", BS.replicate 64 65 <> "-_9="
+      ]
+
+parserCoherenceTests :: TestTree
+parserCoherenceTests = testGroup "Parser consistency across all representations"
+  [ testProperty name $
+      forAll (listOf $ resize 8 $ listOf1 $ elements alphabet) $ \chunks ->
+        let textChunks = fmap T.pack chunks
+            byteChunks = fmap T.encodeUtf8 textChunks
+            textInput = T.concat textChunks
+            byteInput = BS.concat byteChunks
+            expected = strictBytes byteInput
+        in conjoin
+          [ counterexample "lazy ByteString" $
+              (LBS.toStrict <$> lazyBytes (LBS.fromChunks byteChunks)) === expected
+          , counterexample "short ByteString" $
+              (SBS.fromShort <$> shortBytes (SBS.toShort byteInput)) === expected
+          , counterexample "strict Text" $
+              (T.encodeUtf8 <$> strictText textInput) === expected
+          , counterexample "lazy Text" $
+              (T.encodeUtf8 . TL.toStrict <$> lazyText (TL.fromChunks textChunks)) === expected
+          , counterexample "short Text" $
+              (TS.toByteString <$> shortText (TS.fromText textInput)) === expected
+          ]
+  | (name, strictBytes, lazyBytes, shortBytes, strictText, lazyText, shortText) <-
+      [ ("standard padded"
+        , fmap extractBase64 . parse b64, fmap extractBase64 . parse lb64
+        , fmap extractBase64 . parse sb64, fmap extractBase64 . parse t64
+        , fmap extractBase64 . parse tl64, fmap extractBase64 . parse ts64)
+      , ("URL padded"
+        , fmap extractBase64 . parseUrlPad b64, fmap extractBase64 . parseUrlPad lb64
+        , fmap extractBase64 . parseUrlPad sb64, fmap extractBase64 . parseUrlPad t64
+        , fmap extractBase64 . parseUrlPad tl64, fmap extractBase64 . parseUrlPad ts64)
+      , ("URL unpadded"
+        , fmap extractBase64 . parseUrlNopad b64, fmap extractBase64 . parseUrlNopad lb64
+        , fmap extractBase64 . parseUrlNopad sb64, fmap extractBase64 . parseUrlNopad t64
+        , fmap extractBase64 . parseUrlNopad tl64, fmap extractBase64 . parseUrlNopad ts64)
+      ]
+  ]
+  where
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=_-% \n\255\955\128512"
 
 prop_url_padding :: (Arbitrary a, IsString a, Eq a, Show a) => Harness a -> TestTree
 prop_url_padding Harness{..}  = testGroup "prop_url_padding"
@@ -605,60 +786,5 @@ decodeWithVectors utf8 TextHarness{..} h t = testGroup "DecodeWith* unit tests"
       a <- either (assertFailure . show) pure $ decodeUrlNopad t "PDw_Pz4-"
       b <- either (assertFailure . show) pure $ decodeUrlUnpaddedWith_ utf8 "PDw_Pz4-"
       a @=? b
-    ]
-  ]
-
--- | Validity unit tests for the URL workflow
---
-validityTests :: IsString a => Harness a -> TestTree
-validityTests Harness{..} = testGroup "Validity and correctness unit tests"
-  [ testGroup "Validity unit tests"
-    [ testCase "Padding tests" $ do
-      not (validateUrl "P") @? "P"
-      validateUrl "PA" @? "PA"
-      validateUrl "PDw" @? "PDw"
-      validateUrl "PDw_" @? "PDw_"
-      validateUrl "PA==" @? "PA=="
-      validateUrl "PDw=" @? "PDw="
-      validateUrl "PDw_" @? "PDw_"
-
-    , testCase "Canonicity tests" $ do
-      validateUrl "ZK==" @? "ZK=="
-      validateUrl "ZE==" @? "ZE=="
-
-      validateUrl "ZA==" @? "ZA=="
-      validateUrl "ZK==" @? "ZK=="
-      validateUrl "ZK" @? "ZK"
-
-      validateUrl "ZmA=" @? "ZmA="
-      validateUrl "ZmC=" @? "ZmC="
-      validateUrl "ZmE" @? "ZmE"
-
-      validateUrl "Zm9vYmA=" @? "Zm9vYmA="
-      validateUrl "Zm9vYmC=" @? "Zm9vYmC="
-      validateUrl "Zm9vYmC" @? "Zm9vYmC"
-    ]
-  , testGroup "Correctness unit tests"
-    [ testCase "Padding tests" $ do
-      not (validateUrl "P") @? "P"
-      correctUrl "PA" @? "PA"
-      correctUrl "PDw" @? "PDw"
-      correctUrl "PDw_" @? "PDw_"
-      correctUrl "PA==" @? "PA=="
-      correctUrl "PDw=" @? "PDw="
-      correctUrl "PDw_" @? "PDw_"
-
-    , testCase "Canonicity tests" $ do
-      not (correctUrl "ZK==") @? "ZK=="
-      not (correctUrl "ZE==") @? "ZE=="
-      correctUrl "ZA==" @? "ZA=="
-
-      correctUrl "ZmA=" @? "ZmA="
-      not (correctUrl "ZmC=") @? "ZmC="
-      not (correctUrl "ZmD") @? "ZmD"
-
-      correctUrl "Zm9vYmA=" @? "Zm9vYmA="
-      not (correctUrl "Zm9vYmC=") @? "Zm9vYmC="
-      not (correctUrl "Zm9vYmC") @? "Zm9vYmC"
     ]
   ]
