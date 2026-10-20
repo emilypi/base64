@@ -38,8 +38,9 @@ import GHC.TypeLits
 -- | Assert the provenance of a value encoded in a particular
 -- base64 alphabet.
 --
--- For untrusted standard Base64 input, use the @parseBase64@ function
--- in the corresponding ByteString or Text module to validate it first.
+-- For untrusted input, use @parseBase64@ for standard Base64, or
+-- @parseBase64Padded@ / @parseBase64Unpadded@ for Base64url, in the
+-- corresponding ByteString or Text module to validate it first.
 --
 -- /Warning/: This is a blind assertion that a particular
 -- value is base64 encoded in some alphabet. If you are not

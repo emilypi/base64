@@ -2,19 +2,26 @@
 
 ## 2.0
 
-This release removes two public functions. See [MIGRATION-2.0.md](MIGRATION-2.0.md)
+This release replaces the standard and URL-safe Boolean validators with typed
+parsers. See [MIGRATION-2.0.md](MIGRATION-2.0.md)
 for replacement examples and the stricter validation behavior.
 
 * Replace `isBase64` and `isValidBase64` with `parseBase64` in all six
   standard-alphabet modules. The parser returns
   `Either Text (Base64 'StdPadded a)`, preserving the original encoded input
   after checking its alphabet, length, padding, and canonicity.
-* For a Boolean check, migrate to `isRight . parseBase64`. This is stricter
-  than the old shape-only `isValidBase64` check. URL-specific validators
-  are unchanged.
-* Remove the predicates without a deprecation period. A source scan of 45
-  published direct dependents found no occurrences of either function;
-  private projects and other historical versions were not covered.
+* Replace `isBase64Url` and `isValidBase64Url` in all six URL-safe modules
+  with `parseBase64Padded` and `parseBase64Unpadded`, returning
+  `Base64 'UrlPadded a` and `Base64 'UrlUnpadded a` respectively on success.
+  They validate the whole input and preserve its representation, including
+  lazy chunk boundaries, with errors matching the strict ByteString decoders.
+* For a Boolean check, use `isRight` with the appropriate parser. To accept
+  either URL padding policy, combine the two checks with `(||)`. Parsing is
+  stricter than the old shape-only `isValidBase64` / `isValidBase64Url` checks.
+* Remove the predicates without a deprecation period. The earlier source scan
+  of 45 published direct dependents covered only `isBase64` and
+  `isValidBase64`, finding no occurrences; it did not cover URL predicates,
+  private projects, or other historical versions.
 * Add an optional, manual `simd` flag (off by default) for bundled ARM64 NEON
   and runtime-detected x86-64 AVX2/SSSE3 encoding and strict decoding.
 * The SIMD path retains scalar fallbacks, encoding and decoding behavior,

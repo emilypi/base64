@@ -3,7 +3,9 @@
 Version 2.0 replaces the standard-alphabet predicates `isBase64` and
 `isValidBase64` with `parseBase64`. The new function checks the encoded input
 and returns a typed `Base64` value, or an error explaining why validation
-failed. The old predicates are removed without a deprecation period.
+failed. The URL predicates `isBase64Url` and `isValidBase64Url` are likewise
+replaced by `parseBase64Padded` and `parseBase64Unpadded`. All four predicates
+are removed without a deprecation period.
 
 The release also adds optional SIMD support. It is off by default, so existing
 builds continue to use the scalar implementation.
@@ -69,7 +71,62 @@ If your application intentionally accepts incomplete or non-canonical input,
 keep that policy explicit; `parseBase64` does not reproduce the permissive
 behavior of `isValidBase64`.
 
-## Text and URL-safe encodings
+## URL-safe encodings
+
+Each corresponding `.URL` module exports both parsers, specialized to its
+string type:
+
+```haskell
+parseBase64Padded   :: a -> Either Text (Base64 'UrlPadded a)
+parseBase64Unpadded :: a -> Either Text (Base64 'UrlUnpadded a)
+```
+
+This covers strict, lazy, and short ByteString and Text. The padded parser
+requires complete padding when needed; the unpadded parser rejects padding.
+Empty input and complete four-character quanta with no padding are valid in
+both modes. Both parsers preserve the original encoded input, including lazy
+chunk boundaries, and validate the entire value before returning `Right`.
+They check the URL-safe alphabet and canonical padding bits, returning the
+same errors as the corresponding strict ByteString untyped decoder.
+
+```haskell
+import qualified Data.ByteString.Base64.URL as B64U
+
+-- Right "PDw_Pj4=", with alphabet UrlPadded.
+padded = B64U.parseBase64Padded "PDw_Pj4="
+
+-- Right "PDw_Pj4", with alphabet UrlUnpadded.
+unpadded = B64U.parseBase64Unpadded "PDw_Pj4"
+
+-- Both return Right "<<?>>".
+decodedPadded = fmap B64U.decodeBase64Padded padded
+decodedUnpadded = fmap B64U.decodeBase64Unpadded unpadded
+```
+
+For a Boolean check with a specific padding policy, use
+`isRight . B64U.parseBase64Padded` or `isRight . B64U.parseBase64Unpadded`.
+To accept either policy, replace `isBase64Url input` with:
+
+```haskell
+isRight (B64U.parseBase64Padded input)
+  || isRight (B64U.parseBase64Unpadded input)
+```
+
+To retain a typed result when either policy is accepted, handle each
+successful parser result with `decodeBase64`, which accepts both URL types:
+
+```haskell
+decodeEitherPadding input =
+  case B64U.parseBase64Padded input of
+    Right encoded -> Right (B64U.decodeBase64 encoded)
+    Left _ -> fmap B64U.decodeBase64 (B64U.parseBase64Unpadded input)
+```
+
+The parsers replace the shape-only `isValidBase64Url` check with canonical
+validation. For example, `ZE==` and `ZE` now fail, whereas `Zg==` succeeds
+only with the padded parser and `Zg` only with the unpadded parser.
+
+## Text payloads
 
 The Text parsers validate the Base64 encoding, not the UTF-8 validity of the
 decoded payload. For example, `parseBase64 "/w=="` succeeds even though its
@@ -77,8 +134,9 @@ decoded byte is not valid UTF-8. Use a ByteString decoder for arbitrary binary
 payloads, or `decodeBase64UntypedWith` with a checked text conversion such as
 `decodeUtf8'` when you need to report conversion errors.
 
-The URL-specific predicates `isBase64Url` and `isValidBase64Url` retain their
-existing names and behavior. The encoding and decoding APIs are unchanged.
+The same rule applies to the URL Text parsers: `parseBase64Padded "_w=="`
+and `parseBase64Unpadded "_w"` succeed without decoding the payload as text.
+The encoding and decoding APIs are unchanged.
 
 ## Enable SIMD optionally
 
