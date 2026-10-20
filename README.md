@@ -22,15 +22,16 @@ Additionally this library has
 
 - Better performance than `base64-bytestring` for encode and decode.
 - Optics for handling more complex structures with Base64 representations via the `base64-lens` package
-- Parses standard Base64 into a validated `Base64` value, and checks Base64url encodings
+- Parses standard and URL-safe Base64 into validated `Base64` values
 - Rejects non-canonical encodings that do not roundtrip in other base64 libraries like `ZE==`.
 
 The library supports GHC 9.6 through 9.14. Its dependencies are `base`,
 `bytestring`, `deepseq`, `text`, and `text-short`.
 
-Upgrading to 2.0? See the [migration guide](MIGRATION-2.0.md) for the replacement
-of the standard and URL-safe Boolean validators, and the [release notes](CHANGELOG.md#20) for
-the optional SIMD implementation.
+Upgrading to 2.1? See the [migration guide](MIGRATION-2.1.md) and
+[release notes](CHANGELOG.md#21) for the replacement of the URL-safe Boolean
+validators. If upgrading from 1.x, also follow the [2.0 migration guide](MIGRATION-2.0.md)
+for the standard-alphabet parsers and optional SIMD support.
 
 ### Parsing existing Base64
 
@@ -82,7 +83,7 @@ Right "<<?>>"
 
 For a Boolean check that accepts either padding policy, use
 `isRight (B64U.parseBase64Padded input) || isRight (B64U.parseBase64Unpadded input)`.
-See the [migration guide](MIGRATION-2.0.md#url-safe-encodings) for typed use.
+See the [migration guide](MIGRATION-2.1.md#parse-url-safe-input) for typed use.
 
 The complete parser API covers all six string representations:
 

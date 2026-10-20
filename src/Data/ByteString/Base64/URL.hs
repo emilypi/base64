@@ -299,7 +299,7 @@ decodeBase64Lenient = decodeBase64Lenient_ decodeB64UrlTable
 -- >>> parseBase64Padded "ZE=="
 -- Left "non-canonical encoding detected at offset: 1"
 --
--- @since 2.0
+-- @since 2.1
 --
 parseBase64Padded :: ByteString -> Either Text (Base64 'UrlPadded ByteString)
 parseBase64Padded bs = assertBase64 bs <$ decodeBase64PaddedUntyped bs
@@ -327,7 +327,7 @@ parseBase64Padded bs = assertBase64 bs <$ decodeBase64PaddedUntyped bs
 -- >>> parseBase64Unpadded "ZE"
 -- Left "non-canonical encoding detected at offset: 1"
 --
--- @since 2.0
+-- @since 2.1
 --
 parseBase64Unpadded :: ByteString -> Either Text (Base64 'UrlUnpadded ByteString)
 parseBase64Unpadded bs = assertBase64 bs <$ decodeBase64UnpaddedUntyped bs

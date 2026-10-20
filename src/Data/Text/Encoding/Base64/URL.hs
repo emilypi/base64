@@ -320,7 +320,7 @@ decodeBase64Lenient = T.decodeUtf8
 -- >>> parseBase64Padded "ZE=="
 -- Left "non-canonical encoding detected at offset: 1"
 --
--- @since 2.0
+-- @since 2.1
 --
 parseBase64Padded :: Text -> Either Text (Base64 'UrlPadded Text)
 parseBase64Padded bs = assertBase64 bs <$ B64U.parseBase64Padded (T.encodeUtf8 bs)
@@ -351,7 +351,7 @@ parseBase64Padded bs = assertBase64 bs <$ B64U.parseBase64Padded (T.encodeUtf8 b
 -- >>> parseBase64Unpadded "ZE"
 -- Left "non-canonical encoding detected at offset: 1"
 --
--- @since 2.0
+-- @since 2.1
 --
 parseBase64Unpadded :: Text -> Either Text (Base64 'UrlUnpadded Text)
 parseBase64Unpadded bs = assertBase64 bs <$ B64U.parseBase64Unpadded (T.encodeUtf8 bs)

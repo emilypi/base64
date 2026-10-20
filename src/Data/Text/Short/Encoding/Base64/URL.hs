@@ -312,7 +312,7 @@ decodeBase64Lenient = fromText . B64TU.decodeBase64Lenient . toText
 -- >>> parseBase64Padded "ZE=="
 -- Left "non-canonical encoding detected at offset: 1"
 --
--- @since 2.0
+-- @since 2.1
 --
 parseBase64Padded :: ShortText -> Either Text (Base64 'UrlPadded ShortText)
 parseBase64Padded bs = assertBase64 bs <$ B64U.parseBase64Padded (toByteString bs)
@@ -343,7 +343,7 @@ parseBase64Padded bs = assertBase64 bs <$ B64U.parseBase64Padded (toByteString b
 -- >>> parseBase64Unpadded "ZE"
 -- Left "non-canonical encoding detected at offset: 1"
 --
--- @since 2.0
+-- @since 2.1
 --
 parseBase64Unpadded :: ShortText -> Either Text (Base64 'UrlUnpadded ShortText)
 parseBase64Unpadded bs = assertBase64 bs <$ B64U.parseBase64Unpadded (toByteString bs)

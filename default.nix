@@ -10,7 +10,7 @@ let
       }:
       mkDerivation {
         pname = "base64";
-        version = "2.0";
+        version = "2.1";
         src = ./.;
         libraryHaskellDepends = [
           base bytestring deepseq ghc-byteorder text text-short

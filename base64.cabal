@@ -1,6 +1,6 @@
 cabal-version:   2.0
 name:            base64
-version:         2.0
+version:         2.1
 synopsis:        A modern Base64 library
 description:
   A performant, featureful RFC 4648 and 7049-compliant Base64 implementation
@@ -19,6 +19,7 @@ extra-doc-files:
   README.md
   MIGRATION-1.0.md
   MIGRATION-2.0.md
+  MIGRATION-2.1.md
 
 tested-with:     GHC ==9.6.7 || ==9.8.4 || ==9.10.3 || ==9.12.4 || ==9.14.1
 
